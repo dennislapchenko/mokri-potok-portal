@@ -1,0 +1,74 @@
+# CLAUDE.md
+
+1. Don't assume. Don't hide confusion. Surface tradeoffs.
+2. Minimum code that solves the problem. Nothing speculative.
+3. Touch only what you must. Clean up only your own mess.
+4. Define success criteria. Loop until verified (`task check` is the floor).
+
+## What this is
+
+The village portal for a small Slovenian collective — see `README.md` for the
+stack and `.claude/context/village.md` for who uses it and why the rooms are
+shaped the way they are. It is a **social tool for a handful of houses**, not
+a product: every feature must beat "scroll up in the WhatsApp group" or it
+does not ship.
+
+## Invariants
+
+- **A house is the account.** Everyone in a house shares one identity; a device
+  row per phone tells them apart. Never add per-person accounts without a
+  decision recorded in the plan.
+- **Nothing is public.** Every API route except `/api/healthz`, `/api/status`,
+  `/api/bootstrap`, `/api/join` requires a bearer token. Away-notices are
+  burglary information: they never leave the logged-in app (no digests, no feeds).
+- **No tallies of favours.** "Taken by", "claimed by", "watched by" are
+  acknowledgments. No counts, points, leaderboards, streaks. Ever.
+- **Cadastre is a view, not a source.** `parcels.geojson` is public GURS data;
+  parcel numbers show only for assigned parcels (and to stewards in assign
+  mode). The map carries its snapshot date and "boundaries, not fences" line.
+  House ↔ parcel assignment lives in the DB only.
+- **Exit is designed.** `GET /api/export` (steward) dumps everything as JSON;
+  `VACUUM INTO` backups land nightly in `${DATA_DIR}/backups/`. Keep both working.
+- **No secrets in this repo, and none needed.** The first steward code is
+  generated on first boot and printed to the container log.
+- **Slovenian first.** Every user-facing string goes through `t()` in
+  `frontend/src/i18n.tsx` with a Slovenian entry. English is the fallback key.
+
+## Layout
+
+```
+backend/            Go: main.go, internal/{config,store,httpapi}; migrations embedded
+frontend/           Vite + React; src/rooms/* one file per room; src/map/VillageMap.tsx
+frontend/public/data/  parcels.geojson (cadastre), channels.json (modelled water, dashed)
+deploy/app/         compose for the VM stack; deploy/infra-log.md = what was done by hand
+.doco-cd.yml        deploy config the VM's doco-cd polls; BE_TAG rolled by CI
+.github/workflows/  build-backend (GHCR + roll tag), deploy-pages
+```
+
+## Docs stay current, in the same change
+
+- **One fact, one home.** Architecture and invariants: this file. Stack and
+  commands: `README.md`. Manual VM steps, in order: `deploy/infra-log.md`
+  (the one place allowed to be a changelog). Village context: `.claude/context/village.md`.
+- A change to the API shape, a table, the deploy path or a workflow updates the
+  doc that owns it **in the same commit**. Docs describe current state — when
+  something becomes history, delete it rather than framing it as a change.
+- A new room or a new table gets one line in `village.md` saying which
+  villager job it serves. If that line cannot be written, the feature is not needed.
+- `.claude/launch.json` starts the dev frontend; `task be:run` the backend.
+
+## Working rules
+
+- Run `task check` before every commit. CI runs the same.
+- Migrations are append-only files in `backend/internal/store/migrations/`;
+  never edit an applied one.
+- Prefer a few lines of code over a dependency. Backend has one (sqlite);
+  frontend has three runtime deps. Adding one is a decision to write down here.
+- Commits: lowercase, succinct, say what changed and why. No AI trailers, no
+  backticks in subjects (they break the Telegram deploy ping).
+- Push to `main` deploys: frontend to Pages within ~1 min, backend image via
+  GHCR then the VM's doco-cd within ~2 min of the roll commit. Verify with
+  `task vm:logs` and the Pages URL, not by assumption.
+- The VM is shared with gaias-choice: Caddy and the controller belong to that
+  repo. A portal change that needs a new route or a new poll entry is a change
+  **there** — see `deploy/infra-log.md`.

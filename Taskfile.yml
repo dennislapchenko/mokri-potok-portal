@@ -1,0 +1,35 @@
+version: "3"
+
+# Host toolchain is fine here (go, node); the gaias-choice containers-only rule
+# is not copied — this is a small hobby stack and the CI is the gate.
+tasks:
+  default:
+    cmds: [task --list]
+  be:test:
+    desc: vet + test the backend
+    dir: backend
+    cmds: [go vet ./..., go test ./...]
+  be:run:
+    desc: run the backend locally on :8788 with ./data
+    dir: backend
+    cmds: [go run .]
+  be:image:
+    desc: build the backend image locally
+    cmds: [docker build -t mokri-potok-portal-be:local backend]
+  fe:dev:
+    desc: vite dev server on :5173 (expects backend on :8788, see frontend/.env.development)
+    dir: frontend
+    cmds: [npm run dev]
+  fe:build:
+    desc: typecheck + build the frontend
+    dir: frontend
+    cmds: [npm run build]
+  check:
+    desc: everything CI runs
+    cmds: [task be:test, task fe:build]
+  vm:logs:
+    desc: tail the backend on the VM (bootstrap code shows here on first boot)
+    cmds: ["ssh -p 13337 -i ~/.ssh/gaia root@gaias-choice.gardenofatlantis.com 'docker logs --tail 100 -f mokri-potok-potok-api-1'"]
+  vm:backup:
+    desc: copy the latest SQLite backup from the VM to ./backups/
+    cmds: ["mkdir -p backups && scp -P 13337 -i ~/.ssh/gaia 'root@gaias-choice.gardenofatlantis.com:/srv/mokri-potok/data/backups/*.db' backups/"]

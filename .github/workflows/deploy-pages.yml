@@ -1,0 +1,53 @@
+name: Deploy to Pages
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "backend/**"
+      - "deploy/**"
+      - ".claude/**"
+      - "CLAUDE.md"
+      - "README.md"
+      - "Taskfile.yml"
+      - ".doco-cd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+        env:
+          # Project page lives under /mokri-potok-portal/.
+          BASE_PATH: /mokri-potok-portal/
+          # Backend on the gaias-choice VM, behind its Caddy at /potok/api.
+          VITE_API_URL: https://gaias-choice.gardenofatlantis.com/potok/api
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

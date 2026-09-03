@@ -1,0 +1,28 @@
+# Backend stack on the shared VM. No edge here: the gaias-choice Caddy owns
+# 80/443 and proxies /potok/* to this service over its compose network, which
+# we join as an external network. Data is a host bind mount under /srv.
+services:
+  potok-api:
+    image: ghcr.io/dennislapchenko/mokri-potok-portal-be:${BE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      DATA_DIR: /data
+      PORT: "8788"
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    volumes:
+      - /srv/mokri-potok/data:/data
+    networks:
+      - default
+      - gaias
+    healthcheck:
+      test: ["CMD", "/server", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+networks:
+  gaias:
+    # The gaias-choice stack's default compose network — Caddy lives there.
+    name: gaias-choice_default
+    external: true

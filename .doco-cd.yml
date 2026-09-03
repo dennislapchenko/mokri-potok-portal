@@ -1,0 +1,12 @@
+# doco-cd deploy config. The controller on the gaias-choice VM polls this repo
+# (second entry in that repo's deploy/controller/poll.yaml) and reconciles
+# deploy/app/ on every push to main. Non-secrets only — this stack has no
+# secrets: the first steward code is generated on first boot and read from
+# `docker logs`. BE_TAG is rolled by .github/workflows/build-backend.yml.
+name: mokri-potok
+working_dir: deploy/app
+environment:
+  CORS_ORIGINS: https://dennislapchenko.github.io,http://localhost:5173
+  BE_TAG: latest
+reconciliation:
+  events: [unhealthy]

@@ -1,0 +1,4 @@
+2026/09/03 22:03:45 migrated 001_init.sql
+2026/09/03 22:03:45 no houses yet — bootstrap the first steward house with code: devcode
+2026/09/03 22:03:45 listening on :8788, data in ./data
+2026/09/03 22:03:48 GET /api/status 1ms

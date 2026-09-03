@@ -1,0 +1,87 @@
+:root {
+  --wood: #2b1d12; --wood2: #4a3222; --wood3: #6b4a2f;
+  --parch: #f1e4c6; --parch2: #e4d2a8; --parch3: #d6c08f;
+  --ink: #2c2416; --ink2: #5a4a34; --ink3: #857055;
+  --brass: #c7a24a; --brass2: #e0c072;
+  --red: #8a2f2f; --green: #4a7c3f; --blue: #3f5f8a;
+  --shadow: 0 2px 0 #1a100a, 0 6px 14px rgba(0,0,0,.35);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--wood); color: var(--ink); font: 17px/1.5 Alegreya, Georgia, serif; }
+#root { min-height: 100vh; display: flex; flex-direction: column; }
+h1, h2, h3, .sign { font-family: "IM Fell English SC", "IM Fell English", Georgia, serif; font-weight: 400; letter-spacing: .02em; margin: 0; }
+a { color: var(--blue); }
+button, .btn { font: inherit; font-family: "IM Fell English", Georgia, serif; cursor: pointer; border: 2px solid var(--wood2); background: linear-gradient(#e9d8ab, #d3bb84); color: var(--ink); padding: .35rem .9rem; border-radius: 6px; box-shadow: 0 2px 0 #3a281a; }
+button:hover { background: linear-gradient(#f3e5bf, #ddc793); }
+button:active { transform: translateY(1px); box-shadow: 0 1px 0 #3a281a; }
+button.primary { background: linear-gradient(#d9b45a, #b88d2c); border-color: #5a3d12; }
+button.danger { background: linear-gradient(#c96a5f, #9a3c33); color: #fff3e6; border-color: #4a1a15; }
+button.ghost { background: transparent; box-shadow: none; border-color: transparent; color: var(--ink2); padding: .2rem .5rem; }
+button:disabled { opacity: .5; cursor: default; }
+input, select, textarea { font: inherit; color: var(--ink); background: #fbf3dc; border: 1px solid var(--parch3); border-radius: 4px; padding: .4rem .6rem; width: 100%; }
+textarea { min-height: 4.5rem; resize: vertical; }
+label { display: block; font-size: .9rem; color: var(--ink2); margin-top: .5rem; }
+.small { font-size: .85rem; color: var(--ink2); }
+.muted { color: var(--ink3); }
+
+.topbar { background: linear-gradient(#5a3f2a, var(--wood2)); color: var(--parch); border-bottom: 4px solid #1a100a; box-shadow: 0 3px 8px rgba(0,0,0,.5); position: sticky; top: 0; z-index: 5; }
+.topbar .inner { max-width: 1100px; margin: 0 auto; padding: .5rem 1rem; display: flex; align-items: center; gap: 1rem; }
+.topbar h1 { font-size: 1.35rem; color: var(--brass2); text-shadow: 0 1px 0 #000; flex: 1; }
+.topbar h1 a { color: inherit; text-decoration: none; }
+.topbar .house { display: flex; align-items: center; gap: .4rem; font-family: "IM Fell English", serif; }
+.topbar .lang button { padding: .1rem .5rem; font-size: .85rem; }
+
+main { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 1rem 1rem 6rem; }
+.parchment { background: var(--parch); border: 3px solid #7a5a3a; border-radius: 10px; padding: 1rem 1.2rem; box-shadow: var(--shadow), inset 0 0 40px rgba(120,80,30,.15); position: relative; }
+.parchment + .parchment { margin-top: 1rem; }
+.parchment h2 { font-size: 1.5rem; color: var(--wood2); border-bottom: 2px solid var(--parch3); padding-bottom: .3rem; margin-bottom: .8rem; display: flex; align-items: baseline; gap: .6rem; }
+.parchment h2 .sub { font-family: Alegreya, serif; font-size: .9rem; color: var(--ink3); font-style: italic; }
+
+.buildings { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .8rem; margin-top: 1rem; }
+.building { display: block; text-decoration: none; color: var(--ink); background: linear-gradient(#f3e6c6, var(--parch2)); border: 3px solid #7a5a3a; border-radius: 10px; padding: .8rem; box-shadow: var(--shadow); text-align: center; transition: transform .1s; }
+.building:hover { transform: translateY(-2px); }
+.building .icon { font-size: 2.2rem; line-height: 1; filter: drop-shadow(0 2px 1px rgba(0,0,0,.3)); }
+.building .sign { display: block; font-size: 1.2rem; color: var(--wood2); margin-top: .3rem; }
+.building .small { display: block; }
+.building .badge { display: inline-block; margin-top: .3rem; background: var(--red); color: #fff3e6; border-radius: 999px; padding: 0 .55rem; font-size: .8rem; font-family: Alegreya, serif; }
+
+.tabs { display: flex; gap: .4rem; margin-bottom: .8rem; flex-wrap: wrap; }
+.tabs button { padding: .25rem .8rem; }
+.tabs button.active { background: linear-gradient(#d9b45a, #b88d2c); border-color: #5a3d12; }
+
+.card { background: #fbf3dc; border: 1px solid var(--parch3); border-left: 5px solid var(--brass); border-radius: 6px; padding: .6rem .8rem; margin: .5rem 0; }
+.card.pinned { border-left-color: var(--red); background: #fff6e0; }
+.card .head { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.card .head .who { font-family: "IM Fell English", serif; }
+.card .head time, .card .head .when { color: var(--ink3); font-size: .85rem; margin-left: auto; }
+.card .body { white-space: pre-wrap; margin: .3rem 0; }
+.card .actions { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .3rem; }
+.card .actions button { padding: .15rem .6rem; font-size: .9rem; }
+.crest { display: inline-flex; width: 1.7rem; height: 1.7rem; border-radius: 50%; align-items: center; justify-content: center; border: 2px solid rgba(0,0,0,.35); font-size: 1rem; background: var(--brass2); }
+.tag { display: inline-block; font-size: .78rem; padding: 0 .5rem; border-radius: 999px; background: var(--parch3); color: var(--ink2); }
+.tag.open { background: #dfe8cf; } .tag.taken, .tag.claimed { background: #f0d9a8; } .tag.done { background: #ddd; }
+.tag.alarm { background: #f2c2c2; color: var(--red); } .tag.work { background: #cfe0c2; }
+
+form.inline { display: grid; gap: .3rem; grid-template-columns: 1fr; margin-bottom: 1rem; }
+form.inline .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .5rem; }
+form.inline .submit { display: flex; justify-content: flex-end; margin-top: .4rem; gap: .5rem; }
+.err { color: var(--red); font-size: .9rem; }
+.ok { color: var(--green); font-size: .9rem; }
+
+.map-wrap { position: relative; background: #ead9b0; border: 3px solid #7a5a3a; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.map-wrap svg { display: block; width: 100%; height: 62vh; min-height: 320px; touch-action: none; cursor: grab; background: radial-gradient(ellipse at center, #efe0bb 0%, #dcc79a 100%); }
+.map-wrap svg:active { cursor: grabbing; }
+.map-controls { position: absolute; right: .5rem; top: .5rem; display: flex; flex-direction: column; gap: .3rem; }
+.map-controls button { width: 2.2rem; height: 2.2rem; padding: 0; font-size: 1.2rem; }
+.map-note { position: absolute; left: .5rem; bottom: .4rem; right: 3rem; font-size: .72rem; color: var(--ink2); background: rgba(241,228,198,.85); padding: .15rem .4rem; border-radius: 4px; }
+.map-tip { position: absolute; left: .5rem; top: .5rem; background: rgba(43,29,18,.9); color: var(--parch); padding: .25rem .6rem; border-radius: 4px; font-size: .85rem; pointer-events: none; }
+.legend { display: flex; flex-wrap: wrap; gap: .5rem .9rem; margin-top: .6rem; font-size: .9rem; }
+.legend .swatch { display: inline-block; width: .9rem; height: .9rem; border: 1px solid #5a4a34; vertical-align: -2px; margin-right: .3rem; }
+
+.gate { max-width: 460px; margin: 3rem auto; }
+.gate h2 { justify-content: center; }
+.bottomnav { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(var(--wood2), var(--wood)); border-top: 3px solid #1a100a; display: flex; justify-content: space-around; padding: .3rem 0 calc(.3rem + env(safe-area-inset-bottom)); z-index: 5; }
+.bottomnav a { color: var(--parch2); text-decoration: none; text-align: center; font-size: .7rem; font-family: "IM Fell English", serif; }
+.bottomnav a .icon { display: block; font-size: 1.4rem; line-height: 1.2; }
+.bottomnav a.active { color: var(--brass2); }
+@media (min-width: 800px) { .bottomnav { display: none; } main { padding-bottom: 2rem; } }

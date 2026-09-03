@@ -7,6 +7,6 @@ name: mokri-potok
 working_dir: deploy/app
 environment:
   CORS_ORIGINS: https://dennislapchenko.github.io,http://localhost:5173
-  BE_TAG: latest
+  BE_TAG: sha-7e959c2a8ee633c397897b67919874abd603f1bf
 reconciliation:
   events: [unhealthy]

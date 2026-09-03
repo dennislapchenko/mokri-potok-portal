@@ -4,3 +4,4 @@ backend/data/
 backups/
 .DS_Store
 *.local
+*.log

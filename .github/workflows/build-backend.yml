@@ -47,6 +47,9 @@ jobs:
           context: backend
           file: backend/Dockerfile
           push: true
+          # GHCR rejected the first push with 'unknown blob' on the provenance
+          # attestation manifest; plain image manifests push fine.
+          provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
       - name: Roll BE_TAG for doco-cd

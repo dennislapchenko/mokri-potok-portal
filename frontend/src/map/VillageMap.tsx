@@ -8,6 +8,10 @@ type Feature = { properties: { parcel: string; area_m2: number; e: number; n: nu
 type Parcels = { features: Feature[] };
 type Channels = { segments: number[][] };
 
+// EPSG:3794 metres. The collective's plot is the village's high ground; the
+// event ground lies north-west across the stream. Stewards refine by assigning.
+const VILLAGE_CENTER = { e: 486450, n: 46480 };
+
 function ringsOf(f: Feature): number[][][] {
   const g = f.geometry;
   if (g.type === "Polygon") return g.coordinates as number[][][];
@@ -49,7 +53,8 @@ export function VillageMap({ houses, selected, onParcelClick, highlight }: {
     for (const f of pool) for (const ring of ringsOf(f)) for (const [e, n] of ring) {
       if (e < minE) minE = e; if (e > maxE) maxE = e; if (n < minN) minN = n; if (n > maxN) maxN = n;
     }
-    if (!isFinite(minE)) return { x: 486000, y: -46900, w: 1000, h: 1000 };
+    // Nothing assigned yet: open on the village centre, not the whole 2.5 km box.
+    if (!own.length || !isFinite(minE)) return { x: VILLAGE_CENTER.e - 350, y: -VILLAGE_CENTER.n - 350, w: 700, h: 700 };
     const pad = own.length ? 60 : 0;
     const w = Math.max(maxE - minE + 2 * pad, 250), h = Math.max(maxN - minN + 2 * pad, 250);
     const cx = (minE + maxE) / 2, cy = -(minN + maxN) / 2;

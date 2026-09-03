@@ -9,9 +9,10 @@ the shop, when the work party is — with a game-like village map as the door.
 ## People and roles
 
 - **Houses**, not persons, are the accounts. A house holds several phones.
-- **Stewards** (a couple of houses) create houses, hand out invite links,
-  assign parcels on the map, pin posts. The first steward founds the village
-  with the bootstrap code from the server log.
+- **Stewards** create houses, hand out invite links, assign parcels on the
+  map, pin posts. One steward house today (the owner's); a second one in the
+  village is the exit plan. The first steward founds the village with the
+  bootstrap code from the server log.
 - The owner of this repo is one house and the first steward, remote part of
   the week. A second steward in the village is the exit plan.
 
@@ -38,7 +39,9 @@ pooling), village knowledge (Archive), web push for alarms.
 ## Map data
 
 `frontend/public/data/parcels.geojson`: ~500 parcels of k.o. 1590, public
-cadastre WFS snapshot 2026-08, EPSG:3794 metres, rounded to 0.1 m. Drawn as
+cadastre WFS snapshot 2026-08-15, EPSG:3794 metres, rounded to 0.1 m. The
+GURS open-data licence string is not recorded yet — it must be, before the
+portal moves to the collective's own domain. Drawn as
 SVG with northing flipped; no tiles. `channels.json` is a D8 flow model of the
 plot's own window only — dashed, labelled as a model, not a survey.
 

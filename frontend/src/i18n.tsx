@@ -107,7 +107,7 @@ const sl: Record<string, string> = {
   "Rename house": "Preimenuj hišo",
   "Export everything": "Izvozi vse",
   "Log out on this phone": "Odjava na tem telefonu",
-  "Cadastre snapshot 2026-08 (GURS). Lines are legal boundaries, not fences. Dashed blue: modelled water paths near the plot, not a survey.": "Kataster, posnetek 2026-08 (GURS). Črte so pravne meje, ne ograje. Modra črtkana: modelirane vodne poti ob parceli, ne meritev.",
+  "Cadastre snapshot 2026-08-15 (GURS). Lines are legal boundaries, not fences. Dashed blue: modelled water paths near the plot, not a survey.": "Kataster, posnetek 2026-08-15 (GURS). Črte so pravne meje, ne ograje. Modra črtkana: modelirane vodne poti ob parceli, ne meritev.",
   "unassigned": "nedodeljeno",
   "zoom in": "približaj",
   "zoom out": "oddalji",

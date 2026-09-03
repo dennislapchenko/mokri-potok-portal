@@ -26,7 +26,8 @@ does not ship.
 - **Cadastre is a view, not a source.** `parcels.geojson` is public GURS data;
   parcel numbers show only for assigned parcels (and to stewards in assign
   mode). The map carries its snapshot date and "boundaries, not fences" line.
-  House ↔ parcel assignment lives in the DB only.
+  House ↔ parcel assignment lives in the DB only. Licence attribution for the
+  GURS data: `TBD`, required before the portal moves to the collective's domain.
 - **Exit is designed.** `GET /api/export` (steward) dumps everything as JSON;
   `VACUUM INTO` backups land nightly in `${DATA_DIR}/backups/`. Keep both working.
 - **No secrets in this repo, and none needed.** The first steward code is

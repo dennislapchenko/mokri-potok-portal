@@ -123,7 +123,7 @@ export function VillageMap({ houses, selected, onParcelClick, highlight }: {
         <button aria-label={t("reset")} onClick={() => setView(home)}>⌂</button>
       </div>
       {tip && <div className="map-tip">{tip}</div>}
-      <div className="map-note">{t("Cadastre snapshot 2026-08 (GURS). Lines are legal boundaries, not fences. Dashed blue: modelled water paths near the plot, not a survey.")}</div>
+      <div className="map-note">{t("Cadastre snapshot 2026-08-15 (GURS). Lines are legal boundaries, not fences. Dashed blue: modelled water paths near the plot, not a survey.")}</div>
     </div>
   );
 }

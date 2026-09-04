@@ -556,7 +556,7 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request) {
 		who = a + " · " + who
 	}
 	s.notify("posts", houseFrom(r).ID, func(lang string) Payload {
-		return Payload{Title: "🍺 " + who + tr(lang, " v gostilni", " in the tavern"), Body: snippet(str(m, "body"), 140), URL: "#/tavern"}
+		return Payload{Title: "🍺 " + who + tr(lang, " v gostilni", " in the tavern"), Body: snippet(str(m, "body"), 140), URL: "#/tavern?at=board"}
 	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }

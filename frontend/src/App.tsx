@@ -4,8 +4,7 @@ import { api, ApiError, getToken, setToken, type House, type Me } from "./api";
 import { syncPushLang } from "./push";
 import { useT } from "./i18n";
 import { VillageMap } from "./map/VillageMap";
-import { Tavern } from "./rooms/Tavern";
-import { BellTower } from "./rooms/BellTower";
+import { Hall } from "./rooms/Hall";
 import { Market } from "./rooms/Market";
 import { Watchtower } from "./rooms/Watchtower";
 import { Houses } from "./rooms/Houses";
@@ -14,13 +13,15 @@ import { InstallBanner } from "./Install";
 
 export type Session = { me: Me; houses: House[]; refresh: () => Promise<void>; logout: () => void };
 
+// `short` is the bottom-nav label: a phone gives each item about 60 px, and
+// "Lopa z orodjem" does not fit. `nav: false` keeps a room off the bottom bar —
+// Houses is reached by tapping your own house name in the top bar.
 export const ROOMS = [
-  { path: "/tavern", icon: "🍺", name: "Tavern", sub: "board and notices" },
-  { path: "/bell", icon: "🔔", name: "Bell tower", sub: "calendar" },
-  { path: "/market", icon: "🧺", name: "Market", sub: "needs, give-aways, runs" },
-  { path: "/watch", icon: "🕯️", name: "Watchtower", sub: "who is away" },
-  { path: "/shed", icon: "🛠", name: "Tool shed", sub: "what the village lends" },
-  { path: "/houses", icon: "🏘️", name: "Houses", sub: "houses and land" },
+  { path: "/tavern", icon: "🍺", name: "Tavern", short: "Hall", sub: "calendar, work bees and the board", nav: true },
+  { path: "/market", icon: "🧺", name: "Market", short: "Market", sub: "needs, give-aways, runs", nav: true },
+  { path: "/watch", icon: "🕯️", name: "Watchtower", short: "Watch", sub: "who is away", nav: true },
+  { path: "/shed", icon: "🛠", name: "Tool shed", short: "Shed", sub: "what the village lends", nav: true },
+  { path: "/houses", icon: "🏘️", name: "Houses", short: "Houses", sub: "houses and land", nav: false },
 ];
 
 export default function App() {
@@ -65,8 +66,9 @@ export default function App() {
         {state === "in" && me && (
           <Routes>
             <Route path="/" element={<Home me={me} houses={houses} />} />
-            <Route path="/tavern" element={<Tavern me={me} />} />
-            <Route path="/bell" element={<BellTower me={me} />} />
+            <Route path="/tavern" element={<Hall me={me} />} />
+            {/* Notifications sent before the merge point at #/bell — keep it alive. */}
+            <Route path="/bell" element={<Hall me={me} />} />
             <Route path="/market" element={<Market me={me} houses={houses} />} />
             <Route path="/watch" element={<Watchtower me={me} />} />
             <Route path="/shed" element={<ToolShed me={me} />} />
@@ -79,7 +81,7 @@ export default function App() {
       {state === "in" && (
         <nav className="bottomnav">
           <NavLink to="/" end><span className="icon">🗺️</span>{t("Village")}</NavLink>
-          {ROOMS.map((r) => <NavLink key={r.path} to={r.path}><span className="icon">{r.icon}</span>{t(r.name)}</NavLink>)}
+          {ROOMS.filter((r) => r.nav).map((r) => <NavLink key={r.path} to={r.path}><span className="icon">{r.icon}</span>{t(r.short)}</NavLink>)}
         </nav>
       )}
     </>
@@ -88,19 +90,27 @@ export default function App() {
 
 function Home({ me, houses }: { me: Me; houses: House[] }) {
   const { t } = useT();
-  const [counts, setCounts] = useState<Record<string, number>>({});
+  // One badge per building, built as a finished sentence so a room can say two
+  // things at once (the shed: how many are in it, how many are out).
+  const [badges, setBadges] = useState<Record<string, string>>({});
   useEffect(() => {
-    Promise.all([api<any[]>("/needs"), api<any[]>("/events"), api<any[]>("/away"), api<any[]>("/posts")]).then(([n, e, a, p]) => {
-      const today = new Date().toISOString().slice(0, 10);
-      setCounts({
-        "/market": n.filter((x) => x.state === "open").length,
-        "/bell": e.filter((x) => x.starts_at >= today).length,
-        "/watch": a.filter((x) => x.from_date <= today && x.to_date >= today).length,
-        "/tavern": p.filter((x) => x.pinned).length,
-      });
-    }).catch(() => {});
-  }, []);
-  const labels: Record<string, string> = { "/market": "open needs", "/bell": "events ahead", "/watch": "away now", "/tavern": "pinned" };
+    Promise.all([api<any[]>("/needs"), api<any[]>("/events"), api<any[]>("/away"), api<any[]>("/posts"), api<any[]>("/tools")])
+      .then(([n, e, a, p, tools]) => {
+        // Local date, not UTC: between midnight and 02:00 CEST a UTC date
+        // counts a finished event as still ahead.
+        const n2 = (v: number) => String(v).padStart(2, "0");
+        const d = new Date();
+        const today = `${d.getFullYear()}-${n2(d.getMonth() + 1)}-${n2(d.getDate())}`;
+        const num = (v: number, label: string) => (v > 0 ? `${v} ${t(label)}` : "");
+        const out = tools.filter((x) => x.held_by).length;
+        setBadges({
+          "/market": num(n.filter((x) => x.state === "open").length, "open needs"),
+          "/watch": num(a.filter((x) => x.from_date <= today && x.to_date >= today).length, "away now"),
+          "/tavern": [num(e.filter((x) => (x.ends_at || x.starts_at) >= today).length, "events ahead"), num(p.filter((x) => x.pinned).length, "pinned")].filter(Boolean).join(" · "),
+          "/shed": [num(tools.length - out, "in the shed"), num(out, "out")].filter(Boolean).join(" · "),
+        });
+      }).catch(() => {});
+  }, [t]);
   return (
     <>
       <InstallBanner />
@@ -114,7 +124,7 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
             <span className="icon">{r.icon}</span>
             <span className="sign">{t(r.name)}</span>
             <span className="small">{t(r.sub)}</span>
-            {counts[r.path] > 0 && <span className="badge">{counts[r.path]} {t(labels[r.path])}</span>}
+            {badges[r.path] && <span className="badge">{badges[r.path]}</span>}
           </Link>
         ))}
       </div>

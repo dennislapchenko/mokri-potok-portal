@@ -171,6 +171,20 @@ const sl: Record<string, string> = {
   "The installed icon starts signed out. Take a code with you:": "Nameščena ikona se začne odjavljena. Vzemite kodo s seboj:",
   "one tap, then it opens like an app.": "en dotik, potem se odpre kot aplikacija.",
   "Notifications sleep from 21:00 to 07:00 — only an alarm rings at night.": "Obvestila spijo med 21:00 in 7:00 — ponoči zvoni samo alarm.",
+  "out": "zunaj",
+  "nobody has signed up yet": "nihče se še ni prijavil",
+  "Nothing planned. Ring the bell — add an event or call a work party, and houses sign up here.": "Nič ni načrtovano. Pozvonite — dodajte dogodek ali skličite delovno akcijo, hiše se prijavijo tukaj.",
+  "calendar and work bees": "koledar in delovne akcije",
+  "Watch": "Straža",
+  "Shed": "Lopa",
+  "Hall": "Gostilna",
+  "calendar, work bees and the board": "koledar, delovne akcije in oglasna deska",
+  "The village calendar": "Vaški koledar",
+  "The board": "Oglasna deska",
+  "what must stay findable": "kar mora ostati najdljivo",
+  "today": "danes",
+  "Nothing on this day.": "Ta dan ni nič.",
+  "Show the whole month": "Pokaži cel mesec",
 };
 
 const Ctx = createContext<{ lang: Lang; t: (s: string) => string; setLang: (l: Lang) => void }>({ lang: "sl", t: (s) => s, setLang: () => {} });

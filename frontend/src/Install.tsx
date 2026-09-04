@@ -13,13 +13,25 @@ export function InstallBanner() {
   const [dismissed, setDismissed] = useState(() => { try { return sessionStorage.getItem("potok.banner") === "1"; } catch { return false; } });
   const [prompt, setPrompt] = useState<any>(null);
   const [push, setPush] = useState<PushState>("off");
-  const standalone = isStandalone();
+  // Installed-ness is state, not a one-off read: on a laptop the install opens
+  // a new window and this tab stays a browser tab, so the banner would sit
+  // there until dismissed by hand. `appinstalled` fires here — use it.
+  const [standalone, setStandalone] = useState(isStandalone());
 
   useEffect(() => {
-    const h = (e: Event) => { e.preventDefault(); setPrompt(e); };
-    window.addEventListener("beforeinstallprompt", h);
+    const onPrompt = (e: Event) => { e.preventDefault(); setPrompt(e); };
+    const onInstalled = () => { setPrompt(null); setDismissed(true); };
+    const mq = window.matchMedia("(display-mode: standalone)");
+    const onMode = () => setStandalone(mq.matches || isStandalone());
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    mq.addEventListener?.("change", onMode);
     pushState().then(setPush);
-    return () => window.removeEventListener("beforeinstallprompt", h);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+      mq.removeEventListener?.("change", onMode);
+    };
   }, []);
 
   if (dismissed) return null;

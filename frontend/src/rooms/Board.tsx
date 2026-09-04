@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
-import { Crest, Empty, When, canEdit, useList } from "./shared";
+import { Crest, Empty, When, canEdit } from "./shared";
 
-export function Tavern({ me }: { me: Me }) {
+// The message board half of the tavern. The calendar is the other half —
+// Hall.tsx stacks them, because a village opens one room, not two.
+export function Board({ me, items, reload }: { me: Me; items: any[]; reload: () => void }) {
   const { t } = useT();
-  const { items, reload } = useList("/posts");
   const [body, setBody] = useState("");
   const [author, setAuthor] = useState(() => { try { return localStorage.getItem("potok.author") || ""; } catch { return ""; } });
   const [replyTo, setReplyTo] = useState<number | null>(null);
@@ -22,7 +23,7 @@ export function Tavern({ me }: { me: Me }) {
 
   return (
     <div className="parchment">
-      <h2>🍺 {t("Tavern")} <span className="sub">{t("board and notices")}</span></h2>
+      <h2>📜 {t("The board")} <span className="sub">{t("what must stay findable")}</span></h2>
       <form className="inline" onSubmit={post}>
         <div className="row">
           <label>{t("Your name (optional)")}<input value={author} onChange={(e) => setAuthor(e.target.value)} maxLength={40} /></label>

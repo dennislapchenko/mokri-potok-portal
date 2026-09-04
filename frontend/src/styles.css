@@ -69,6 +69,24 @@ form.inline .submit { display: flex; justify-content: flex-end; margin-top: .4re
 .err { color: var(--red); font-size: .9rem; }
 .ok { color: var(--green); font-size: .9rem; }
 
+.pinned-strip { border-color: var(--red); }
+.pinned-strip h2 { border-bottom-color: #d8b5a0; }
+.pinned-strip .card { margin-top: .3rem; }
+
+.cal { margin: .6rem 0 1rem; }
+.cal-head { display: flex; align-items: center; justify-content: center; gap: 1rem; font-family: "IM Fell English SC", serif; font-size: 1.1rem; color: var(--wood2); margin-bottom: .3rem; }
+.cal-head button { font-size: 1.3rem; line-height: 1; padding: 0 .5rem; color: var(--wood2); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background: var(--parch3); border: 2px solid var(--wood3); border-radius: 8px; overflow: hidden; }
+.cal-wd { background: var(--parch2); text-align: center; font-size: .72rem; padding: .2rem 0; color: var(--ink2); font-family: "IM Fell English SC", serif; }
+.cal-day { background: #fbf3dc; border: 0; border-radius: 0; box-shadow: none; min-height: 3.1rem; padding: .15rem .2rem; display: flex; flex-direction: column; align-items: flex-start; gap: .1rem; font-family: inherit; }
+.cal-day:hover { background: #fff8e4; }
+.cal-day .n { font-size: .78rem; color: var(--ink2); }
+.cal-day .marks { font-size: .8rem; line-height: 1; letter-spacing: -1px; }
+.cal-day.other { background: #efe4c8; }
+.cal-day.other .n { color: var(--ink3); opacity: .6; }
+.cal-day.today .n { background: var(--brass); color: var(--wood); border-radius: 50%; width: 1.25rem; height: 1.25rem; display: inline-flex; align-items: center; justify-content: center; }
+.cal-day.picked { background: #f3e0ae; box-shadow: inset 0 0 0 2px var(--red); }
+
 .map-wrap { position: relative; background: #ead9b0; border: 3px solid #7a5a3a; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
 .map-wrap svg { display: block; width: 100%; height: 62vh; min-height: 320px; touch-action: none; cursor: grab; background: radial-gradient(ellipse at center, #efe0bb 0%, #dcc79a 100%); }
 .map-wrap svg:active { cursor: grabbing; }
@@ -76,7 +94,10 @@ form.inline .submit { display: flex; justify-content: flex-end; margin-top: .4re
 .map-controls button { width: 2.2rem; height: 2.2rem; padding: 0; font-size: 1.2rem; }
 .map-note { position: absolute; left: .5rem; bottom: .4rem; right: 3rem; font-size: .72rem; color: var(--ink2); background: rgba(241,228,198,.85); padding: .15rem .4rem; border-radius: 4px; }
 .map-tip { position: absolute; left: .5rem; top: .5rem; background: rgba(43,29,18,.9); color: var(--parch); padding: .25rem .6rem; border-radius: 4px; font-size: .85rem; pointer-events: none; }
-.legend { display: flex; flex-wrap: wrap; gap: .5rem .9rem; margin-top: .6rem; font-size: .9rem; }
+/* The legend sits on the dark wood, outside any parchment panel — it must not
+   inherit the ink colour or it disappears into the background. */
+.legend { display: flex; flex-wrap: wrap; gap: .5rem .9rem; margin-top: .6rem; font-size: .9rem; color: var(--parch2); }
+.legend .swatch { border-color: rgba(241,228,198,.5); }
 .legend .swatch { display: inline-block; width: .9rem; height: .9rem; border: 1px solid #5a4a34; vertical-align: -2px; margin-right: .3rem; }
 
 .gate { max-width: 460px; margin: 3rem auto; }
@@ -91,7 +112,21 @@ form.inline .submit { display: flex; justify-content: flex-end; margin-top: .4re
 .kind input { width: auto; }
 .gate h2 { justify-content: center; }
 .bottomnav { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(var(--wood2), var(--wood)); border-top: 3px solid #1a100a; display: flex; justify-content: space-around; padding: .3rem 0 calc(.3rem + env(safe-area-inset-bottom)); z-index: 5; }
-.bottomnav a { color: var(--parch2); text-decoration: none; text-align: center; font-size: .7rem; font-family: "IM Fell English", serif; }
+.bottomnav a { color: var(--parch2); text-decoration: none; text-align: center; font-size: .68rem; font-family: "IM Fell English", serif; flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
 .bottomnav a .icon { display: block; font-size: 1.4rem; line-height: 1.2; }
 .bottomnav a.active { color: var(--brass2); }
 @media (min-width: 800px) { .bottomnav { display: none; } main { padding-bottom: 2rem; } }
+
+/* Phone widths: the title's tagline and a room heading's button both fought
+   the heading for the same line and wrapped it into three. */
+.parchment h2 { flex-wrap: wrap; }
+.parchment h2 > button { margin-left: auto; white-space: nowrap; }
+@media (max-width: 560px) {
+  .topbar .inner { gap: .5rem; padding: .4rem .6rem; }
+  .topbar h1 { font-size: 1.1rem; white-space: nowrap; }
+  .topbar h1 > .small { display: none; }
+  .topbar .house { font-size: .9rem; }
+  .parchment { padding: .8rem .7rem; }
+  .parchment h2 { font-size: 1.25rem; }
+  .parchment h2 .sub { flex: 1 1 100%; margin-top: -.2rem; }
+}

@@ -61,12 +61,20 @@ does not ship.
   Do not widen either without redoing that arithmetic.
 - **Slovenian first.** Every user-facing string goes through `t()` in
   `frontend/src/i18n.tsx` with a Slovenian entry. English is the fallback key.
+- **The bottom bar fits five.** Village plus four rooms. A new room either
+  replaces one, merges into one, or lives off the bar like Houses does (reached
+  by tapping your own house name in the top bar). Rooms carry a `short` label
+  for the bar because a phone gives each item about 60 px.
+- **Old notification links must keep working.** Payload URLs live in the
+  database of no one — they are already on people's phones. `/bell` survives as
+  a route alias after the merge; a post links to `#/tavern?at=board`.
 
 ## Layout
 
 ```
 backend/            Go: main.go, internal/{config,store,httpapi}; migrations embedded
-frontend/           Vite + React; src/rooms/* one file per room; src/map/VillageMap.tsx
+frontend/           Vite + React; src/rooms/* one file per room. Hall.tsx = Calendar.tsx + Board.tsx
+                    stacked, because the tavern is one door; src/map/VillageMap.tsx
 frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons; src/push.ts, src/Install.tsx, src/AddPhone.tsx
                     icon.svg is hand-drawn paths, full-bleed, content inside the central 80 % safe circle
                     (an emoji glyph renders off-centre and monochrome — do not go back to one)

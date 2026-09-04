@@ -27,8 +27,7 @@ the shop, when the work party is — with a game-like village map as the door.
 | Village map (home) | Who lives where. Parcels coloured by house crest; the event ground is a house of kind `common`. |
 | Watchtower | "We are away from … to …, please watch the land." Dates, care notes, one watcher. The room that justifies the app. |
 | Market | "Going to the shop, anyone need anything?" Needs with states, give-aways, shop runs with a cut-off. |
-| Bell tower | Every village event in one place; kinds: event, work party, alarm. |
-| Tavern | Pinned notices and threads that must stay findable. Smallest room, first to cut. |
+| Tavern (the hall) | One room, three parts stacked: pinned notices on top, then the month calendar (kinds: event, work party, alarm, with sign-ups), then the message board. Merged 2026-09-04 — two doors to one gathering place crowded the bottom bar, and the board alone was never worth a door. `/bell` stays a route alias because notifications already sent point at it. |
 | Tool shed | Who lends what, and who holds it now. A tool comes back; a give-away does not. |
 | Work bees | Any event takes sign-ups. The house that called it hears who is coming. A headcount for the day, never a score. |
 

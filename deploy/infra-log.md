@@ -24,10 +24,9 @@
   and synced with `task doco:sync` there. **`up -d` alone does not reload the
   poll config** (the daemon reads the file at start) — a
   `docker compose restart doco-cd` in `/opt/doco-cd` was needed.
-- `deploy/app/Caddyfile`: `handle /potok/*` → `potok-api:8788`. **Not yet
-  applied** — the assistant's edit to that file was blocked by its permission
-  classifier; the owner adds the block (text in `deploy/README.md`) and pushes,
-  doco-cd force-recreates Caddy with the new file.
+- `deploy/app/Caddyfile`: `handle /potok/*` → `potok-api:8788`. Applied by the
+  owner (gaias-choice commit "feat: add potok portal temp routing"); doco-cd
+  force-recreated Caddy. `GET /potok/api/status` answers 200 from the internet.
 
 ### 3. First deploy
 - CI built the image (first push failed with `unknown blob` on the provenance
@@ -39,5 +38,11 @@
   (`unable to open database file: out of memory (14)`). Fixed on the host with
   `chown -R 65532:65532 /srv/mokri-potok/data` + `docker restart`. A fresh VM
   needs that chown before the first deploy.
-- Container healthy. The bootstrap code is in `task vm:logs`; the village is
-  not founded yet.
+- Container healthy. The owner founded the village from the Pages URL; three
+  houses exist as of 2026-09-04.
+
+### 4. Known issue — phone sessions
+- A house that opens its invite link from WhatsApp lands in WhatsApp's in-app
+  browser. The token is stored in *that* browser's storage. Opening the site
+  later in Safari/Chrome finds no token and the gate shows. Options and the
+  recommendation are in the owner's homestead repo, `NOW.md` 🏰 block.

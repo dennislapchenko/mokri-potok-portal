@@ -30,7 +30,11 @@ does not ship.
   GURS data: `TBD`, required before the portal moves to the collective's domain.
 - **No tally of favours.** Work-bee sign-ups are a headcount for one day and
   die with the event. Tool loans record who holds a tool now, never how many
-  times a house borrowed. Do not add a total anywhere.
+  times a house borrowed. Do not add a total anywhere. The **return reminder**
+  (`remind.go`) nudges the holder after one day and then with doubling gaps
+  (day 1, 3, 7, 15), read off two timestamps — never a counter, never the
+  owner, never in quiet hours. A cap "after N reminders" would need a count;
+  do not add one.
 - **Exit is designed.** `GET /api/export` (steward) dumps everything as JSON;
   `VACUUM INTO` backups land nightly in `${DATA_DIR}/backups/`. Keep both working.
 - **No secrets in this repo, and none needed.** The first steward code is

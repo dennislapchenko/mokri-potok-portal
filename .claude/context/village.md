@@ -28,7 +28,7 @@ the shop, when the work party is — with a game-like village map as the door.
 | Watchtower | "We are away from … to …, please watch the land." Dates, care notes, one watcher. The room that justifies the app. |
 | Market | "Going to the shop, anyone need anything?" Needs with states, give-aways, shop runs with a cut-off. |
 | Tavern (the hall) | One room, three parts stacked: pinned notices on top, then the month calendar (kinds: event, work party, alarm, with sign-ups), then the message board. Merged 2026-09-04 — two doors to one gathering place crowded the bottom bar, and the board alone was never worth a door. `/bell` stays a route alias because notifications already sent point at it. |
-| Tool shed | Who lends what, and who holds it now. A tool comes back; a give-away does not. |
+| Tool shed | Who lends what, and who holds it now. A tool comes back; a give-away does not. The holder gets a nudge after a day, then at doubling gaps — a reminder, not a ledger. |
 | Work bees | Any event takes sign-ups. The house that called it hears who is coming. A headcount for the day, never a score. |
 
 | Notifications | Installed as a home-screen app (PWA), each phone can allow push. Every new post, need, give-away, run, event or away notice rings the other houses; a house switches kinds off in the Houses room. Away pushes name nothing. All six on by default is sized for a handful of houses — revisit the defaults and quiet hours when more join. |

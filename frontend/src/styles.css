@@ -78,10 +78,17 @@ form.inline .submit { display: flex; justify-content: flex-end; margin-top: .4re
 .cal-head button { font-size: 1.3rem; line-height: 1; padding: 0 .5rem; color: var(--wood2); }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background: var(--parch3); border: 2px solid var(--wood3); border-radius: 8px; overflow: hidden; }
 .cal-wd { background: var(--parch2); text-align: center; font-size: .72rem; padding: .2rem 0; color: var(--ink2); font-family: "IM Fell English SC", serif; }
-.cal-day { background: #fbf3dc; border: 0; border-radius: 0; box-shadow: none; min-height: 3.1rem; padding: .15rem .2rem; display: flex; flex-direction: column; align-items: flex-start; gap: .1rem; font-family: inherit; }
+.cal-day { background: #fbf3dc; border: 0; border-radius: 0; box-shadow: none; min-height: 3.3rem; padding: .15rem .2rem; display: flex; flex-direction: column; align-items: stretch; gap: 0; font-family: inherit; position: relative; }
 .cal-day:hover { background: #fff8e4; }
-.cal-day .n { font-size: .78rem; color: var(--ink2); }
-.cal-day .marks { font-size: .8rem; line-height: 1; letter-spacing: -1px; }
+.cal-day .n { font-size: .72rem; color: var(--ink2); align-self: flex-start; line-height: 1; }
+/* Icons fill the cell and shrink as the day fills: one big, four small. */
+.cal-day .marks { flex: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; align-content: center; line-height: 1; gap: 1px; padding-bottom: .1rem; }
+.cal-day .marks.m1 { font-size: 1.55rem; }
+.cal-day .marks.m2 { font-size: 1.15rem; }
+.cal-day .marks.m3 { font-size: .95rem; }
+.cal-day .marks.m4 { font-size: .8rem; }
+.cal-day .marks .more { font-size: .65rem; color: var(--ink3); }
+@media (max-width: 560px) { .cal-day .marks.m1 { font-size: 1.3rem; } .cal-day .marks.m2 { font-size: 1rem; } }
 .cal-day.other { background: #efe4c8; }
 .cal-day.other .n { color: var(--ink3); opacity: .6; }
 .cal-day.today .n { background: var(--brass); color: var(--wood); border-radius: 50%; width: 1.25rem; height: 1.25rem; display: inline-flex; align-items: center; justify-content: center; }

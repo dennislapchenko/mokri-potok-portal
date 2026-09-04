@@ -17,6 +17,8 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   const [sel, setSel] = useState<string[]>([]);
   const [devices, setDevices] = useState<any[]>([]);
   const [myName, setMyName] = useState(me.name);
+  const [myCrest, setMyCrest] = useState(me.crest);
+  const [myColor, setMyColor] = useState(me.color);
   const [copied, setCopied] = useState<number | null>(null);
 
   useEffect(() => { api<any[]>("/devices").then(setDevices).catch(() => {}); }, []);
@@ -86,8 +88,12 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
       </div>
       <div className="parchment">
         <h2>{me.crest} {t("Your house")}</h2>
-        <form className="inline" onSubmit={(e) => { e.preventDefault(); api(`/houses/${me.id}`, { method: "PUT", body: { name: myName } }).then(refresh); }}>
-          <div className="row"><label>{t("Rename house")}<input value={myName} onChange={(e) => setMyName(e.target.value)} maxLength={60} /></label></div>
+        <form className="inline" onSubmit={(e) => { e.preventDefault(); api(`/houses/${me.id}`, { method: "PUT", body: { name: myName, crest: myCrest, color: myColor } }).then(refresh); }}>
+          <div className="row">
+            <label>{t("Rename house")}<input value={myName} onChange={(e) => setMyName(e.target.value)} maxLength={60} /></label>
+            <label>{t("Crest")}<input value={myCrest} onChange={(e) => setMyCrest(e.target.value)} maxLength={4} /></label>
+            <label>{t("Colour")}<input type="color" value={myColor} onChange={(e) => setMyColor(e.target.value)} /></label>
+          </div>
           <div className="submit"><button type="submit">{t("Save")}</button></div>
         </form>
         <Notifications />

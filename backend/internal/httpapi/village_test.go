@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -168,5 +169,59 @@ func TestWorkBeeSignup(t *testing.T) {
 	_, _, evs = zagar.do("GET", "/api/events", nil)
 	if evs[0]["signups"].(float64) != 0 {
 		t.Fatalf("still signed up: %v", evs[0])
+	}
+}
+
+// TestToolReminder: a tool out for two days nags its holder once a day, the
+// owner hears nothing, and returning it clears the clock.
+func TestToolReminder(t *testing.T) {
+	srv, fake, steward, zagar := newVillage(t)
+	for _, c := range []struct {
+		c  *client
+		ep string
+	}{{steward, "https://push/s"}, {zagar, "https://push/z"}} {
+		code, _, _ := c.c.do("POST", "/api/push/subscribe", map[string]any{"endpoint": c.ep, "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+		c.c.must(204, code, "subscribe")
+	}
+	_, obj, _ := zagar.do("POST", "/api/tools", map[string]any{"name": "Lestev"})
+	id := itoa(obj["id"].(float64))
+	waitFor(t, 1, fake) // the steward hears about the new tool
+	steward.do("PUT", "/api/tools/"+id, map[string]any{"take": true})
+	waitFor(t, 2, fake) // the owner hears it was taken
+
+	// Fresh loan: no reminder yet.
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+	if n, _ := srv.remindTools(context.Background()); n != 0 {
+		t.Fatalf("reminded a fresh loan: %d", n)
+	}
+	// Two days later: exactly one reminder, to the holder.
+	srv.st.Exec(context.Background(), `UPDATE tools SET held_since=date('now','-2 day')`)
+	if n, _ := srv.remindTools(context.Background()); n != 1 {
+		t.Fatalf("want 1 reminder got %d", n)
+	}
+	waitFor(t, 1, fake)
+	fake.mu.Lock()
+	if fake.sent[0].Endpoint != "https://push/s" {
+		t.Fatalf("reminder went to %s", fake.sent[0].Endpoint)
+	}
+	fake.mu.Unlock()
+	// Same day again: nothing. The next gap equals the two days already held.
+	if n, _ := srv.remindTools(context.Background()); n != 0 {
+		t.Fatalf("double reminder: %d", n)
+	}
+	srv.st.Exec(context.Background(), `UPDATE tools SET reminded_at=datetime('now','-1 day')`)
+	if n, _ := srv.remindTools(context.Background()); n != 0 {
+		t.Fatalf("reminded before the gap doubled: %d", n)
+	}
+	srv.st.Exec(context.Background(), `UPDATE tools SET reminded_at=datetime('now','-2 day')`)
+	if n, _ := srv.remindTools(context.Background()); n != 1 {
+		t.Fatalf("want the second reminder after the doubled gap, got %d", n)
+	}
+	// Returned: no more reminders even if the clock says overdue.
+	steward.do("PUT", "/api/tools/"+id, map[string]any{"take": false})
+	if n, _ := srv.remindTools(context.Background()); n != 0 {
+		t.Fatalf("reminded a returned tool: %d", n)
 	}
 }

@@ -15,8 +15,35 @@ export function Calendar({ me }: { me: Me }) {
   const [open, setOpen] = useState(false);
   const [cursor, setCursor] = useState(() => new Date());
   const [day, setDay] = useState<string | null>(null);
-  const set = (k: string) => (e: React.ChangeEvent<any>) => setF({ ...f, [k]: e.target.value });
   const locale = lang === "sl" ? "sl-SI" : "en-GB";
+
+  // The form opens already filled: the picked day, else today when the shown
+  // month is this one, else the 1st of the shown month — 09:00 to 17:00. A
+  // villager then changes the day, or nothing. Moving the start date drags the
+  // end date along until the end is edited by hand.
+  const [endTouched, setEndTouched] = useState(false);
+  const defaultDay = () => {
+    if (day) return day;
+    const now = new Date();
+    return cursor.getFullYear() === now.getFullYear() && cursor.getMonth() === now.getMonth() ? iso(now) : iso(new Date(cursor.getFullYear(), cursor.getMonth(), 1));
+  };
+  const openForm = () => {
+    if (!open) {
+      const d = defaultDay();
+      setF({ ...f, starts_at: d + "T09:00", ends_at: d + "T17:00" });
+      setEndTouched(false);
+    }
+    setOpen(!open);
+  };
+  const set = (k: string) => (e: React.ChangeEvent<any>) => {
+    const v = e.target.value;
+    if (k === "starts_at" && !endTouched && v.length >= 10) {
+      setF({ ...f, starts_at: v, ends_at: v.slice(0, 10) + (f.ends_at.slice(10) || "T17:00") });
+      return;
+    }
+    if (k === "ends_at") setEndTouched(true);
+    setF({ ...f, [k]: v });
+  };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +110,7 @@ export function Calendar({ me }: { me: Me }) {
   return (
     <div className="parchment">
       <h2>🔔 {t("The village calendar")} <span className="sub">{t("calendar and work bees")}</span>
-        <button style={{ marginLeft: "auto" }} onClick={() => setOpen(!open)}>+ {t("Add an event")}</button>
+        <button style={{ marginLeft: "auto" }} onClick={openForm}>+ {t("Add an event")}</button>
       </h2>
 
       {open && (
@@ -118,7 +145,7 @@ export function Calendar({ me }: { me: Me }) {
               <button key={key} className={"cal-day" + (other ? " other" : "") + (key === today ? " today" : "") + (key === day ? " picked" : "")}
                 onClick={() => setDay(key === day ? null : key)}>
                 <span className="n">{d.getDate()}</span>
-                <span className="marks">{evs.slice(0, 3).map((e, i) => <span key={i}>{ICON[e.kind]}</span>)}{evs.length > 3 ? "…" : ""}</span>
+                <span className={"marks m" + Math.min(evs.length, 4)}>{evs.slice(0, 4).map((e, i) => <span key={i}>{ICON[e.kind]}</span>)}{evs.length > 4 ? <span className="more">+{evs.length - 4}</span> : null}</span>
               </button>
             );
           })}

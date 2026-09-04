@@ -1028,7 +1028,7 @@ func (s *Server) updateTool(w http.ResponseWriter, r *http.Request) {
 				writeErr(w, 403, "not yours to return")
 				return
 			}
-			s.st.Exec(r.Context(), `UPDATE tools SET held_by=NULL, held_since=NULL WHERE id=?`, id)
+			s.st.Exec(r.Context(), `UPDATE tools SET held_by=NULL, held_since=NULL, reminded_at=NULL WHERE id=?`, id)
 			if held && owner != h.ID {
 				name := row["name"].(string)
 				s.notifyHouse("tools", owner, func(lang string) Payload {

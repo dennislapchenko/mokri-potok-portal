@@ -766,9 +766,9 @@ func (s *Server) createAway(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	// Away notices are burglary information: the lock-screen line names the
-	// house and nothing else. Dates and care notes stay behind the login.
-	s.notify("away", houseFrom(r).ID, Payload{Title: "🕯️ " + houseFrom(r).Name, Body: "odsotnost vpisana — odpri Stražnico", URL: "#/watch"})
+	// Away notices are burglary information and a lock screen is readable by
+	// anyone holding the phone: the push names no house, no dates, no notes.
+	s.notify("away", houseFrom(r).ID, Payload{Title: "🕯️ Stražnica", Body: "nova odsotnost — odpri portal", URL: "#/watch"})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 

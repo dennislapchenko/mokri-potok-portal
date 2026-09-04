@@ -26,7 +26,7 @@ the shop, when the work party is — with a game-like village map as the door.
 | Bell tower | Every village event in one place; kinds: event, work party, alarm. |
 | Tavern | Pinned notices and threads that must stay findable. Smallest room, first to cut. |
 
-| Notifications | Installed as a home-screen app (PWA), each phone can allow push. Every new post, need, give-away, run, event or away notice rings the other houses; a house switches kinds off in the Houses room. |
+| Notifications | Installed as a home-screen app (PWA), each phone can allow push. Every new post, need, give-away, run, event or away notice rings the other houses; a house switches kinds off in the Houses room. Away pushes name nothing. All six on by default is sized for a handful of houses — revisit the defaults and quiet hours when more join. |
 
 Later, only if the houses ask: growing plans (Fields), shared tools (Tool
 shed), per-house frost log (Almanac — this site's binding constraint is frost

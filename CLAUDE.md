@@ -36,7 +36,9 @@ does not ship.
 - **Push is opt-in per phone, filtered per house.** A phone subscribes after
   the villager taps Allow; the house switches kinds off in `notify_off` (empty
   = all six kinds on). The author's house never receives its own event. Push
-  carries a title, a one-line snippet and a route — never the full away notes.
+  carries a title, a one-line snippet and a route. **An away push carries no
+  house name, no dates, no notes** — a lock screen is readable by anyone
+  holding the phone; it says only "new notice, open the Watchtower".
 - **Slovenian first.** Every user-facing string goes through `t()` in
   `frontend/src/i18n.tsx` with a Slovenian entry. English is the fallback key.
 

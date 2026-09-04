@@ -11,15 +11,17 @@ import (
 )
 
 type fakeSender struct {
-	mu     sync.Mutex
-	sent   []Subscription
-	status map[string]int // endpoint -> status to return
+	mu       sync.Mutex
+	sent     []Subscription
+	payloads [][]byte
+	status   map[string]int // endpoint -> status to return
 }
 
-func (f *fakeSender) Send(_ context.Context, sub Subscription, _ []byte) (int, error) {
+func (f *fakeSender) Send(_ context.Context, sub Subscription, payload []byte) (int, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.sent = append(f.sent, sub)
+	f.payloads = append(f.payloads, payload)
 	if st, ok := f.status[sub.Endpoint]; ok {
 		return st, nil
 	}
@@ -50,6 +52,7 @@ func TestPushFanout(t *testing.T) {
 	fake := &fakeSender{status: map[string]int{}}
 	srv := New(st, config.Config{BootstrapCode: "x"})
 	srv.send = fake
+	srv.now = func() time.Time { return time.Date(2026, 9, 4, 10, 0, 0, 0, time.Local) } // outside quiet hours
 	h := srv.Handler()
 
 	steward := &client{t: t, h: h}

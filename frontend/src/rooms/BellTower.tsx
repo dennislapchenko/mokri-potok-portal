@@ -21,11 +21,17 @@ export function BellTower({ me }: { me: Me }) {
   const byMonth: Record<string, any[]> = {};
   for (const ev of upcoming) (byMonth[ev.starts_at.slice(0, 7)] ||= []).push(ev);
 
+  const signup = (ev: any) => api(`/events/${ev.id}/signup`, { method: ev.mine ? "DELETE" : "POST" }).then(reload);
+
   const Card = ({ ev }: { ev: any }) => (
     <div className="card" style={{ borderLeftColor: ev.kind === "alarm" ? "var(--red)" : ev.kind === "work" ? "var(--green)" : "var(--brass)" }}>
       <div className="head"><Crest crest={ev.house_crest} color={ev.house_color} /><strong>{ev.title}</strong>{ev.kind !== "event" && <span className={"tag " + ev.kind}>{t(ev.kind)}</span>}<span className="when"><When iso={ev.starts_at} />{ev.ends_at ? <> → <When iso={ev.ends_at} /></> : null}</span></div>
       {(ev.place || ev.notes) && <div className="body small">{ev.place && <>📍 {ev.place} </>}{ev.notes}</div>}
-      {canEdit(me, ev) && <div className="actions"><button className="ghost" onClick={() => confirm("?") && api(`/events/${ev.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button></div>}
+      {ev.signups > 0 && <div className="small">🙋 {ev.signup_names}</div>}
+      <div className="actions">
+        <button className={ev.mine ? "" : "primary"} onClick={() => signup(ev)}>{ev.mine ? t("I cannot come after all") : "🙋 " + t("I am coming")}</button>
+        {canEdit(me, ev) && <button className="ghost" onClick={() => confirm("?") && api(`/events/${ev.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button>}
+      </div>
     </div>
   );
 

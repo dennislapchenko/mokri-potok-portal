@@ -4,6 +4,7 @@ import { useT } from "../i18n";
 import { VillageMap } from "../map/VillageMap";
 import { Crest } from "./shared";
 import { Notifications } from "./Notifications";
+import { AddPhone } from "../AddPhone";
 
 // Houses: everyone sees the list and manages their own house + devices.
 // Stewards also create houses, hand out invite links and assign parcels.
@@ -91,6 +92,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
         </form>
         <Notifications />
         <h3>{t("Your devices")}</h3>
+        <p><AddPhone /></p>
         {devices.map((d) => (
           <div key={d.id} className="card"><div className="head"><span>📱 {d.label || "—"}{d.id === me.device_id ? ` (${t("This phone")})` : ""}</span><span className="when">{d.last_seen?.slice(0, 16)}</span></div>
             {d.id !== me.device_id && <div className="actions"><button className="ghost" onClick={() => api(`/devices/${d.id}`, { method: "DELETE" }).then(() => api<any[]>("/devices").then(setDevices))}>{t("Remove")}</button></div>}

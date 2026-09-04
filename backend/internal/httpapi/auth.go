@@ -47,6 +47,18 @@ func inviteCode() string {
 	return string(b)
 }
 
+// pairingCode is six digits: short enough to read across a kitchen table,
+// short-lived and single-use to make up for the small keyspace.
+func pairingCode() string {
+	b := make([]byte, 6)
+	rand.Read(b)
+	out := make([]byte, 6)
+	for i := range b {
+		out[i] = '0' + b[i]%10
+	}
+	return string(out)
+}
+
 func hashToken(t string) string {
 	sum := sha256.Sum256([]byte(t))
 	return hex.EncodeToString(sum[:])

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError, getToken, setToken, type House, type Me } from "./api";
+import { syncPushLang } from "./push";
 import { useT } from "./i18n";
 import { VillageMap } from "./map/VillageMap";
 import { Tavern } from "./rooms/Tavern";
@@ -8,6 +9,7 @@ import { BellTower } from "./rooms/BellTower";
 import { Market } from "./rooms/Market";
 import { Watchtower } from "./rooms/Watchtower";
 import { Houses } from "./rooms/Houses";
+import { ToolShed } from "./rooms/ToolShed";
 import { InstallBanner } from "./Install";
 
 export type Session = { me: Me; houses: House[]; refresh: () => Promise<void>; logout: () => void };
@@ -17,6 +19,7 @@ export const ROOMS = [
   { path: "/bell", icon: "🔔", name: "Bell tower", sub: "calendar" },
   { path: "/market", icon: "🧺", name: "Market", sub: "needs, give-aways, runs" },
   { path: "/watch", icon: "🕯️", name: "Watchtower", sub: "who is away" },
+  { path: "/shed", icon: "🛠", name: "Tool shed", sub: "what the village lends" },
   { path: "/houses", icon: "🏘️", name: "Houses", sub: "houses and land" },
 ];
 
@@ -29,6 +32,7 @@ export default function App() {
   const refresh = useCallback(async () => {
     const [m, hs] = await Promise.all([api<Me>("/me"), api<House[]>("/houses")]);
     setMe(m); setHouses(hs); setState("in");
+    syncPushLang();
   }, []);
 
   useEffect(() => {
@@ -43,7 +47,7 @@ export default function App() {
       <header className="topbar">
         <div className="inner">
           <h1><Link to="/">🏰 Mokri Potok</Link> <span className="small" style={{ color: "var(--parch2)" }}>· {t("Village portal")}</span></h1>
-          {me && <span className="house"><span className="crest" style={{ background: me.color }}>{me.crest}</span> {me.name}</span>}
+          {me && <Link className="house" to="/houses"><span className="crest" style={{ background: me.color }}>{me.crest}</span> {me.name}</Link>}
           <span className="lang">
             <button className={lang === "sl" ? "primary" : ""} onClick={() => setLang("sl")}>SL</button>{" "}
             <button className={lang === "en" ? "primary" : ""} onClick={() => setLang("en")}>EN</button>
@@ -65,6 +69,7 @@ export default function App() {
             <Route path="/bell" element={<BellTower me={me} />} />
             <Route path="/market" element={<Market me={me} houses={houses} />} />
             <Route path="/watch" element={<Watchtower me={me} />} />
+            <Route path="/shed" element={<ToolShed me={me} />} />
             <Route path="/houses" element={<Houses me={me} houses={houses} refresh={refresh} logout={logout} />} />
             <Route path="/join/:code" element={<Home me={me} houses={houses} />} />
             <Route path="*" element={<Home me={me} houses={houses} />} />
@@ -139,15 +144,16 @@ function Gate({ onJoined }: { onJoined: () => Promise<void> }) {
       nav("/");
     } catch (ex) {
       const s = ex instanceof ApiError ? ex.status : 0;
-      setErr(s === 404 ? t("Unknown code") : s === 410 ? t("Code expired — ask the steward for a new link") : s === 403 ? t("Unknown code") : t("Something went wrong"));
+      setErr(s === 404 || s === 403 ? t("Unknown code") : s === 410 ? t("Code expired — ask the steward for a new link") : s === 429 ? t("Too many attempts. Wait a few minutes.") : t("Something went wrong"));
     }
   };
   return (
     <div className="parchment gate">
       <h2>🏰 {t("Enter the village")}</h2>
       <p className="small">{bootstrap ? t("The village is empty. The first steward founds it with the bootstrap code from the server log.") : t("You need an invite link from a steward. Ask in the WhatsApp group.")}</p>
+      {!bootstrap && <p className="small">{t("Already signed in in your browser? Open the portal there, go to Houses and press Add another phone — it gives you a 6-digit code for this one.")}</p>}
       <form onSubmit={submit} className="inline">
-        <label>{bootstrap ? t("Bootstrap code") : t("Invite code")}<input value={code} onChange={(e) => setCode(e.target.value)} autoCapitalize="off" autoComplete="off" required /></label>
+        <label>{bootstrap ? t("Bootstrap code") : t("Invite or pairing code")}<input value={code} onChange={(e) => setCode(e.target.value)} autoCapitalize="off" autoComplete="off" required /></label>
         {bootstrap && <label>{t("Steward house name")}<input value={name} onChange={(e) => setName(e.target.value)} /></label>}
         <label>{t("This phone")}<input value={device} onChange={(e) => setDevice(e.target.value)} placeholder={t("e.g. Ana's phone")} /></label>
         {err && <div className="err">{err}</div>}

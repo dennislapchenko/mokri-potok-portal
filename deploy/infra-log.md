@@ -52,3 +52,6 @@
   every subscription; phones would need to re-enable.
 - `PUSH_SUBJECT` (VAPID subject) defaults to the Pages URL; set it in
   `deploy/app/compose.yaml` if the frontend moves.
+- `TZ=Europe/Ljubljana` is set on the service and the binary embeds
+  `time/tzdata` (distroless carries no zoneinfo). Without it a notification
+  would say "tomorrow" for tonight. Change both together if the village moves.

@@ -22,11 +22,15 @@ type Server struct {
 	st   *store.Store
 	cfg  config.Config
 	mux  *http.ServeMux
-	send Sender // nil until first use; tests inject a fake
+	send Sender           // nil until first use; tests inject a fake
+	now  func() time.Time // swapped in tests so "today"/"tomorrow" are deterministic
+
+	tries  *limiter // per-IP cap on code guessing
+	misses *counter // village-wide wrong-code counter, burns live pairing codes
 }
 
 func New(st *store.Store, cfg config.Config) *Server {
-	s := &Server{st: st, cfg: cfg, mux: http.NewServeMux()}
+	s := &Server{st: st, cfg: cfg, mux: http.NewServeMux(), now: time.Now, tries: newLimiter(), misses: &counter{}}
 	s.routes()
 	return s
 }
@@ -41,6 +45,7 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/status", s.status)
 	m.HandleFunc("POST /api/bootstrap", s.bootstrap)
 	m.HandleFunc("POST /api/join", s.join)
+	m.HandleFunc("POST /api/pair", s.requireHouse(s.createPairing))
 
 	m.HandleFunc("GET /api/me", s.requireHouse(s.me))
 	m.HandleFunc("GET /api/devices", s.requireHouse(s.listDevices))
@@ -63,6 +68,13 @@ func (s *Server) routes() {
 	m.HandleFunc("POST /api/events", s.requireHouse(s.createEvent))
 	m.HandleFunc("PUT /api/events/{id}", s.requireHouse(s.updateEvent))
 	m.HandleFunc("DELETE /api/events/{id}", s.requireHouse(s.deleteRow("events")))
+	m.HandleFunc("POST /api/events/{id}/signup", s.requireHouse(s.signUp))
+	m.HandleFunc("DELETE /api/events/{id}/signup", s.requireHouse(s.signOff))
+	// Tool shed
+	m.HandleFunc("GET /api/tools", s.requireHouse(s.listTools))
+	m.HandleFunc("POST /api/tools", s.requireHouse(s.createTool))
+	m.HandleFunc("PUT /api/tools/{id}", s.requireHouse(s.updateTool))
+	m.HandleFunc("DELETE /api/tools/{id}", s.requireHouse(s.deleteRow("tools")))
 	// Market
 	m.HandleFunc("GET /api/runs", s.requireHouse(s.listRuns))
 	m.HandleFunc("POST /api/runs", s.requireHouse(s.createRun))
@@ -242,6 +254,10 @@ func (s *Server) BootstrapCode() (string, error) {
 
 // bootstrap creates the first steward house. Refused once any house exists.
 func (s *Server) bootstrap(w http.ResponseWriter, r *http.Request) {
+	if !s.tries.allow(clientIP(r), 12, 10*time.Minute) {
+		writeErr(w, http.StatusTooManyRequests, "too many attempts, wait a few minutes")
+		return
+	}
 	m, err := readJSON(r)
 	if err != nil {
 		writeErr(w, 400, "bad json")
@@ -281,23 +297,47 @@ func (s *Server) bootstrap(w http.ResponseWriter, r *http.Request) {
 // join turns an invite code into a device token. The code stays valid until
 // it expires so every member of the house can use the same link.
 func (s *Server) join(w http.ResponseWriter, r *http.Request) {
+	// A pairing code is only six digits, so guessing has to cost something.
+	if !s.tries.allow(clientIP(r), 12, 10*time.Minute) {
+		writeErr(w, http.StatusTooManyRequests, "too many attempts, wait a few minutes")
+		return
+	}
 	m, err := readJSON(r)
 	if err != nil {
 		writeErr(w, 400, "bad json")
 		return
 	}
-	inv, err := s.st.One(r.Context(), `SELECT house_id, expires_at FROM invites WHERE code=?`, strings.ToLower(str(m, "code")))
+	code := strings.ToLower(strings.TrimSpace(str(m, "code")))
+	// A code is either a steward's invite (a house joins) or a house's own
+	// pairing code (one more phone of a house already inside).
+	inv, err := s.st.One(r.Context(), `SELECT house_id, expires_at, 'invite' AS src FROM invites WHERE code=?
+		UNION ALL SELECT house_id, expires_at, 'pairing' FROM pairings WHERE code=? AND used_at IS NULL`, code, code)
 	if err != nil {
 		fail(w, err)
 		return
 	}
 	if inv == nil {
+		// A wrong six-digit guess also spends the live pairing code's budget:
+		// five misses anywhere in the village and every live code is dropped.
+		if s.misses.count(1) >= 5 {
+			s.st.Exec(r.Context(), `DELETE FROM pairings WHERE used_at IS NULL`)
+			s.misses.reset()
+		}
 		writeErr(w, 404, "unknown code")
 		return
 	}
 	if exp, _ := time.Parse(time.RFC3339, inv["expires_at"].(string)); time.Now().After(exp) {
 		writeErr(w, 410, "code expired")
 		return
+	}
+	if inv["src"] == "pairing" {
+		// Single use: burn it before minting the device.
+		res, err := s.st.Exec(r.Context(), `UPDATE pairings SET used_at=datetime('now') WHERE code=? AND used_at IS NULL`, code)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		_ = res
 	}
 	tok, err := s.newDevice(r.Context(), inv["house_id"].(int64), str(m, "device"))
 	if err != nil {
@@ -511,7 +551,13 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	s.notify("posts", houseFrom(r).ID, Payload{Title: "🍺 " + houseFrom(r).Name, Body: snippet(str(m, "body"), 120), URL: "#/tavern"})
+	who := houseFrom(r).Name
+	if a := str(m, "author"); a != "" {
+		who = a + " · " + who
+	}
+	s.notify("posts", houseFrom(r).ID, func(lang string) Payload {
+		return Payload{Title: "🍺 " + who + tr(lang, " v gostilni", " in the tavern"), Body: snippet(str(m, "body"), 140), URL: "#/tavern"}
+	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
@@ -545,8 +591,12 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request) {
 // ---- bell tower ----------------------------------------------------------
 
 func (s *Server) listEvents(w http.ResponseWriter, r *http.Request) {
-	rows, err := s.st.Rows(r.Context(), `SELECT e.*,`+houseJoin+`FROM events e JOIN houses h ON h.id=e.house_id
-		WHERE e.starts_at >= date('now','-60 days') ORDER BY e.starts_at LIMIT 500`)
+	rows, err := s.st.Rows(r.Context(), `SELECT e.*,`+houseJoin+`,
+		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id) AS signups,
+		(SELECT group_concat(h2.crest || ' ' || h2.name, ', ') FROM event_signups s JOIN houses h2 ON h2.id=s.house_id WHERE s.event_id=e.id) AS signup_names,
+		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id AND s.house_id=?) AS mine
+		FROM events e JOIN houses h ON h.id=e.house_id
+		WHERE e.starts_at >= date('now','-60 days') ORDER BY e.starts_at LIMIT 500`, houseFrom(r).ID)
 	if err != nil {
 		fail(w, err)
 		return
@@ -570,11 +620,19 @@ func (s *Server) createEvent(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	icon := "🔔"
+	icon := map[string]string{"event": "🔔", "work": "🤝", "alarm": "🚨"}[kind]
+	// An alarm is the one thing that may wake the village at night.
+	ring := s.notify
 	if kind == "alarm" {
-		icon = "🚨"
+		ring = s.notifyUrgent
 	}
-	s.notify("events", houseFrom(r).ID, Payload{Title: icon + " " + str(m, "title"), Body: snippet(str(m, "starts_at")+" "+str(m, "place"), 100), URL: "#/bell"})
+	ring("events", houseFrom(r).ID, func(lang string) Payload {
+		body := join(" · ", humanWhen(str(m, "starts_at"), lang, s.now()), str(m, "place"))
+		if n := str(m, "notes"); n != "" {
+			body = join(" — ", body, snippet(n, 70))
+		}
+		return Payload{Title: icon + " " + str(m, "title"), Body: body, URL: "#/bell"}
+	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
@@ -619,7 +677,14 @@ func (s *Server) createRun(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	s.notify("runs", houseFrom(r).ID, Payload{Title: "🚗 " + houseFrom(r).Name + " → " + str(m, "destination"), Body: snippet(str(m, "cutoff_at")+" "+str(m, "notes"), 100), URL: "#/market"})
+	s.notify("runs", houseFrom(r).ID, func(lang string) Payload {
+		return Payload{
+			Title: "🚗 " + houseFrom(r).Name + tr(lang, " gre v ", " drives to ") + str(m, "destination"),
+			Body: join(" — ", tr(lang, "odhod ", "leaves ")+humanWhen(str(m, "cutoff_at"), lang, s.now()),
+				tr(lang, "napiši, kaj rabiš", "post what you need")),
+			URL: "#/market",
+		}
+	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
@@ -648,7 +713,9 @@ func (s *Server) createNeed(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	s.notify("needs", houseFrom(r).ID, Payload{Title: "🛒 " + houseFrom(r).Name, Body: snippet(str(m, "text"), 120), URL: "#/market"})
+	s.notify("needs", houseFrom(r).ID, func(lang string) Payload {
+		return Payload{Title: "🛒 " + houseFrom(r).Name + tr(lang, " rabi iz trgovine", " needs from the shop"), Body: snippet(str(m, "text"), 140), URL: "#/market"}
+	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
@@ -683,7 +750,18 @@ func (s *Server) createOffer(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	s.notify("offers", houseFrom(r).ID, Payload{Title: "🎁 " + houseFrom(r).Name, Body: snippet(str(m, "text"), 120), URL: "#/market"})
+	s.notify("offers", houseFrom(r).ID, func(lang string) Payload {
+		icon, what := "🎁", tr(lang, " podarja", " gives away")
+		switch tag {
+		case "seeds":
+			icon, what = "🌱", tr(lang, " deli semena", " shares seeds")
+		case "surplus":
+			icon, what = "🧺", tr(lang, " deli presežek", " shares surplus")
+		case "joint":
+			icon, what = "📦", tr(lang, " zbira skupno naročilo", " starts a joint order")
+		}
+		return Payload{Title: icon + " " + houseFrom(r).Name + what, Body: snippet(str(m, "text"), 140), URL: "#/market"}
+	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
@@ -768,7 +846,9 @@ func (s *Server) createAway(w http.ResponseWriter, r *http.Request) {
 	}
 	// Away notices are burglary information and a lock screen is readable by
 	// anyone holding the phone: the push names no house, no dates, no notes.
-	s.notify("away", houseFrom(r).ID, Payload{Title: "🕯️ Stražnica", Body: "nova odsotnost — odpri portal", URL: "#/watch"})
+	s.notify("away", houseFrom(r).ID, func(lang string) Payload {
+		return Payload{Title: tr(lang, "🕯️ Stražnica", "🕯️ Watchtower"), Body: tr(lang, "nekdo je vpisal odsotnost — odpri portal", "someone marked an absence — open the portal"), URL: "#/watch"}
+	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
@@ -812,7 +892,7 @@ func (s *Server) updateAway(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 	out := map[string]any{"exported_at": time.Now().UTC().Format(time.RFC3339)}
-	for _, t := range []string{"houses", "house_parcels", "posts", "events", "runs", "needs", "offers", "away"} {
+	for _, t := range []string{"houses", "house_parcels", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools"} {
 		rows, err := s.st.Rows(r.Context(), `SELECT * FROM `+t)
 		if err != nil {
 			fail(w, err)
@@ -822,6 +902,170 @@ func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="potok-export-%s.json"`, time.Now().UTC().Format("2006-01-02")))
 	writeJSON(w, 200, out)
+}
+
+// ---- work-bee sign-ups ---------------------------------------------------
+
+// signUp puts this house on an event's list and tells the house that called
+// the work bee. No count is ever shown as a score — it is a headcount for the
+// day, deleted with the event.
+func (s *Server) signUp(w http.ResponseWriter, r *http.Request) {
+	h := houseFrom(r)
+	id, err := pathID(r)
+	if err != nil {
+		writeErr(w, 400, "bad id")
+		return
+	}
+	m, _ := readJSON(r)
+	ev, err := s.st.One(r.Context(), `SELECT house_id, title FROM events WHERE id=?`, id)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if ev == nil {
+		writeErr(w, 404, "no such event")
+		return
+	}
+	if _, err := s.st.Exec(r.Context(), `INSERT INTO event_signups(event_id, house_id, note) VALUES (?,?,?)
+		ON CONFLICT(event_id, house_id) DO UPDATE SET note=excluded.note`, id, h.ID, str(m, "note")); err != nil {
+		fail(w, err)
+		return
+	}
+	if owner := ev["house_id"].(int64); owner != h.ID {
+		title := ev["title"].(string)
+		s.notifyHouse("events", owner, func(lang string) Payload {
+			return Payload{Title: "🙋 " + h.Name + tr(lang, " prihaja", " is coming"), Body: title, URL: "#/bell"}
+		})
+	}
+	w.WriteHeader(204)
+}
+
+func (s *Server) signOff(w http.ResponseWriter, r *http.Request) {
+	id, err := pathID(r)
+	if err != nil {
+		writeErr(w, 400, "bad id")
+		return
+	}
+	if _, err := s.st.Exec(r.Context(), `DELETE FROM event_signups WHERE event_id=? AND house_id=?`, id, houseFrom(r).ID); err != nil {
+		fail(w, err)
+		return
+	}
+	w.WriteHeader(204)
+}
+
+// ---- tool shed -----------------------------------------------------------
+
+func (s *Server) listTools(w http.ResponseWriter, r *http.Request) {
+	rows, err := s.st.Rows(r.Context(), `SELECT x.*,`+houseJoin+`, t.name AS held_by_name, t.crest AS held_by_crest
+		FROM tools x JOIN houses h ON h.id=x.house_id LEFT JOIN houses t ON t.id=x.held_by ORDER BY h.name, x.name`)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	writeJSON(w, 200, rows)
+}
+
+func (s *Server) createTool(w http.ResponseWriter, r *http.Request) {
+	h := houseFrom(r)
+	m, err := readJSON(r)
+	if err != nil || str(m, "name") == "" {
+		writeErr(w, 400, "name required")
+		return
+	}
+	id, err := s.st.Exec(r.Context(), `INSERT INTO tools(house_id, name, notes) VALUES (?,?,?)`, h.ID, str(m, "name"), str(m, "notes"))
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	s.notify("tools", h.ID, func(lang string) Payload {
+		return Payload{Title: "🛠 " + h.Name + tr(lang, " deli orodje", " shares a tool"), Body: snippet(join(" — ", str(m, "name"), str(m, "notes")), 140), URL: "#/shed"}
+	})
+	writeJSON(w, 201, map[string]any{"id": id})
+}
+
+// updateTool: any house takes a free tool or gives it back; the owner or a
+// steward edits the name and notes. Taking tells the owner, and nothing else.
+func (s *Server) updateTool(w http.ResponseWriter, r *http.Request) {
+	h := houseFrom(r)
+	id, err := pathID(r)
+	if err != nil {
+		writeErr(w, 400, "bad id")
+		return
+	}
+	m, err := readJSON(r)
+	if err != nil {
+		writeErr(w, 400, "bad json")
+		return
+	}
+	row, err := s.st.One(r.Context(), `SELECT house_id, name, held_by FROM tools WHERE id=?`, id)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if row == nil {
+		writeErr(w, 404, "not found")
+		return
+	}
+	owner := row["house_id"].(int64)
+	mayEdit := owner == h.ID || h.IsSteward
+	holder, held := row["held_by"].(int64)
+
+	if take, ok := m["take"].(bool); ok {
+		if take {
+			if held {
+				writeErr(w, 409, "already taken")
+				return
+			}
+			s.st.Exec(r.Context(), `UPDATE tools SET held_by=?, held_since=date('now') WHERE id=?`, h.ID, id)
+			if owner != h.ID {
+				name := row["name"].(string)
+				s.notifyHouse("tools", owner, func(lang string) Payload {
+					return Payload{Title: "🛠 " + h.Name + tr(lang, " je vzel", " took"), Body: name, URL: "#/shed"}
+				})
+			}
+		} else {
+			if held && holder != h.ID && !mayEdit {
+				writeErr(w, 403, "not yours to return")
+				return
+			}
+			s.st.Exec(r.Context(), `UPDATE tools SET held_by=NULL, held_since=NULL WHERE id=?`, id)
+			if held && owner != h.ID {
+				name := row["name"].(string)
+				s.notifyHouse("tools", owner, func(lang string) Payload {
+					return Payload{Title: "🛠 " + h.Name + tr(lang, " je vrnil", " returned"), Body: name, URL: "#/shed"}
+				})
+			}
+		}
+	}
+	for _, k := range []string{"name", "notes"} {
+		if _, ok := m[k]; ok {
+			if !mayEdit {
+				writeErr(w, 403, "not yours")
+				return
+			}
+			s.st.Exec(r.Context(), `UPDATE tools SET `+k+`=? WHERE id=?`, str(m, k), id)
+		}
+	}
+	w.WriteHeader(204)
+}
+
+// ---- pairing -------------------------------------------------------------
+
+// createPairing hands the caller a six-digit code so one more phone of the
+// same house can log in. Only one live code per house.
+func (s *Server) createPairing(w http.ResponseWriter, r *http.Request) {
+	h := houseFrom(r)
+	if _, err := s.st.Exec(r.Context(), `DELETE FROM pairings WHERE house_id=? OR expires_at < datetime('now')`, h.ID); err != nil {
+		fail(w, err)
+		return
+	}
+	code := pairingCode()
+	exp := time.Now().UTC().Add(15 * time.Minute).Format(time.RFC3339)
+	if _, err := s.st.Exec(r.Context(), `INSERT INTO pairings(code, house_id, expires_at) VALUES (?,?,?)`, code, h.ID, exp); err != nil {
+		fail(w, err)
+		return
+	}
+	writeJSON(w, 201, map[string]any{"code": code, "expires_at": exp})
 }
 
 func nullIfEmpty(s string) any {

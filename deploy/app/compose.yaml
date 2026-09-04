@@ -9,6 +9,8 @@ services:
       DATA_DIR: /data
       PORT: "8788"
       CORS_ORIGINS: ${CORS_ORIGINS}
+      # Notifications say "today" / "tomorrow" against the village's own date.
+      TZ: Europe/Ljubljana
     volumes:
       # Must be owned by uid 65532 on the host (image runs as nonroot).
       - /srv/mokri-potok/data:/data

@@ -28,17 +28,37 @@ does not ship.
   mode). The map carries its snapshot date and "boundaries, not fences" line.
   House ↔ parcel assignment lives in the DB only. Licence attribution for the
   GURS data: `TBD`, required before the portal moves to the collective's domain.
+- **No tally of favours.** Work-bee sign-ups are a headcount for one day and
+  die with the event. Tool loans record who holds a tool now, never how many
+  times a house borrowed. Do not add a total anywhere.
 - **Exit is designed.** `GET /api/export` (steward) dumps everything as JSON;
   `VACUUM INTO` backups land nightly in `${DATA_DIR}/backups/`. Keep both working.
 - **No secrets in this repo, and none needed.** The first steward code is
   generated on first boot and printed to the container log. The VAPID key pair
   for web push is generated on first use and kept in the `settings` table.
 - **Push is opt-in per phone, filtered per house.** A phone subscribes after
-  the villager taps Allow; the house switches kinds off in `notify_off` (empty
-  = all six kinds on). The author's house never receives its own event. Push
-  carries a title, a one-line snippet and a route. **An away push carries no
-  house name, no dates, no notes** — a lock screen is readable by anyone
-  holding the phone; it says only "new notice, open the Watchtower".
+  the villager taps Allow and records the language it subscribed in; the house
+  switches kinds off in `notify_off` (empty = all seven kinds on). The author's
+  house never receives its own event. Push carries a title, a one-line snippet
+  and a route, in human words — `banner_test.go` pins every string, so read it
+  before changing copy.
+- **What a lock screen may say about an empty house.** Anyone holding a phone
+  can read a notification. The line: a **multi-day absence is anonymous** — an
+  away push names no house, no dates, no notes, only "new notice, open the
+  Watchtower". A **scheduled short trip is named** — a shop run says who drives
+  and when, because the house is coming back the same day and the whole point
+  is to answer it. Classify a new kind against that line; do not guess.
+  The one other exception is the optional author name on a tavern post, which
+  the poster typed themselves.
+- **Quiet hours: 21:00–07:00 only an alarm rings.** Everything else waits in
+  the app rather than buzzing a neighbour at night. `s.now()` decides, so tests
+  can move the clock.
+- **Codes.** A steward's invite is 10 characters and multi-use for 14 days — it
+  travels through WhatsApp and lets a whole house in. A pairing code is 6
+  digits, single use, 15 minutes, and only ever adds one more phone to a house
+  that is already inside. The small keyspace is paid for by a per-IP cap on
+  `/api/join` and by burning every live pairing code after five wrong guesses.
+  Do not widen either without redoing that arithmetic.
 - **Slovenian first.** Every user-facing string goes through `t()` in
   `frontend/src/i18n.tsx` with a Slovenian entry. English is the fallback key.
 
@@ -47,7 +67,9 @@ does not ship.
 ```
 backend/            Go: main.go, internal/{config,store,httpapi}; migrations embedded
 frontend/           Vite + React; src/rooms/* one file per room; src/map/VillageMap.tsx
-frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons; src/push.ts, src/Install.tsx
+frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons; src/push.ts, src/Install.tsx, src/AddPhone.tsx
+                    icon.svg is hand-drawn paths, full-bleed, content inside the central 80 % safe circle
+                    (an emoji glyph renders off-centre and monochrome — do not go back to one)
 frontend/public/data/  parcels.geojson (cadastre), channels.json (modelled water, dashed)
 deploy/app/         compose for the VM stack; deploy/infra-log.md = what was done by hand
 .doco-cd.yml        deploy config the VM's doco-cd polls; BE_TAG rolled by CI

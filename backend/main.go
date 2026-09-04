@@ -11,6 +11,10 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	// Embeds the timezone database: the image is distroless and has none, and
+	// notifications say "today" / "tomorrow" against the village's local date.
+	// Set TZ=Europe/Ljubljana in the compose file to pick it up.
+	_ "time/tzdata"
 
 	"github.com/dennislapchenko/mokri-potok-portal/backend/internal/config"
 	"github.com/dennislapchenko/mokri-potok-portal/backend/internal/httpapi"
@@ -54,7 +58,7 @@ func main() {
 		defer cancel()
 		hs.Shutdown(sh)
 	}()
-	log.Printf("listening on :%s, data in %s", cfg.Port, cfg.DataDir)
+	log.Printf("listening on :%s, data in %s, timezone %s", cfg.Port, cfg.DataDir, time.Local)
 	if err := hs.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

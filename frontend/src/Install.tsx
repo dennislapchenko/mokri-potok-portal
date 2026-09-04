@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useT } from "./i18n";
 import { enablePush, isInApp, isIOS, isStandalone, pushState, type PushState } from "./push";
+import { AddPhone } from "./AddPhone";
 
 // InstallBanner: shown on the home screen until the portal runs as an installed
 // app with notifications on. Three states, one message each:
@@ -29,11 +30,11 @@ export function InstallBanner() {
   if (!standalone && isInApp()) {
     body = <><strong>{t("You are inside WhatsApp's browser.")}</strong> {t("Open this page in Chrome or Safari (menu ⋮ → open in browser), then add it to your home screen. Otherwise the phone forgets you.")}</>;
   } else if (!standalone && prompt) {
-    body = <><strong>{t("Install the village on this phone")}</strong> — {t("one tap, then it opens like an app and remembers you.")} <button className="primary" onClick={() => prompt.prompt()}>📲 {t("Install")}</button></>;
+    body = <><strong>{t("Install the village on this phone")}</strong> — {t("one tap, then it opens like an app.")} <button className="primary" onClick={() => prompt.prompt()}>📲 {t("Install")}</button><Signin /></>;
   } else if (!standalone && isIOS()) {
-    body = <><strong>{t("Install the village on this phone")}</strong>: {t("tap Share")} <span aria-hidden="true">⎋</span> {t("below, then")} <em>{t("Add to Home Screen")}</em>. {t("Then it opens like an app and remembers you.")}</>;
+    body = <><strong>{t("Install the village on this phone")}</strong>: {t("tap Share")} <span aria-hidden="true">⎋</span> {t("below, then")} <em>{t("Add to Home Screen")}</em>.<Signin /></>;
   } else if (!standalone) {
-    body = <><strong>{t("Install the village on this phone")}</strong>: {t("browser menu → Install app / Add to Home Screen.")} {t("Then it opens like an app and remembers you.")}</>;
+    body = <><strong>{t("Install the village on this phone")}</strong>: {t("browser menu → Install app / Add to Home Screen.")}<Signin /></>;
   } else {
     body = <><strong>{t("Ring the bell for you too?")}</strong> {t("Get a notification when a house posts, needs something, drives to town, adds an event or goes away.")} <button className="primary" onClick={() => enablePush().then(setPush)}>🔔 {t("Enable notifications")}</button></>;
   }
@@ -41,6 +42,18 @@ export function InstallBanner() {
     <div className="card banner">
       <div className="body">{body}</div>
       <button className="ghost dismiss" aria-label={t("Dismiss")} onClick={dismiss}>✕</button>
+    </div>
+  );
+}
+
+// The installed app starts with empty storage on iOS, so hand the villager a
+// code before they walk away from the signed-in browser tab.
+function Signin() {
+  const { t } = useT();
+  return (
+    <div style={{ marginTop: ".4rem" }}>
+      <span className="small">{t("The installed icon starts signed out. Take a code with you:")} </span>
+      <AddPhone compact />
     </div>
   );
 }

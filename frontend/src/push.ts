@@ -1,6 +1,8 @@
 // Install + push plumbing. Everything here degrades to "not available" quietly.
 import { api } from "./api";
 
+const lang = () => { try { return localStorage.getItem("potok.lang") === "en" ? "en" : "sl"; } catch { return "sl"; } };
+
 export const isStandalone = () =>
   window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone === true;
 export const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -44,8 +46,23 @@ export async function enablePush(): Promise<PushState> {
   if (!reg) return "unsupported";
   const { key } = await api<{ key: string }>("/push/key");
   const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToUint8(key) });
-  await api("/push/subscribe", { method: "POST", body: sub.toJSON() });
+  await api("/push/subscribe", { method: "POST", body: { ...sub.toJSON(), lang: lang() } });
   return "on";
+}
+
+// syncPushLang re-registers this phone when the villager switched SL/EN after
+// subscribing — the notification text is built on the server.
+export async function syncPushLang() {
+  try {
+    if ((await pushState()) !== "on") return;
+    const sent = localStorage.getItem("potok.pushlang");
+    if (sent === lang()) return;
+    const reg = await navigator.serviceWorker.getRegistration(import.meta.env.BASE_URL);
+    const sub = await reg?.pushManager.getSubscription();
+    if (!sub) return;
+    await api("/push/subscribe", { method: "POST", body: { ...sub.toJSON(), lang: lang() } });
+    localStorage.setItem("potok.pushlang", lang());
+  } catch { /* best effort */ }
 }
 
 export async function disablePush(): Promise<PushState> {

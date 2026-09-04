@@ -1,1 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#2b1d12"/><rect x="48" y="48" width="416" height="416" rx="72" fill="#f1e4c6"/><text x="256" y="330" font-size="260" text-anchor="middle" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">🏰</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Mokri Potok village portal">
+  <title>Mokri Potok — vaški portal</title>
+  <!-- Full-bleed background: iOS and Android apply their own mask, so the
+       source must not carry rounded corners. All content sits inside the
+       central 80 % safe circle so a maskable crop cannot clip a tower. -->
+  <rect width="512" height="512" fill="#f1e4c6"/>
+  <g transform="translate(0,20)">
+    <g fill="#2b1d12">
+      <rect x="252" y="84" width="8" height="46"/>
+      <rect x="128" y="236" width="256" height="140"/>
+      <rect x="128" y="176" width="56" height="60"/>
+      <rect x="328" y="176" width="56" height="60"/>
+      <rect x="208" y="146" width="96" height="90"/>
+      <rect x="128" y="152" width="24" height="24"/>
+      <rect x="160" y="152" width="24" height="24"/>
+      <rect x="328" y="152" width="24" height="24"/>
+      <rect x="360" y="152" width="24" height="24"/>
+      <rect x="208" y="122" width="26" height="24"/>
+      <rect x="243" y="122" width="26" height="24"/>
+      <rect x="278" y="122" width="26" height="24"/>
+    </g>
+    <path d="M260 88 L306 100 L260 112 Z" fill="#8a2f2f"/>
+    <g fill="#f1e4c6">
+      <path d="M226 376 L226 330 A30 30 0 0 1 286 330 L286 376 Z"/>
+      <path d="M158 312 L158 286 A14 14 0 0 1 186 286 L186 312 Z"/>
+      <path d="M326 312 L326 286 A14 14 0 0 1 354 286 L354 312 Z"/>
+      <path d="M242 222 L242 196 A14 14 0 0 1 270 196 L270 222 Z"/>
+    </g>
+  </g>
+</svg>

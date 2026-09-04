@@ -15,7 +15,7 @@ import (
 // services; it is generated once and kept in the settings table, so it lives
 // in the same SQLite file as everything else and travels with the backups.
 
-var Kinds = []string{"posts", "needs", "offers", "runs", "events", "away"}
+var Kinds = []string{"posts", "needs", "offers", "runs", "events", "away", "tools"}
 
 // Sender is the one seam for tests: production sends over the network.
 type Sender interface {
@@ -27,6 +27,7 @@ type Subscription struct {
 	Endpoint string
 	P256dh   string
 	Auth     string
+	Lang     string
 }
 
 type Payload struct {
@@ -79,21 +80,29 @@ func (s *Server) sender() (Sender, error) {
 	return s.send, nil
 }
 
-// notify fans a payload out to every phone of every house that did not switch
-// this kind off, except the house that caused it. Runs in the background; a
-// dead subscription (404/410) is deleted.
-func (s *Server) notify(kind string, fromHouse int64, p Payload) {
-	p.Kind = kind
-	body, _ := json.Marshal(p)
+// fanout renders the text once per language and sends it to the phones the
+// query selects. A dead subscription (404/410) is deleted. Runs detached.
+func (s *Server) fanout(kind string, build func(lang string) Payload, query string, args ...any) {
+	rendered := map[string][]byte{}
+	body := func(lang string) []byte {
+		if b, ok := rendered[lang]; ok {
+			return b
+		}
+		p := build(lang)
+		p.Kind = kind
+		b, _ := json.Marshal(p)
+		rendered[lang] = b
+		return b
+	}
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		subs, err := s.recipients(ctx, kind, fromHouse)
+		rows, err := s.st.Rows(ctx, query, args...)
 		if err != nil {
 			log.Printf("push: recipients: %v", err)
 			return
 		}
-		if len(subs) == 0 {
+		if len(rows) == 0 {
 			return
 		}
 		snd, err := s.sender()
@@ -101,8 +110,9 @@ func (s *Server) notify(kind string, fromHouse int64, p Payload) {
 			log.Printf("push: sender: %v", err)
 			return
 		}
-		for _, sub := range subs {
-			status, err := snd.Send(ctx, sub, body)
+		for _, r := range rows {
+			sub := Subscription{ID: r["id"].(int64), Endpoint: r["endpoint"].(string), P256dh: r["p256dh"].(string), Auth: r["auth"].(string), Lang: r["lang"].(string)}
+			status, err := snd.Send(ctx, sub, body(sub.Lang))
 			if err != nil {
 				log.Printf("push: send %d: %v", sub.ID, err)
 				continue
@@ -114,17 +124,37 @@ func (s *Server) notify(kind string, fromHouse int64, p Payload) {
 	}()
 }
 
-func (s *Server) recipients(ctx context.Context, kind string, fromHouse int64) ([]Subscription, error) {
-	rows, err := s.st.Rows(ctx, `SELECT p.id, p.endpoint, p.p256dh, p.auth FROM push_subscriptions p
-		WHERE p.house_id != ? AND NOT EXISTS (SELECT 1 FROM notify_off n WHERE n.house_id=p.house_id AND n.kind=?)`, fromHouse, kind)
-	if err != nil {
-		return nil, err
+const subsFor = `SELECT p.id, p.endpoint, p.p256dh, p.auth, p.lang FROM push_subscriptions p
+	WHERE NOT EXISTS (SELECT 1 FROM notify_off n WHERE n.house_id=p.house_id AND n.kind=?) `
+
+// quietHours: between 21:00 and 07:00 only an alarm is worth a buzz. The item
+// still waits in the app — a village that stops trusting its phone at night
+// turns notifications off altogether.
+func (s *Server) quietHours() bool {
+	h := s.now().Hour()
+	return h >= 21 || h < 7
+}
+
+// notify tells every house except the one that caused the thing.
+func (s *Server) notify(kind string, fromHouse int64, build func(lang string) Payload) {
+	if s.quietHours() {
+		return
 	}
-	out := make([]Subscription, 0, len(rows))
-	for _, r := range rows {
-		out = append(out, Subscription{ID: r["id"].(int64), Endpoint: r["endpoint"].(string), P256dh: r["p256dh"].(string), Auth: r["auth"].(string)})
+	s.notifyUrgent(kind, fromHouse, build)
+}
+
+// notifyUrgent ignores quiet hours — alarms only.
+func (s *Server) notifyUrgent(kind string, fromHouse int64, build func(lang string) Payload) {
+	s.fanout(kind, build, subsFor+`AND p.house_id != ?`, kind, fromHouse)
+}
+
+// notifyHouse sends to one house only — used when the message is that house's
+// business alone: someone signed up to its work bee, or borrowed its tool.
+func (s *Server) notifyHouse(kind string, toHouse int64, build func(lang string) Payload) {
+	if s.quietHours() {
+		return
 	}
-	return out, nil
+	s.fanout(kind, build, subsFor+`AND p.house_id = ?`, kind, toHouse)
 }
 
 // ---- handlers ------------------------------------------------------------
@@ -154,9 +184,13 @@ func (s *Server) subscribe(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "endpoint and keys required")
 		return
 	}
-	if _, err := s.st.Exec(r.Context(), `INSERT INTO push_subscriptions(house_id, device_id, endpoint, p256dh, auth) VALUES (?,?,?,?,?)
-		ON CONFLICT(endpoint) DO UPDATE SET house_id=excluded.house_id, device_id=excluded.device_id, p256dh=excluded.p256dh, auth=excluded.auth`,
-		h.ID, h.DeviceID, endpoint, p256, auth); err != nil {
+	lang := str(m, "lang")
+	if lang != "en" {
+		lang = "sl"
+	}
+	if _, err := s.st.Exec(r.Context(), `INSERT INTO push_subscriptions(house_id, device_id, endpoint, p256dh, auth, lang) VALUES (?,?,?,?,?,?)
+		ON CONFLICT(endpoint) DO UPDATE SET house_id=excluded.house_id, device_id=excluded.device_id, p256dh=excluded.p256dh, auth=excluded.auth, lang=excluded.lang`,
+		h.ID, h.DeviceID, endpoint, p256, auth, lang); err != nil {
 		fail(w, err)
 		return
 	}

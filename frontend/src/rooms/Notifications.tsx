@@ -23,7 +23,7 @@ export function Notifications() {
     setBusy(true);
     try { setState(await (state === "on" ? disablePush() : enablePush())); await load(); } finally { setBusy(false); }
   };
-  const labels: Record<string, string> = { posts: "Tavern posts", needs: "Needs", offers: "Give-aways", runs: "Runs to town", events: "Events", away: "Away notices" };
+  const labels: Record<string, string> = { posts: "Tavern posts", needs: "Needs", offers: "Give-aways", runs: "Runs to town", events: "Events", away: "Away notices", tools: "Tool shed" };
 
   return (
     <>
@@ -34,6 +34,7 @@ export function Notifications() {
         <p><button className={state === "on" ? "" : "primary"} disabled={busy} onClick={flip}>{state === "on" ? "🔕 " + t("Turn off on this phone") : "🔔 " + t("Enable notifications")}</button>
           {prefs && <span className="small" style={{ marginLeft: ".6rem" }}>{prefs.phones} {t("phones of this house receive them")}</span>}</p>
       )}
+      <p className="small">{t("Notifications sleep from 21:00 to 07:00 — only an alarm rings at night.")}</p>
       {prefs && (
         <div className="kinds">
           <div className="small">{t("What the house wants to hear about:")}</div>

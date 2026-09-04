@@ -9,6 +9,10 @@ the shop, when the work party is — with a game-like village map as the door.
 ## People and roles
 
 - **Houses**, not persons, are the accounts. A house holds several phones.
+- A house adds its **own** further phones with a six-digit pairing code from
+  the Houses room. The steward is not needed for that, and it is the way back
+  in after adding the portal to an iPhone home screen — the installed icon gets
+  storage of its own and starts signed out.
 - **Stewards** create houses, hand out invite links, assign parcels on the
   map, pin posts. One steward house today (the owner's); a second one in the
   village is the exit plan. The first steward founds the village with the
@@ -25,12 +29,14 @@ the shop, when the work party is — with a game-like village map as the door.
 | Market | "Going to the shop, anyone need anything?" Needs with states, give-aways, shop runs with a cut-off. |
 | Bell tower | Every village event in one place; kinds: event, work party, alarm. |
 | Tavern | Pinned notices and threads that must stay findable. Smallest room, first to cut. |
+| Tool shed | Who lends what, and who holds it now. A tool comes back; a give-away does not. |
+| Work bees | Any event takes sign-ups. The house that called it hears who is coming. A headcount for the day, never a score. |
 
 | Notifications | Installed as a home-screen app (PWA), each phone can allow push. Every new post, need, give-away, run, event or away notice rings the other houses; a house switches kinds off in the Houses room. Away pushes name nothing. All six on by default is sized for a handful of houses — revisit the defaults and quiet hours when more join. |
 
-Later, only if the houses ask: growing plans (Fields), shared tools (Tool
-shed), per-house frost log (Almanac — this site's binding constraint is frost
-pooling), village knowledge (Archive).
+Later, only if the houses ask: growing plans (Fields), per-house frost log
+(Almanac — this site's binding constraint is frost pooling), village knowledge
+(Archive), seasonal map skins.
 
 ## Things that are deliberately not here
 

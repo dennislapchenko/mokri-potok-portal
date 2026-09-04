@@ -1,0 +1,172 @@
+package httpapi
+
+import (
+	"testing"
+	"time"
+
+	"github.com/dennislapchenko/mokri-potok-portal/backend/internal/config"
+	"github.com/dennislapchenko/mokri-potok-portal/backend/internal/store"
+)
+
+func newVillage(t *testing.T) (*Server, *fakeSender, *client, *client) {
+	t.Helper()
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { st.Close() })
+	fake := &fakeSender{status: map[string]int{}}
+	srv := New(st, config.Config{BootstrapCode: "x"})
+	srv.send = fake
+	srv.now = func() time.Time { return time.Date(2026, 9, 4, 10, 0, 0, 0, time.Local) }
+	h := srv.Handler()
+	steward := &client{t: t, h: h}
+	_, obj, _ := steward.do("POST", "/api/bootstrap", map[string]any{"code": "x", "name": "S"})
+	steward.token = obj["token"].(string)
+	_, o, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Žagar"})
+	other := &client{t: t, h: h}
+	_, j, _ := other.do("POST", "/api/join", map[string]any{"code": o["invite"].(map[string]any)["code"]})
+	other.token = j["token"].(string)
+	return srv, fake, steward, other
+}
+
+// TestPairingCode: a logged-in house makes a six-digit code, a second phone of
+// the same house uses it once, and the code then dies.
+func TestPairingCode(t *testing.T) {
+	srv, _, _, zagar := newVillage(t)
+	code, obj, _ := zagar.do("POST", "/api/pair", nil)
+	zagar.must(201, code, "pair")
+	pin := obj["code"].(string)
+	if len(pin) != 6 {
+		t.Fatalf("want 6 digits, got %q", pin)
+	}
+	phone2 := &client{t: t, h: srv.Handler()}
+	code, j, _ := phone2.do("POST", "/api/join", map[string]any{"code": pin, "device": "phone B"})
+	phone2.must(201, code, "join by pairing")
+	phone2.token = j["token"].(string)
+	_, me, _ := phone2.do("GET", "/api/me", nil)
+	if me["name"] != "Žagar" {
+		t.Fatalf("paired into wrong house: %v", me)
+	}
+	// Single use.
+	phone3 := &client{t: t, h: srv.Handler()}
+	code, _, _ = phone3.do("POST", "/api/join", map[string]any{"code": pin})
+	phone3.must(404, code, "reuse refused")
+	// Both phones belong to the house.
+	_, _, devs := zagar.do("GET", "/api/devices", nil)
+	if len(devs) != 2 {
+		t.Fatalf("want 2 devices got %d", len(devs))
+	}
+}
+
+// TestGuessingCostsSomething: wrong codes are throttled per IP and five misses
+// drop every live pairing code.
+func TestGuessingCostsSomething(t *testing.T) {
+	srv, _, _, zagar := newVillage(t)
+	_, obj, _ := zagar.do("POST", "/api/pair", nil)
+	pin := obj["code"].(string)
+	guess := &client{t: t, h: srv.Handler()}
+	seen429 := false
+	for i := 0; i < 14; i++ {
+		code, _, _ := guess.do("POST", "/api/join", map[string]any{"code": "000000"})
+		if code == 429 {
+			seen429 = true
+			break
+		}
+	}
+	if !seen429 {
+		t.Fatal("no rate limit on /api/join")
+	}
+	// The live code was burned by the misses before the limiter kicked in.
+	fresh := &client{t: t, h: srv.Handler()}
+	if code, _, _ := fresh.do("POST", "/api/join", map[string]any{"code": pin}); code == 201 {
+		t.Fatal("live pairing code survived a guessing run")
+	}
+}
+
+// TestQuietHours: nothing but an alarm rings at 23:00.
+func TestQuietHours(t *testing.T) {
+	srv, fake, steward, zagar := newVillage(t)
+	srv.now = func() time.Time { return time.Date(2026, 9, 4, 23, 10, 0, 0, time.Local) }
+	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{
+		"endpoint": "https://push/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	steward.must(204, code, "subscribe")
+
+	zagar.do("POST", "/api/needs", map[string]any{"text": "mleko"})
+	waitFor(t, 0, fake)
+	zagar.do("POST", "/api/events", map[string]any{"title": "Medved", "kind": "alarm", "starts_at": "2026-09-04T23:10"})
+	waitFor(t, 1, fake)
+}
+
+// TestToolShed: a house shares a tool, another takes it, the owner is told,
+// and returning frees it.
+func TestToolShed(t *testing.T) {
+	_, fake, steward, zagar := newVillage(t)
+	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{
+		"endpoint": "https://push/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	zagar.must(204, code, "subscribe")
+
+	code, obj, _ := zagar.do("POST", "/api/tools", map[string]any{"name": "Motorna žaga", "notes": "gorivo svoje"})
+	zagar.must(201, code, "create tool")
+	id := itoa(obj["id"].(float64))
+	waitFor(t, 0, fake) // the sharing house does not hear its own tool
+
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+	code, _, _ = steward.do("PUT", "/api/tools/"+id, map[string]any{"take": true})
+	steward.must(204, code, "take")
+	waitFor(t, 1, fake) // only the owner is told
+	code, _, _ = zagar.do("PUT", "/api/tools/"+id, map[string]any{"take": true})
+	zagar.must(409, code, "double take")
+
+	_, _, tools := zagar.do("GET", "/api/tools", nil)
+	if tools[0]["held_by_name"] != "S" {
+		t.Fatalf("holder: %v", tools[0])
+	}
+	code, _, _ = steward.do("PUT", "/api/tools/"+id, map[string]any{"take": false})
+	steward.must(204, code, "return")
+	_, _, tools = zagar.do("GET", "/api/tools", nil)
+	if tools[0]["held_by"] != nil {
+		t.Fatalf("not returned: %v", tools[0])
+	}
+	// A house that neither owns nor holds it cannot rename it.
+	code, _, _ = steward.do("PUT", "/api/tools/"+id, map[string]any{"name": "x"})
+	if code != 204 { // the steward may, being a steward
+		t.Fatalf("steward edit: %d", code)
+	}
+}
+
+// TestWorkBeeSignup: any house can sign up, the caller of the work bee hears
+// about it, and the count comes back on the event.
+func TestWorkBeeSignup(t *testing.T) {
+	_, fake, steward, zagar := newVillage(t)
+	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{
+		"endpoint": "https://push/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	zagar.must(204, code, "subscribe")
+	code, obj, _ := zagar.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-06T08:00"})
+	zagar.must(201, code, "event")
+	id := itoa(obj["id"].(float64))
+
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"note": "pridem s koso"})
+	steward.must(204, code, "signup")
+	waitFor(t, 1, fake) // the house that called it hears
+
+	_, _, evs := zagar.do("GET", "/api/events", nil)
+	if evs[0]["signups"].(float64) != 1 || evs[0]["mine"].(float64) != 0 {
+		t.Fatalf("signups: %v", evs[0])
+	}
+	_, _, evs = steward.do("GET", "/api/events", nil)
+	if evs[0]["mine"].(float64) != 1 {
+		t.Fatalf("mine flag: %v", evs[0])
+	}
+	code, _, _ = steward.do("DELETE", "/api/events/"+id+"/signup", nil)
+	steward.must(204, code, "sign off")
+	_, _, evs = zagar.do("GET", "/api/events", nil)
+	if evs[0]["signups"].(float64) != 0 {
+		t.Fatalf("still signed up: %v", evs[0])
+	}
+}

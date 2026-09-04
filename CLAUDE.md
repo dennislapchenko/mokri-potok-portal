@@ -31,7 +31,12 @@ does not ship.
 - **Exit is designed.** `GET /api/export` (steward) dumps everything as JSON;
   `VACUUM INTO` backups land nightly in `${DATA_DIR}/backups/`. Keep both working.
 - **No secrets in this repo, and none needed.** The first steward code is
-  generated on first boot and printed to the container log.
+  generated on first boot and printed to the container log. The VAPID key pair
+  for web push is generated on first use and kept in the `settings` table.
+- **Push is opt-in per phone, filtered per house.** A phone subscribes after
+  the villager taps Allow; the house switches kinds off in `notify_off` (empty
+  = all six kinds on). The author's house never receives its own event. Push
+  carries a title, a one-line snippet and a route — never the full away notes.
 - **Slovenian first.** Every user-facing string goes through `t()` in
   `frontend/src/i18n.tsx` with a Slovenian entry. English is the fallback key.
 
@@ -40,6 +45,7 @@ does not ship.
 ```
 backend/            Go: main.go, internal/{config,store,httpapi}; migrations embedded
 frontend/           Vite + React; src/rooms/* one file per room; src/map/VillageMap.tsx
+frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons; src/push.ts, src/Install.tsx
 frontend/public/data/  parcels.geojson (cadastre), channels.json (modelled water, dashed)
 deploy/app/         compose for the VM stack; deploy/infra-log.md = what was done by hand
 .doco-cd.yml        deploy config the VM's doco-cd polls; BE_TAG rolled by CI
@@ -63,8 +69,9 @@ deploy/app/         compose for the VM stack; deploy/infra-log.md = what was don
 - Run `task check` before every commit. CI runs the same.
 - Migrations are append-only files in `backend/internal/store/migrations/`;
   never edit an applied one.
-- Prefer a few lines of code over a dependency. Backend has one (sqlite);
-  frontend has three runtime deps. Adding one is a decision to write down here.
+- Prefer a few lines of code over a dependency. Backend has two (sqlite,
+  webpush-go for VAPID + payload encryption); frontend has three runtime deps.
+  Adding one is a decision to write down here.
 - Commits: lowercase, succinct, say what changed and why. No AI trailers, no
   backticks in subjects (they break the Telegram deploy ping).
 - Push to `main` deploys: frontend to Pages within ~1 min, backend image via

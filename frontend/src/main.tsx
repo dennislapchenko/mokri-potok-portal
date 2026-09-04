@@ -4,6 +4,9 @@ import { HashRouter } from "react-router-dom";
 import { I18n } from "./i18n";
 import App from "./App";
 import "./styles.css";
+import { registerSW } from "./push";
+
+registerSW();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

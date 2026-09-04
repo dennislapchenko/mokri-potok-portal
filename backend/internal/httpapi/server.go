@@ -19,9 +19,10 @@ import (
 )
 
 type Server struct {
-	st  *store.Store
-	cfg config.Config
-	mux *http.ServeMux
+	st   *store.Store
+	cfg  config.Config
+	mux  *http.ServeMux
+	send Sender // nil until first use; tests inject a fake
 }
 
 func New(st *store.Store, cfg config.Config) *Server {
@@ -79,6 +80,12 @@ func (s *Server) routes() {
 	m.HandleFunc("POST /api/away", s.requireHouse(s.createAway))
 	m.HandleFunc("PUT /api/away/{id}", s.requireHouse(s.updateAway))
 	m.HandleFunc("DELETE /api/away/{id}", s.requireHouse(s.deleteRow("away")))
+	// Web push
+	m.HandleFunc("GET /api/push/key", s.pushKey)
+	m.HandleFunc("POST /api/push/subscribe", s.requireHouse(s.subscribe))
+	m.HandleFunc("DELETE /api/push/subscribe", s.requireHouse(s.unsubscribe))
+	m.HandleFunc("GET /api/me/prefs", s.requireHouse(s.getPrefs))
+	m.HandleFunc("PUT /api/me/prefs", s.requireHouse(s.putPrefs))
 	// Exit path: everything as one JSON document (steward only).
 	m.HandleFunc("GET /api/export", s.requireSteward(s.export))
 }
@@ -504,6 +511,7 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	s.notify("posts", houseFrom(r).ID, Payload{Title: "🍺 " + houseFrom(r).Name, Body: snippet(str(m, "body"), 120), URL: "#/tavern"})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
@@ -562,6 +570,11 @@ func (s *Server) createEvent(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	icon := "🔔"
+	if kind == "alarm" {
+		icon = "🚨"
+	}
+	s.notify("events", houseFrom(r).ID, Payload{Title: icon + " " + str(m, "title"), Body: snippet(str(m, "starts_at")+" "+str(m, "place"), 100), URL: "#/bell"})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
@@ -606,6 +619,7 @@ func (s *Server) createRun(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	s.notify("runs", houseFrom(r).ID, Payload{Title: "🚗 " + houseFrom(r).Name + " → " + str(m, "destination"), Body: snippet(str(m, "cutoff_at")+" "+str(m, "notes"), 100), URL: "#/market"})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
@@ -634,6 +648,7 @@ func (s *Server) createNeed(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	s.notify("needs", houseFrom(r).ID, Payload{Title: "🛒 " + houseFrom(r).Name, Body: snippet(str(m, "text"), 120), URL: "#/market"})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
@@ -668,6 +683,7 @@ func (s *Server) createOffer(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	s.notify("offers", houseFrom(r).ID, Payload{Title: "🎁 " + houseFrom(r).Name, Body: snippet(str(m, "text"), 120), URL: "#/market"})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
@@ -750,6 +766,7 @@ func (s *Server) createAway(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	s.notify("away", houseFrom(r).ID, Payload{Title: "🕯️ " + houseFrom(r).Name + " odsotni", Body: snippet(str(m, "from_date")+" → "+str(m, "to_date")+" "+str(m, "notes"), 120), URL: "#/watch"})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 

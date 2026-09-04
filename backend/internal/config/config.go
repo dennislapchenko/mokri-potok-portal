@@ -12,6 +12,7 @@ type Config struct {
 	DataDir       string   // SQLite file + nightly backups live here
 	CORSOrigins   []string // exact origins allowed to call the API from a browser
 	BootstrapCode string   // optional: fixed code for the first steward house; empty = generated and logged
+	PushSubject   string   // VAPID subject: an https URL or mailto: that identifies this sender to push services
 	Debug         bool
 }
 
@@ -21,6 +22,7 @@ func Load() Config {
 		DataDir:       envOr("DATA_DIR", "./data"),
 		CORSOrigins:   splitCSV(envOr("CORS_ORIGINS", "http://localhost:5173,https://dennislapchenko.github.io")),
 		BootstrapCode: os.Getenv("POTOK_BOOTSTRAP_CODE"),
+		PushSubject:   envOr("PUSH_SUBJECT", "https://dennislapchenko.github.io/mokri-potok-portal/"),
 		Debug:         os.Getenv("DEBUG") == "1",
 	}
 }

@@ -8,6 +8,7 @@ import { BellTower } from "./rooms/BellTower";
 import { Market } from "./rooms/Market";
 import { Watchtower } from "./rooms/Watchtower";
 import { Houses } from "./rooms/Houses";
+import { InstallBanner } from "./Install";
 
 export type Session = { me: Me; houses: House[]; refresh: () => Promise<void>; logout: () => void };
 
@@ -97,6 +98,7 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
   const labels: Record<string, string> = { "/market": "open needs", "/bell": "events ahead", "/watch": "away now", "/tavern": "pinned" };
   return (
     <>
+      <InstallBanner />
       <VillageMap houses={houses} highlight={me.id} />
       <div className="legend">
         {houses.map((h) => <span key={h.id}><span className="swatch" style={{ background: h.color }} /> {h.crest} {h.name}{h.id === me.id ? ` (${t("Your house")})` : ""}</span>)}

@@ -26,15 +26,19 @@ the shop, when the work party is — with a game-like village map as the door.
 | Bell tower | Every village event in one place; kinds: event, work party, alarm. |
 | Tavern | Pinned notices and threads that must stay findable. Smallest room, first to cut. |
 
+| Notifications | Installed as a home-screen app (PWA), each phone can allow push. Every new post, need, give-away, run, event or away notice rings the other houses; a house switches kinds off in the Houses room. |
+
 Later, only if the houses ask: growing plans (Fields), shared tools (Tool
 shed), per-house frost log (Almanac — this site's binding constraint is frost
-pooling), village knowledge (Archive), web push for alarms.
+pooling), village knowledge (Archive).
 
 ## Things that are deliberately not here
 
 - Renown points, quests, leaderboards. Counted reciprocity turns into debt.
 - Photo uploads (v0). Money of any kind. Public pages.
 - WhatsApp login via Meta's Business API — the invite link *is* the WhatsApp login.
+- Offline caching in the service worker. A stale shell after a deploy costs
+  more than a reload on village Wi-Fi.
 
 ## Map data
 

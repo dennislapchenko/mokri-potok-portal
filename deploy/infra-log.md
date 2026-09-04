@@ -41,8 +41,14 @@
 - Container healthy. The owner founded the village from the Pages URL; three
   houses exist as of 2026-09-04.
 
-### 4. Known issue — phone sessions
-- A house that opens its invite link from WhatsApp lands in WhatsApp's in-app
-  browser. The token is stored in *that* browser's storage. Opening the site
-  later in Safari/Chrome finds no token and the gate shows. Options and the
-  recommendation are in the owner's homestead repo, `NOW.md` 🏰 block.
+### 4. Phone sessions and push
+- Likely cause of lost sessions (unconfirmed on a phone): an invite link opened
+  from WhatsApp lands in WhatsApp's in-app browser and the token stays there.
+- Shipped: web manifest + install banner (Android prompt, iOS Share → Add to
+  Home Screen, in-app-browser warning), `navigator.storage.persist()`, service
+  worker, VAPID web push with per-house kind toggles. The VAPID pair is
+  generated on first `GET /api/push/key` and stored in the `settings` table —
+  it is inside the nightly SQLite backup. Losing it would silently orphan
+  every subscription; phones would need to re-enable.
+- `PUSH_SUBJECT` (VAPID subject) defaults to the Pages URL; set it in
+  `deploy/app/compose.yaml` if the frontend moves.

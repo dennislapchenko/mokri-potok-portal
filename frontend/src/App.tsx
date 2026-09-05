@@ -22,7 +22,7 @@ export const ROOMS = [
   { path: "/tavern", icon: "🍺", name: "Tavern", short: "Hall", sub: "calendar, work bees and the board", nav: true },
   { path: "/projects", icon: "📋", name: "Projects", short: "Projects", sub: "long jobs, split into tasks", nav: true },
   { path: "/market", icon: "🧺", name: "Market", short: "Market", sub: "needs, give-aways, runs", nav: true },
-  { path: "/shed", icon: "🛠", name: "Tool shed", short: "Shed", sub: "what the village lends", nav: true },
+  { path: "/shed", icon: "🛠", name: "Tool shed", short: "Shed", sub: "what the village has", nav: true },
   { path: "/watch", icon: "🕯️", name: "Watchtower", short: "Watch", sub: "who is away", nav: false },
   { path: "/camp", icon: "🏕️", name: "Campground", short: "Camp", sub: "who noticed, who has the money", nav: false },
   { path: "/houses", icon: "🏘️", name: "Houses", short: "Houses", sub: "houses and land", nav: false },

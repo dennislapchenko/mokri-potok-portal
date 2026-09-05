@@ -87,7 +87,8 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
   return (
     <>
       <div className="parchment">
-        <h2>🛠 {t("Tool shed")} <span className="sub">{t("what the village lends")}</span></h2>
+        <h2>🛠 {t("Tool shed")} <span className="sub">{t("what the village has")}</span></h2>
+        <p className="small muted" style={{ fontStyle: "italic", marginTop: "-.3rem" }}>{t("Take and return are for when it helps. A tool may simply be listed, so the village knows it exists.")}</p>
         <form className="inline" onSubmit={add}>
           <div className="row">
             <label>{t("I share a tool")}<input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder={t("chainsaw, ladder, trailer…")} maxLength={80} /></label>

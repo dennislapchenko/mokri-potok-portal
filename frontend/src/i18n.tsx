@@ -234,7 +234,6 @@ const sl: Record<string, string> = {
   "Nothing yet. The first camper of the season will show up here.": "Še nič. Prvi kamper sezone se bo pokazal tukaj.",
   "Log of campers": "Dnevnik kamperjev",
   "Common places": "Skupni prostori",
-  "event grounds, parking, shared land — land on the map, not accounts": "prireditveni prostor, parkirišče, skupna zemlja — zemlja na zemljevidu, ne računi",
   "Add a place": "Dodaj prostor",
   "Event grounds": "Prireditveni prostor",
   "None yet.": "Še nič.",

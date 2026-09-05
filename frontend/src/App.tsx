@@ -127,7 +127,7 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
       <InstallBanner />
       <VillageMap houses={houses} highlight={me.id} />
       <div className="legend">
-        {houses.map((h) => <span key={h.id}><span className="swatch" style={{ background: h.color }} /> {h.crest} {h.name}{h.id === me.id ? ` (${t("Your house")})` : ""}</span>)}
+        {houses.map((h) => <span key={h.id} className="legend-item"><span className="crest" style={{ background: h.color }}>{h.crest}</span> {h.name}{h.id === me.id ? ` (${t("Your house")})` : ""}</span>)}
       </div>
       <div className="buildings">
         {ROOMS.map((r) => (

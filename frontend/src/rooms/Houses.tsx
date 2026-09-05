@@ -91,7 +91,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
         </>)}
       </div>
       <div className="parchment commons">
-        <h2>🌳 {t("Common places")} <span className="sub">{t("event grounds, parking, shared land — land on the map, not accounts")}</span>
+        <h2>🌳 {t("Common places")}
           {steward && <button className="lesser" style={{ marginLeft: "auto" }} onClick={() => setCommonOpen(!commonOpen)}>+ {t("Add a place")}</button>}
         </h2>
         {commonOpen && (

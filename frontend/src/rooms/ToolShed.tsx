@@ -133,8 +133,8 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
           const wants: any[] = JSON.parse(w.wants || "[]");
           return (
             <div key={w.id} className="card">
-              <div className="head"><Link to="/houses" title={w.house_name} className="crest-link"><Crest crest={w.house_crest} color={w.house_color} /></Link><strong>{w.text}</strong><When iso={w.created_at} /></div>
-              {wants.length > 0 && <div className="small wants">🙋 {wants.map((h) => <Link key={h.house_id} to="/houses" title={h.name} className="crest-link"><Crest crest={h.crest} color={h.color || "var(--brass2)"} /></Link>)}</div>}
+              <div className="head"><Crest crest={w.house_crest} color={w.house_color} /><strong>{w.text}</strong><When iso={w.created_at} /></div>
+              <div className="small">{wants.map((h) => `${h.crest} ${h.name}`).join(", ")}</div>
               <div className="actions">
                 <button className={w.mine ? "" : "primary"} onClick={() => api(`/wishes/${w.id}`, { method: "PUT", body: { want: !w.mine } }).then(wishes.reload)}>{w.mine ? t("Not any more") : "🙋 " + t("I would love that too")}</button>
                 {canEdit(me, w) && <button className="ghost" onClick={() => confirm(w.text + "?") && api(`/wishes/${w.id}`, { method: "DELETE" }).then(wishes.reload)}>✓ {t("It arrived")}</button>}

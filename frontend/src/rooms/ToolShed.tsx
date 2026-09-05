@@ -35,6 +35,7 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
   const [wish, setWish] = useState("");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [adding, setAdding] = useState(false);
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +45,7 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
       const { id } = await api<{ id: number }>("/tools", { method: "POST", body: f });
       if (file) await uploadPhoto(id, file);
       setF({ name: "", notes: "", category: "other" }); setFile(null); if (fileRef.current) fileRef.current.value = "";
-      reload();
+      setAdding(false); reload();
     } finally { setBusy(false); }
   };
   const take = (id: number, v: boolean) => api(`/tools/${id}`, { method: "PUT", body: { take: v } }).then(reload);
@@ -87,9 +88,9 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
   return (
     <>
       <div className="parchment">
-        <h2>🛠 {t("Tool shed")} <span className="sub">{t("what the village has")}</span></h2>
+        <h2>🛠 {t("Tool shed")} <span className="sub">{t("what the village has")}</span><button style={{ marginLeft: "auto" }} onClick={() => setAdding(!adding)}>+ {t("I share a tool")}</button></h2>
         <p className="small muted" style={{ fontStyle: "italic", marginTop: "-.3rem" }}>{t("Take and return are for when it helps. A tool may simply be listed, so the village knows it exists.")}</p>
-        <form className="inline" onSubmit={add}>
+        {adding && <form className="inline" onSubmit={add}>
           <div className="row">
             <label>{t("I share a tool")}<input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder={t("chainsaw, ladder, trailer…")} maxLength={80} /></label>
             <label>{t("Category")}<select value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })}>{CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.icon} {t(c.name)}</option>)}</select></label>
@@ -97,7 +98,7 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
             <label>{t("Photo")}<input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>
           </div>
           <div className="submit"><button className="primary" type="submit" disabled={busy}>{t("Put in the shed")}</button></div>
-        </form>
+        </form>}
 
         {items.length > 0 && (
           <div className="chip-rows">

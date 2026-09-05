@@ -143,7 +143,7 @@ func (s *Server) notify(kind string, fromHouse int64, build func(lang string) Pa
 	if s.quietHours() {
 		return
 	}
-	s.notifyUrgent(kind, fromHouse, build)
+	s.fanout(kind, build, subsFor+`AND p.house_id != ?`, kind, kind, fromHouse)
 }
 
 // notifyUrgent is for alarms only: it ignores quiet hours AND both mute lists.

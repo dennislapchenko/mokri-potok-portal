@@ -8,7 +8,8 @@ import { disablePush, enablePush, pushState, type PushState } from "../push";
 export function Notifications({ steward }: { steward: boolean }) {
   const { t } = useT();
   const [state, setState] = useState<PushState>("off");
-  const [prefs, setPrefs] = useState<{ off: string[]; global_off: string[]; kinds: string[]; phones: number } | null>(null);
+  const [prefs, setPrefs] = useState<{ off: string[]; global_off: string[]; global_detail: { kind: string; set_by: string | null; set_at: string }[]; kinds: string[]; phones: number } | null>(null);
+  const mutedBy = (k: string) => { const d = prefs?.global_detail?.find((x) => x.kind === k); return d ? `${t("Switched off for the whole village by")} ${d.set_by || "?"} · ${d.set_at.slice(0, 10)}` : ""; };
   const [busy, setBusy] = useState(false);
   const load = () => api<any>("/me/prefs").then(setPrefs).catch(() => {});
   useEffect(() => { pushState().then(setState); load(); }, []);
@@ -46,15 +47,16 @@ export function Notifications({ steward }: { steward: boolean }) {
         <div className="kinds">
           <div className="small">{t("What the house wants to hear about:")}</div>
           {prefs.kinds.map((k) => (
-            <label key={k} className={"kind" + (prefs.global_off.includes(k) ? " muted-global" : "")} title={prefs.global_off.includes(k) ? t("Switched off for the whole village by a steward") : ""}>
+            <label key={k} className={"kind" + (prefs.global_off.includes(k) ? " muted-global" : "")} title={mutedBy(k)}>
               <input type="checkbox" checked={!prefs.off.includes(k)} onChange={() => toggleKind(k)} disabled={prefs.global_off.includes(k)} /> {t(labels[k] || k)}{prefs.global_off.includes(k) ? " 🔇" : ""}
             </label>
           ))}
         </div>
       )}
+      {prefs && prefs.global_off.length > 0 && <div className="small">🔇 {prefs.global_detail.map((d) => `${t(labels[d.kind] || d.kind)}: ${d.set_by || "?"} · ${d.set_at.slice(0, 10)}`).join(" · ")}</div>}
       {prefs && steward && (
         <div className="kinds global">
-          <div className="small">🗝️ {t("Village-wide (steward): kinds switched off here reach nobody, whatever each house chose.")}</div>
+          <div className="small">🗝️ {t("Village-wide (steward): kinds switched off here reach nobody, whatever each house chose. Alarms always ring.")}</div>
           {prefs.kinds.map((k) => (
             <label key={k} className="kind"><input type="checkbox" checked={!prefs.global_off.includes(k)} onChange={() => toggleGlobal(k)} /> {t(labels[k] || k)}</label>
           ))}

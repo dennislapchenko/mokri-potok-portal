@@ -330,3 +330,21 @@ func TestGlobalMute(t *testing.T) {
 	zagar.do("POST", "/api/offers", map[string]any{"text": "okna"})
 	waitFor(t, 1, fake)
 }
+
+// TestAlarmBeatsMute: an alarm rings through a house mute, a village mute and
+// quiet hours; the mute records who set it.
+func TestAlarmBeatsMute(t *testing.T) {
+	srv, fake, steward, zagar := newVillage(t)
+	srv.now = func() time.Time { return time.Date(2026, 9, 4, 23, 30, 0, 0, time.Local) }
+	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	steward.must(204, code, "subscribe")
+	steward.do("PUT", "/api/me/prefs", map[string]any{"off": []string{"events"}})
+	steward.do("PUT", "/api/prefs/global", map[string]any{"off": []string{"events"}})
+	zagar.do("POST", "/api/events", map[string]any{"title": "Ogenj", "kind": "alarm", "starts_at": "2026-09-04T23:30"})
+	waitFor(t, 1, fake)
+	_, prefs, _ := zagar.do("GET", "/api/me/prefs", nil)
+	d := prefs["global_detail"].([]any)[0].(map[string]any)
+	if d["kind"] != "events" || d["set_by"] != "S" || d["set_at"] == nil {
+		t.Fatalf("global_detail: %v", d)
+	}
+}

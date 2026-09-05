@@ -146,9 +146,11 @@ func (s *Server) notify(kind string, fromHouse int64, build func(lang string) Pa
 	s.notifyUrgent(kind, fromHouse, build)
 }
 
-// notifyUrgent ignores quiet hours — alarms only.
+// notifyUrgent is for alarms only: it ignores quiet hours AND both mute lists.
+// A steward who mutes "events" because they are noisy must not mute the fire
+// bell; a house that switched events off still hears a bear on the road.
 func (s *Server) notifyUrgent(kind string, fromHouse int64, build func(lang string) Payload) {
-	s.fanout(kind, build, subsFor+`AND p.house_id != ?`, kind, kind, fromHouse)
+	s.fanout(kind, build, `SELECT p.id, p.endpoint, p.p256dh, p.auth, p.lang FROM push_subscriptions p WHERE p.house_id != ?`, fromHouse)
 }
 
 // notifyHouse sends to one house only — used when the message is that house's
@@ -222,12 +224,12 @@ func (s *Server) getPrefs(w http.ResponseWriter, r *http.Request) {
 		off = append(off, x["kind"].(string))
 	}
 	subs, _ := s.st.One(r.Context(), `SELECT count(*) AS n FROM push_subscriptions WHERE house_id=?`, houseFrom(r).ID)
-	grows, _ := s.st.Rows(r.Context(), `SELECT kind FROM notify_off_global`)
+	grows, _ := s.st.Rows(r.Context(), `SELECT g.kind, g.set_at, h.name AS set_by FROM notify_off_global g LEFT JOIN houses h ON h.id=g.set_by`)
 	goff := []string{}
 	for _, x := range grows {
 		goff = append(goff, x["kind"].(string))
 	}
-	writeJSON(w, 200, map[string]any{"off": off, "global_off": goff, "kinds": Kinds, "phones": subs["n"]})
+	writeJSON(w, 200, map[string]any{"off": off, "global_off": goff, "global_detail": grows, "kinds": Kinds, "phones": subs["n"]})
 }
 
 // putGlobalPrefs: a steward mutes kinds for every house at once — the lever for
@@ -239,12 +241,23 @@ func (s *Server) putGlobalPrefs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	off, _ := m["off"].([]any)
-	s.st.Exec(r.Context(), `DELETE FROM notify_off_global`)
+	want := map[string]bool{}
 	for _, k := range off {
 		if ks, ok := k.(string); ok && contains(Kinds, ks) {
-			s.st.Exec(r.Context(), `INSERT OR IGNORE INTO notify_off_global(kind) VALUES (?)`, ks)
+			want[ks] = true
 		}
 	}
+	// Keep existing rows (their who/when stays true); add new ones stamped with
+	// this steward; drop the ones switched back on.
+	h := houseFrom(r)
+	for _, k := range Kinds {
+		if want[k] {
+			s.st.Exec(r.Context(), `INSERT OR IGNORE INTO notify_off_global(kind, set_by) VALUES (?,?)`, k, h.ID)
+		} else {
+			s.st.Exec(r.Context(), `DELETE FROM notify_off_global WHERE kind=?`, k)
+		}
+	}
+	log.Printf("global mute by house %d: %v", h.ID, off)
 	w.WriteHeader(204)
 }
 

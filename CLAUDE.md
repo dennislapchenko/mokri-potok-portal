@@ -52,8 +52,10 @@ does not ship.
 - **Push is opt-in per phone, filtered per house, mutable village-wide.** A
   phone subscribes after the villager taps Allow and records the language it
   subscribed in; the house switches kinds off in `notify_off` (empty = all
-  seven kinds on); a steward mutes a kind for everyone in `notify_off_global`.
-  Both lists are checked on every send. The author's
+  seven kinds on); a steward mutes a kind for everyone in `notify_off_global`,
+  which records who and when, shown to every house. Both lists are checked on
+  every send — **except an alarm, which rings through both mutes and quiet
+  hours.** The fire bell is not a preference. The author's
   house never receives its own event. Push carries a title, a one-line snippet
   and a route, in human words — `banner_test.go` pins every string, so read it
   before changing copy.

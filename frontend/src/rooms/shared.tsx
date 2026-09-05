@@ -39,7 +39,7 @@ export function DueInput({ value, onChange }: { value: string; onChange: (v: str
   const ref = useRef<HTMLInputElement>(null);
   return (
     <span className="due">
-      <input value={value} onChange={(e) => onChange(e.target.value)} inputMode="numeric" placeholder={yearPrefix() + "MM-DD"} pattern="\\d{4}-\\d{2}-\\d{2}|\\d{4}-?" title={t("YYYY-MM-DD, or leave the year alone for no date")} />
+      <input value={value} onChange={(e) => onChange(e.target.value)} inputMode="numeric" placeholder={yearPrefix() + "MM-DD"} pattern="\d{4}-\d{2}-\d{2}|\d{4}-?" title={t("YYYY-MM-DD, or leave the year alone for no date")} />
       <input ref={ref} type="date" tabIndex={-1} aria-hidden="true" onChange={(e) => e.target.value && onChange(e.target.value)} />
       <button type="button" className="ghost" aria-label={t("Pick a date")} onClick={() => { const el = ref.current; if (!el) return; (el as any).showPicker ? (el as any).showPicker() : el.click(); }}>📅</button>
     </span>

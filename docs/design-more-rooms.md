@@ -1,6 +1,11 @@
 # Two more rooms: Projects and Campground
 
-Design only. Nothing here is implemented. 2026-09-05.
+Written 2026-09-05 as a design; **built the same day** with two changes the
+owner made: tasks are only ever *taken* (no assignment by anyone, not even
+v1), and the campground stores **no amounts** — a collection and a note, with
+its own notification kind. Migrations landed as `009_projects_camp.sql`. The
+sections below are the argument; `CLAUDE.md` holds the invariants that
+survived.
 
 ## Answer first
 

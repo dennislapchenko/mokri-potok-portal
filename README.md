@@ -1,10 +1,12 @@
 # mokri-potok-portal
 
 Closed web portal for the houses of the Mokri Potok village: a cadastral map of
-the village as the home screen, and four rooms — Tavern (pinned notices, the
+the village as the home screen, and six rooms — Tavern (pinned notices, the
 month calendar with work-bee sign-ups, and the message board), Market (needs,
 give-aways, shop runs), Watchtower (who is away), Tool shed (what the village
-lends). One shared login
+lends), Projects (long jobs split into takable tasks) and Campground (who
+collected from which camper). Four rooms sit on the phone's bottom bar, the
+rest are tiles on the map. One shared login
 per house, handed out as an invite link in WhatsApp; a house adds its own
 further phones with a six-digit pairing code. Installs to the home screen and
 sends notifications.

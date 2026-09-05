@@ -1,9 +1,53 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
 import { Crest, When, canEdit, useList } from "./shared";
 
-const ICON: Record<string, string> = { event: "🔔", work: "🤝", alarm: "🚨" };
+export const ICON: Record<string, string> = { event: "🔔", work: "🤝", alarm: "🚨" };
+
+// EventCard is shared with the project page: same card, same sign-ups.
+export function EventCard({ ev, me, reload }: { ev: any; me: Me; reload: () => void }) {
+  const { t } = useT();
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteText, setNoteText] = useState("");
+  const [openNote, setOpenNote] = useState<string | null>(null);
+  const signup = () => api(`/events/${ev.id}/signup`, { method: ev.mine ? "DELETE" : "POST" }).then(reload);
+  const saveNote = async () => { await api(`/events/${ev.id}/signup`, { method: "POST", body: { note: noteText } }); setNoteOpen(false); setNoteText(""); reload(); };
+  const list = JSON.parse(ev.signup_list || "[]") as any[];
+  return (
+    <div className="card" style={{ borderLeftColor: ev.kind === "alarm" ? "var(--red)" : ev.kind === "work" ? "var(--green)" : "var(--brass)" }}>
+      <div className="head">
+        <Crest crest={ev.house_crest} color={ev.house_color} />
+        <strong>{ICON[ev.kind]} {ev.title}</strong>
+        {ev.kind !== "event" && <span className={"tag " + ev.kind}>{t(ev.kind)}</span>}
+        {ev.project_id && <Link to={`/projects/${ev.project_id}`} className="tag project-chip">📋 {ev.project_title}{ev.task_title ? ` · ${ev.task_title}` : ""}</Link>}
+        <span className="when"><When iso={ev.starts_at} />{ev.ends_at ? <> → <When iso={ev.ends_at} /></> : null}</span>
+      </div>
+      {(ev.place || ev.notes) && <div className="body small">{ev.place && <>📍 {ev.place} </>}{ev.notes}</div>}
+      <div className="small signers">🙋 {ev.signups > 0 ? list.map((sgn, i) => {
+        const key = `${ev.id}-${sgn.house_id}`;
+        return (
+          <span key={key}>{i > 0 ? ", " : ""}{sgn.crest} {sgn.name}
+            {sgn.note && <button className="ghost balloon" title={sgn.note} onClick={() => setOpenNote(openNote === key ? null : key)}>💬</button>}
+            {openNote === key && <span className="note-bubble">{sgn.note}</span>}
+          </span>
+        );
+      }) : <span className="muted">{t("nobody has signed up yet")}</span>}</div>
+      {noteOpen && (
+        <div style={{ display: "flex", gap: ".4rem", margin: ".3rem 0" }}>
+          <input value={noteText} onChange={(e) => setNoteText(e.target.value)} maxLength={200} placeholder={t("e.g. I bring the scythe")} autoFocus />
+          <button className="primary" onClick={saveNote}>{t("Save")}</button>
+        </div>
+      )}
+      <div className="actions">
+        <button className={ev.mine ? "" : "primary"} onClick={signup}>{ev.mine ? t("I cannot come after all") : "🙋 " + t("I am coming")}{ev.signups > 0 ? ` (${ev.signups})` : ""}</button>
+        {ev.mine === 1 && !noteOpen && <button className="ghost" onClick={() => { setNoteOpen(true); setNoteText(list.find((x) => x.house_id === me.id)?.note || ""); }}>💬 {t("Add a note")}</button>}
+        {canEdit(me, ev) && <button className="ghost" onClick={() => confirm("?") && api(`/events/${ev.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button>}
+      </div>
+    </div>
+  );
+}
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 // The village calendar: a month grid with the events sitting in their day, then
@@ -11,8 +55,21 @@ const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
 export function Calendar({ me }: { me: Me }) {
   const { t, lang } = useT();
   const { items, reload } = useList("/events");
-  const [f, setF] = useState({ title: "", kind: "event", starts_at: "", ends_at: "", place: "", notes: "" });
+  const [f, setF] = useState({ title: "", kind: "event", starts_at: "", ends_at: "", place: "", notes: "", project_id: "", task_id: "" });
   const [open, setOpen] = useState(false);
+  // Projects for the "belongs to" select; ?project=ID (from a project page)
+  // opens the form with that project chosen.
+  const projects = useList("/projects");
+  const [params] = useSearchParams();
+  const [tasks, setTasks] = useState<any[]>([]);
+  useEffect(() => {
+    if (!f.project_id) { setTasks([]); return; }
+    api<any>(`/projects/${f.project_id}`).then((p) => setTasks((p.tasks || []).filter((x: any) => x.state === "open"))).catch(() => setTasks([]));
+  }, [f.project_id]);
+  useEffect(() => {
+    const pid = params.get("project");
+    if (pid && !open) { const d = defaultDay(); setF((x) => ({ ...x, project_id: pid, starts_at: d + "T09:00", ends_at: d + "T17:00" })); setOpen(true); }
+  }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
   const [cursor, setCursor] = useState(() => new Date());
   const [day, setDay] = useState<string | null>(null);
   const locale = lang === "sl" ? "sl-SI" : "en-GB";
@@ -47,18 +104,11 @@ export function Calendar({ me }: { me: Me }) {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    await api("/events", { method: "POST", body: f });
-    setF({ title: "", kind: "event", starts_at: "", ends_at: "", place: "", notes: "" });
+    await api("/events", { method: "POST", body: { ...f, project_id: f.project_id ? Number(f.project_id) : undefined, task_id: f.task_id ? Number(f.task_id) : undefined } });
+    setF({ title: "", kind: "event", starts_at: "", ends_at: "", place: "", notes: "", project_id: "", task_id: "" });
     setOpen(false);
     reload();
   };
-  const signup = (ev: any) => api(`/events/${ev.id}/signup`, { method: ev.mine ? "DELETE" : "POST" }).then(reload);
-  // A sign-up may carry a line ("pridem s koso"); the list shows a balloon that
-  // opens it. Re-posting the sign-up with a note is the upsert the API already has.
-  const [noteFor, setNoteFor] = useState<number | null>(null);
-  const [noteText, setNoteText] = useState("");
-  const [openNote, setOpenNote] = useState<string | null>(null);
-  const saveNote = async (ev: any) => { await api(`/events/${ev.id}/signup`, { method: "POST", body: { note: noteText } }); setNoteFor(null); setNoteText(""); reload(); };
 
   // An event occupies every day from its start to its end.
   const byDay = useMemo(() => {
@@ -94,40 +144,6 @@ export function Calendar({ me }: { me: Me }) {
     });
   }, [locale]);
 
-  const Card = ({ ev }: { ev: any }) => (
-    <div className="card" style={{ borderLeftColor: ev.kind === "alarm" ? "var(--red)" : ev.kind === "work" ? "var(--green)" : "var(--brass)" }}>
-      <div className="head">
-        <Crest crest={ev.house_crest} color={ev.house_color} />
-        <strong>{ICON[ev.kind]} {ev.title}</strong>
-        {ev.kind !== "event" && <span className={"tag " + ev.kind}>{t(ev.kind)}</span>}
-        <span className="when"><When iso={ev.starts_at} />{ev.ends_at ? <> → <When iso={ev.ends_at} /></> : null}</span>
-      </div>
-      {(ev.place || ev.notes) && <div className="body small">{ev.place && <>📍 {ev.place} </>}{ev.notes}</div>}
-      <div className="small signers">🙋 {ev.signups > 0 ? (JSON.parse(ev.signup_list || "[]") as any[]).map((sgn, i) => {
-        const key = `${ev.id}-${sgn.house_id}`;
-        return (
-          <span key={key}>{i > 0 ? ", " : ""}{sgn.crest} {sgn.name}
-            {sgn.note && <button className="ghost balloon" title={sgn.note} onClick={() => setOpenNote(openNote === key ? null : key)}>💬</button>}
-            {openNote === key && <span className="note-bubble">{sgn.note}</span>}
-          </span>
-        );
-      }) : <span className="muted">{t("nobody has signed up yet")}</span>}</div>
-      {noteFor === ev.id && (
-        <div className="row" style={{ display: "flex", gap: ".4rem", margin: ".3rem 0" }}>
-          <input value={noteText} onChange={(e) => setNoteText(e.target.value)} maxLength={200} placeholder={t("e.g. I bring the scythe")} autoFocus />
-          <button className="primary" onClick={() => saveNote(ev)}>{t("Save")}</button>
-        </div>
-      )}
-      <div className="actions">
-        <button className={ev.mine ? "" : "primary"} onClick={() => signup(ev)}>
-          {ev.mine ? t("I cannot come after all") : "🙋 " + t("I am coming")}{ev.signups > 0 ? ` (${ev.signups})` : ""}
-        </button>
-        {ev.mine === 1 && noteFor !== ev.id && <button className="ghost" onClick={() => { setNoteFor(ev.id); setNoteText((JSON.parse(ev.signup_list || "[]") as any[]).find((x) => x.house_id === me.id)?.note || ""); }}>💬 {t("Add a note")}</button>}
-        {canEdit(me, ev) && <button className="ghost" onClick={() => confirm("?") && api(`/events/${ev.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button>}
-      </div>
-    </div>
-  );
-
   return (
     <div className="parchment">
       <h2>🔔 {t("The village calendar")} <span className="sub">{t("calendar and work bees")}</span>
@@ -145,6 +161,12 @@ export function Calendar({ me }: { me: Me }) {
             <label>{t("Ends")}<input type="datetime-local" value={f.ends_at} onChange={set("ends_at")} /></label>
             <label>{t("Place")}<input value={f.place} onChange={set("place")} maxLength={120} /></label>
           </div>
+          {projects.items.filter((p) => p.state === "open").length > 0 && (
+            <div className="row">
+              <label>📋 {t("Belongs to a project")}<select value={f.project_id} onChange={(e) => setF({ ...f, project_id: e.target.value, task_id: "" })}><option value="">—</option>{projects.items.filter((p) => p.state === "open").map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
+              {f.project_id && tasks.length > 0 && <label>{t("Task")}<select value={f.task_id} onChange={set("task_id")}><option value="">—</option>{tasks.map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}</select></label>}
+            </div>
+          )}
           <label>{t("Notes")}<textarea value={f.notes} onChange={set("notes")} maxLength={2000} /></label>
           <div className="submit"><button className="primary" type="submit">{t("Save")}</button></div>
         </form>
@@ -175,7 +197,7 @@ export function Calendar({ me }: { me: Me }) {
 
       {day && <p className="small">{new Date(day + "T00:00").toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })} · <button className="ghost" onClick={() => setDay(null)}>{t("Show the whole month")}</button></p>}
       {shown.length === 0 && <p className="muted" style={{ fontStyle: "italic" }}>{day ? t("Nothing on this day.") : t("Nothing planned. Ring the bell — add an event or call a work party, and houses sign up here.")}</p>}
-      {shown.map((ev) => <Card key={ev.id + "-" + (day || "")} ev={ev} />)}
+      {shown.map((ev) => <EventCard key={ev.id + "-" + (day || "")} ev={ev} me={me} reload={reload} />)}
     </div>
   );
 }

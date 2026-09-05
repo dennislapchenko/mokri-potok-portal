@@ -9,6 +9,8 @@ import { Market } from "./rooms/Market";
 import { Watchtower } from "./rooms/Watchtower";
 import { Houses } from "./rooms/Houses";
 import { ToolShed } from "./rooms/ToolShed";
+import { Projects, Project } from "./rooms/Projects";
+import { Camp } from "./rooms/Camp";
 import { InstallBanner } from "./Install";
 
 export type Session = { me: Me; houses: House[]; refresh: () => Promise<void>; logout: () => void };
@@ -21,6 +23,8 @@ export const ROOMS = [
   { path: "/market", icon: "🧺", name: "Market", short: "Market", sub: "needs, give-aways, runs", nav: true },
   { path: "/watch", icon: "🕯️", name: "Watchtower", short: "Watch", sub: "who is away", nav: true },
   { path: "/shed", icon: "🛠", name: "Tool shed", short: "Shed", sub: "what the village lends", nav: true },
+  { path: "/projects", icon: "📋", name: "Projects", short: "Projects", sub: "long jobs, split into tasks", nav: false },
+  { path: "/camp", icon: "🏕️", name: "Campground", short: "Camp", sub: "who collected from whom", nav: false },
   { path: "/houses", icon: "🏘️", name: "Houses", short: "Houses", sub: "houses and land", nav: false },
 ];
 
@@ -74,6 +78,9 @@ export default function App() {
             <Route path="/market" element={<Market me={me} houses={houses} />} />
             <Route path="/watch" element={<Watchtower me={me} />} />
             <Route path="/shed" element={<ToolShed me={me} houses={houses} />} />
+            <Route path="/projects" element={<Projects me={me} />} />
+            <Route path="/projects/:id" element={<Project me={me} />} />
+            <Route path="/camp" element={<Camp me={me} />} />
             <Route path="/houses" element={<Houses me={me} houses={houses} refresh={refresh} logout={logout} />} />
             <Route path="/join/:code" element={<Home me={me} houses={houses} />} />
             <Route path="*" element={<Home me={me} houses={houses} />} />
@@ -96,8 +103,8 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
   // things at once (the shed: how many are in it, how many are out).
   const [badges, setBadges] = useState<Record<string, string>>({});
   useEffect(() => {
-    Promise.all([api<any[]>("/needs"), api<any[]>("/events"), api<any[]>("/away"), api<any[]>("/posts"), api<any[]>("/tools")])
-      .then(([n, e, a, p, tools]) => {
+    Promise.all([api<any[]>("/needs"), api<any[]>("/events"), api<any[]>("/away"), api<any[]>("/posts"), api<any[]>("/tools"), api<any[]>("/projects"), api<any[]>("/camp")])
+      .then(([n, e, a, p, tools, projects, camp]) => {
         // Local date, not UTC: between midnight and 02:00 CEST a UTC date
         // counts a finished event as still ahead.
         const n2 = (v: number) => String(v).padStart(2, "0");
@@ -110,6 +117,8 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
           "/watch": num(a.filter((x) => x.from_date <= today && x.to_date >= today).length, "away now"),
           "/tavern": [num(e.filter((x) => (x.ends_at || x.starts_at) >= today).length, "events ahead"), num(p.filter((x) => x.pinned).length, "pinned")].filter(Boolean).join(" · "),
           "/shed": [num(tools.length - out, "in the shed"), num(out, "out")].filter(Boolean).join(" · "),
+          "/projects": [num(projects.filter((x) => x.state === "open").length, "open"), num(projects.reduce((acc, x) => acc + (x.state === "open" ? x.tasks_free : 0), 0), "tasks free to take")].filter(Boolean).join(" · "),
+          "/camp": num(camp.filter((x) => x.state === "held").length, "held"),
         });
       }).catch(() => {});
   }, [t]);

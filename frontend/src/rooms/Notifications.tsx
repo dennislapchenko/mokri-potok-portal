@@ -31,7 +31,7 @@ export function Notifications({ steward }: { steward: boolean }) {
     setBusy(true);
     try { setState(await (state === "on" ? disablePush() : enablePush())); await load(); } finally { setBusy(false); }
   };
-  const labels: Record<string, string> = { posts: "Tavern posts", needs: "Needs", offers: "Give-aways", runs: "Runs to town", events: "Events", away: "Away notices", tools: "Tool shed" };
+  const labels: Record<string, string> = { posts: "Tavern posts", needs: "Needs", offers: "Give-aways", runs: "Runs to town", events: "Events", away: "Away notices", tools: "Tool shed", projects: "Projects", camp: "Campground" };
 
   return (
     <>

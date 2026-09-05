@@ -348,3 +348,99 @@ func TestAlarmBeatsMute(t *testing.T) {
 		t.Fatalf("global_detail: %v", d)
 	}
 }
+
+// TestProjects: a project with a takable task, an event linked to it, the
+// creator told when a task is taken, done as a state, export complete.
+func TestProjects(t *testing.T) {
+	_, fake, steward, zagar := newVillage(t)
+	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	zagar.must(204, code, "subscribe")
+
+	code, obj, _ := zagar.do("POST", "/api/projects", map[string]any{"title": "Ograja okoli travnika", "due_at": "2026-10-15", "notes": "300 m"})
+	zagar.must(201, code, "project")
+	pid := itoa(obj["id"].(float64))
+	waitFor(t, 0, fake) // author does not hear its own project
+	code, obj, _ = zagar.do("POST", "/api/projects/"+pid+"/tasks", map[string]any{"title": "Kupiti stebre", "due_at": "2026-09-20"})
+	zagar.must(201, code, "task")
+	tid := itoa(obj["id"].(float64))
+
+	// Steward takes the task; Žagar (project creator) hears.
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+	code, _, _ = steward.do("PUT", "/api/tasks/"+tid, map[string]any{"take": true})
+	steward.must(204, code, "take")
+	waitFor(t, 1, fake)
+	code, _, _ = zagar.do("PUT", "/api/tasks/"+tid, map[string]any{"take": true})
+	zagar.must(409, code, "double take")
+
+	// A third house cannot close it; the holder can, with a note.
+	_, o, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Tretja"})
+	third := &client{t: t, h: zagar.h}
+	_, j, _ := third.do("POST", "/api/join", map[string]any{"code": o["invite"].(map[string]any)["code"]})
+	third.token = j["token"].(string)
+	code, _, _ = third.do("PUT", "/api/tasks/"+tid, map[string]any{"state": "done"})
+	third.must(403, code, "stranger closes")
+	code, _, _ = steward.do("PUT", "/api/tasks/"+tid, map[string]any{"state": "done", "closing_note": "kupljeno pri Bauhausu"})
+	steward.must(204, code, "holder closes")
+
+	// Event linked to the task inherits the project.
+	code, _, _ = zagar.do("POST", "/api/events", map[string]any{"title": "Postavljanje", "kind": "work", "starts_at": "2026-09-27T09:00", "task_id": json.Number(tid)})
+	zagar.must(201, code, "event on task")
+	_, _, evs := zagar.do("GET", "/api/events", nil)
+	if evs[0]["project_title"] != "Ograja okoli travnika" || evs[0]["task_title"] != "Kupiti stebre" {
+		t.Fatalf("event link: %v", evs[0])
+	}
+	code, p, _ := third.do("GET", "/api/projects/"+pid, nil)
+	third.must(200, code, "get project")
+	tasks := p["tasks"].([]any)
+	if tasks[0].(map[string]any)["state"] != "done" || tasks[0].(map[string]any)["closing_note"] != "kupljeno pri Bauhausu" || len(p["events"].([]any)) != 1 {
+		t.Fatalf("project page: %v", p)
+	}
+	_, _, list := third.do("GET", "/api/projects", nil)
+	if list[0]["tasks"].(float64) != 1 || list[0]["tasks_done"].(float64) != 1 {
+		t.Fatalf("list counts: %v", list[0])
+	}
+	// Done is a state; a stranger cannot set it, the creator can, and reopen.
+	code, _, _ = third.do("PUT", "/api/projects/"+pid, map[string]any{"state": "done"})
+	third.must(403, code, "stranger finishes project")
+	code, _, _ = zagar.do("PUT", "/api/projects/"+pid, map[string]any{"state": "done"})
+	zagar.must(204, code, "finish project")
+	code, _, _ = zagar.do("PUT", "/api/projects/"+pid, map[string]any{"state": "open"})
+	zagar.must(204, code, "reopen")
+	_, exp, _ := steward.do("GET", "/api/export", nil)
+	for _, k := range []string{"projects", "project_tasks", "camp_takings"} {
+		if _, ok := exp[k]; !ok {
+			t.Fatalf("export lacks %s", k)
+		}
+	}
+}
+
+// TestCamp: a collection is a row with no amount; the village hears; hand-over
+// is a state the collecting house or a steward sets.
+func TestCamp(t *testing.T) {
+	_, fake, steward, zagar := newVillage(t)
+	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	steward.must(204, code, "subscribe")
+	code, obj, _ := zagar.do("POST", "/api/camp", map[string]any{"from_who": "siv kamper", "taken_on": "2026-09-05", "collected_by": "Ana", "notes": "2 noči"})
+	zagar.must(201, code, "camp")
+	id := itoa(obj["id"].(float64))
+	waitFor(t, 1, fake)
+	fake.mu.Lock()
+	var p Payload
+	json.Unmarshal(fake.payloads[0], &p)
+	fake.mu.Unlock()
+	if p.Kind != "camp" || p.Title != "🏕️ Ana · Žagar je pobral kamp" || p.Body != "siv kamper — 2 noči" {
+		t.Fatalf("camp push: %+v", p)
+	}
+	_, _, rows := steward.do("GET", "/api/camp", nil)
+	if _, ok := rows[0]["amount_cents"]; ok {
+		t.Fatal("camp stores an amount")
+	}
+	code, _, _ = steward.do("PUT", "/api/camp/"+id, map[string]any{"state": "handed"})
+	steward.must(204, code, "handed")
+	_, _, rows = zagar.do("GET", "/api/camp", nil)
+	if rows[0]["state"] != "handed" || rows[0]["handed_at"] == nil {
+		t.Fatalf("handed: %v", rows[0])
+	}
+}

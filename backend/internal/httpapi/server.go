@@ -106,6 +106,20 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/me/prefs", s.requireHouse(s.getPrefs))
 	m.HandleFunc("PUT /api/me/prefs", s.requireHouse(s.putPrefs))
 	m.HandleFunc("PUT /api/prefs/global", s.requireSteward(s.putGlobalPrefs))
+	// Projects
+	m.HandleFunc("GET /api/projects", s.requireHouse(s.listProjects))
+	m.HandleFunc("POST /api/projects", s.requireHouse(s.createProject))
+	m.HandleFunc("GET /api/projects/{id}", s.requireHouse(s.getProject))
+	m.HandleFunc("PUT /api/projects/{id}", s.requireHouse(s.updateProject))
+	m.HandleFunc("DELETE /api/projects/{id}", s.requireHouse(s.deleteRow("projects")))
+	m.HandleFunc("POST /api/projects/{id}/tasks", s.requireHouse(s.createTask))
+	m.HandleFunc("PUT /api/tasks/{id}", s.requireHouse(s.updateTask))
+	m.HandleFunc("DELETE /api/tasks/{id}", s.requireHouse(s.deleteTask))
+	// Campground
+	m.HandleFunc("GET /api/camp", s.requireHouse(s.listCamp))
+	m.HandleFunc("POST /api/camp", s.requireHouse(s.createCamp))
+	m.HandleFunc("PUT /api/camp/{id}", s.requireHouse(s.updateCamp))
+	m.HandleFunc("DELETE /api/camp/{id}", s.requireHouse(s.deleteRow("camp_takings")))
 	// Exit path: everything as one JSON document (steward only).
 	m.HandleFunc("GET /api/export", s.requireSteward(s.export))
 }
@@ -599,11 +613,11 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request) {
 // ---- bell tower ----------------------------------------------------------
 
 func (s *Server) listEvents(w http.ResponseWriter, r *http.Request) {
-	rows, err := s.st.Rows(r.Context(), `SELECT e.*,`+houseJoin+`,
+	rows, err := s.st.Rows(r.Context(), `SELECT e.*,`+houseJoin+`, pr.title AS project_title, tk.title AS task_title,
 		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id) AS signups,
 		(SELECT json_group_array(json_object('house_id', h2.id, 'name', h2.name, 'crest', h2.crest, 'note', s.note)) FROM event_signups s JOIN houses h2 ON h2.id=s.house_id WHERE s.event_id=e.id) AS signup_list,
 		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id AND s.house_id=?) AS mine
-		FROM events e JOIN houses h ON h.id=e.house_id
+		FROM events e JOIN houses h ON h.id=e.house_id LEFT JOIN projects pr ON pr.id=e.project_id LEFT JOIN project_tasks tk ON tk.id=e.task_id
 		WHERE e.starts_at >= date('now','-60 days') ORDER BY e.starts_at LIMIT 500`, houseFrom(r).ID)
 	if err != nil {
 		fail(w, err)
@@ -622,8 +636,22 @@ func (s *Server) createEvent(w http.ResponseWriter, r *http.Request) {
 	if kind != "work" && kind != "alarm" {
 		kind = "event"
 	}
-	id, err := s.st.Exec(r.Context(), `INSERT INTO events(house_id, title, kind, starts_at, ends_at, place, notes) VALUES (?,?,?,?,?,?,?)`,
-		houseFrom(r).ID, str(m, "title"), kind, str(m, "starts_at"), nullIfEmpty(str(m, "ends_at")), str(m, "place"), str(m, "notes"))
+	// An event may belong to a project, and to one of that project's tasks.
+	// The task decides the project; a task from another project is refused.
+	var projectID, taskID any
+	if v, ok := m["project_id"].(float64); ok && v > 0 {
+		projectID = int64(v)
+	}
+	if v, ok := m["task_id"].(float64); ok && v > 0 {
+		tk, _ := s.st.One(r.Context(), `SELECT project_id FROM project_tasks WHERE id=?`, int64(v))
+		if tk == nil || (projectID != nil && tk["project_id"].(int64) != projectID.(int64)) {
+			writeErr(w, 400, "task does not belong to that project")
+			return
+		}
+		taskID, projectID = int64(v), tk["project_id"]
+	}
+	id, err := s.st.Exec(r.Context(), `INSERT INTO events(house_id, title, kind, starts_at, ends_at, place, notes, project_id, task_id) VALUES (?,?,?,?,?,?,?,?,?)`,
+		houseFrom(r).ID, str(m, "title"), kind, str(m, "starts_at"), nullIfEmpty(str(m, "ends_at")), str(m, "place"), str(m, "notes"), projectID, taskID)
 	if err != nil {
 		fail(w, err)
 		return
@@ -900,7 +928,7 @@ func (s *Server) updateAway(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 	out := map[string]any{"exported_at": time.Now().UTC().Format(time.RFC3339)}
-	for _, t := range []string{"houses", "house_parcels", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants"} {
+	for _, t := range []string{"houses", "house_parcels", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "projects", "project_tasks", "camp_takings"} {
 		cols := "*"
 		if t == "tools" { // photos are bytes, not text — they stay in the SQLite backup
 			cols = "id, house_id, name, notes, category, held_by, held_since, reminded_at, created_at"
@@ -1084,6 +1112,8 @@ func (s *Server) createPairing(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, 201, map[string]any{"code": code, "expires_at": exp})
 }
+
+func itoa64(n int64) string { return strconv.FormatInt(n, 10) }
 
 func nullIfEmpty(s string) any {
 	if s == "" {

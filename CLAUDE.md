@@ -44,6 +44,17 @@ does not ship.
   added there too, or it silently drops out of the exit path.
 - **Wishlist names are not votes.** Never sort, badge or count by how many
   houses want a thing. A wish ends when the wisher marks it arrived.
+- **A task is taken, never assigned.** `project_tasks.assigned_to` is written
+  only by the house that takes it (owner's decision 2026-09-05). No UI and no
+  endpoint lets a creator or steward put a task on another house. "3 of 5
+  done" is a project's progress; never show a house's count of tasks.
+- **The campground holds no amounts.** One row = a house collected from a
+  camper, a note, held or handed over. No `amount` column, no sums, no plates
+  in the label ("grey camper", "family from NL"). The cash box is the ledger.
+  Who the money is handed *to* is `TBD` — the treasurer question in
+  `docs/design-more-rooms.md`.
+- **Done is a state, never a deletion.** Finished projects and closed tasks
+  stay readable with their closing notes. Nothing archives itself.
 - **Exit is designed.** `GET /api/export` (steward) dumps everything as JSON;
   `VACUUM INTO` backups land nightly in `${DATA_DIR}/backups/`. Keep both working.
 - **No secrets in this repo, and none needed.** The first steward code is
@@ -52,7 +63,7 @@ does not ship.
 - **Push is opt-in per phone, filtered per house, mutable village-wide.** A
   phone subscribes after the villager taps Allow and records the language it
   subscribed in; the house switches kinds off in `notify_off` (empty = all
-  seven kinds on); a steward mutes a kind for everyone in `notify_off_global`,
+  nine kinds on); a steward mutes a kind for everyone in `notify_off_global`,
   which records who and when, shown to every house. Both lists are checked on
   every send — **except an alarm, which rings through both mutes and quiet
   hours.** The fire bell is not a preference. The author's
@@ -79,9 +90,11 @@ does not ship.
 - **Slovenian first.** Every user-facing string goes through `t()` in
   `frontend/src/i18n.tsx` with a Slovenian entry. English is the fallback key.
 - **The bottom bar fits five.** Village plus four rooms. A new room either
-  replaces one, merges into one, or lives off the bar like Houses does (reached
-  by tapping your own house name in the top bar). Rooms carry a `short` label
-  for the bar because a phone gives each item about 60 px.
+  replaces one, merges into one, or lives off the bar like Houses, Projects and
+  Campground do — tiles on the Home map, two taps from anywhere. Projects has a
+  second door: the 📋 chip on a calendar event. Rooms carry a `short` label for
+  the bar because a phone gives each item about 60 px. Rationale and the
+  options rejected: `docs/design-more-rooms.md`.
 - **Old notification links must keep working.** Payload URLs live in the
   database of no one — they are already on people's phones. `/bell` survives as
   a route alias after the merge; a post links to `#/tavern?at=board`.
@@ -90,7 +103,7 @@ does not ship.
 
 ```
 backend/            Go: main.go, internal/{config,store,httpapi}; migrations embedded
-frontend/           Vite + React; src/rooms/* one file per room. Hall.tsx = Calendar.tsx + Board.tsx
+frontend/           Vite + React; src/rooms/* one file per room (Projects.tsx holds list + page). Hall.tsx = Calendar.tsx + Board.tsx
                     stacked, because the tavern is one door; src/map/VillageMap.tsx
 frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons, backdrop.jpg (aerial photo behind the gate)
                     src/push.ts, src/Install.tsx, src/AddPhone.tsx, src/photo.ts (auth'd photo fetch + browser-side shrink)

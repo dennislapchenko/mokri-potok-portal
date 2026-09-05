@@ -15,7 +15,7 @@ import (
 // services; it is generated once and kept in the settings table, so it lives
 // in the same SQLite file as everything else and travels with the backups.
 
-var Kinds = []string{"posts", "needs", "offers", "runs", "events", "away", "tools"}
+var Kinds = []string{"posts", "needs", "offers", "runs", "events", "away", "tools", "projects", "camp"}
 
 // Sender is the one seam for tests: production sends over the network.
 type Sender interface {

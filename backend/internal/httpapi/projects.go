@@ -233,11 +233,13 @@ func (s *Server) deleteTask(w http.ResponseWriter, r *http.Request) {
 
 // ---- campground -----------------------------------------------------------
 
-// The campground records that a house collected from a camper, and a note.
-// No amounts, no plates: "grey camper", "family from NL". The cash box holds
-// the money; this holds who has it until it is handed over.
+// A camper's stay is three states: arrived (a house noticed), held (a house
+// has the money), handed (it reached the box). No amounts, no plates. A row is
+// who noticed, who holds, and a note.
 func (s *Server) listCamp(w http.ResponseWriter, r *http.Request) {
-	rows, err := s.st.Rows(r.Context(), `SELECT x.*,`+houseJoin+` FROM camp_takings x JOIN houses h ON h.id=x.house_id ORDER BY x.taken_on DESC, x.created_at DESC LIMIT 500`)
+	rows, err := s.st.Rows(r.Context(), `SELECT x.*,`+houseJoin+`, b.name AS held_by_name, b.crest AS held_by_crest
+		FROM camp_takings x JOIN houses h ON h.id=x.house_id LEFT JOIN houses b ON b.id=x.held_by
+		ORDER BY CASE x.state WHEN 'arrived' THEN 0 WHEN 'held' THEN 1 ELSE 2 END, x.taken_on DESC, x.created_at DESC LIMIT 500`)
 	if err != nil {
 		fail(w, err)
 		return
@@ -245,47 +247,101 @@ func (s *Server) listCamp(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, rows)
 }
 
+// createCamp: "a camper arrived" with an optional note. With have_money the
+// noticing house already holds the cash and the row lands as handed — the
+// owner's choice for now, to be revisited.
 func (s *Server) createCamp(w http.ResponseWriter, r *http.Request) {
 	h := houseFrom(r)
-	m, err := readJSON(r)
-	if err != nil || str(m, "from_who") == "" || str(m, "taken_on") == "" {
-		writeErr(w, 400, "from_who and taken_on required")
-		return
-	}
-	id, err := s.st.Exec(r.Context(), `INSERT INTO camp_takings(house_id, collected_by, from_who, taken_on, notes) VALUES (?,?,?,?,?)`,
-		h.ID, str(m, "collected_by"), str(m, "from_who"), str(m, "taken_on"), str(m, "notes"))
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	s.notify("camp", h.ID, func(lang string) Payload {
-		who := h.Name
-		if c := str(m, "collected_by"); c != "" {
-			who = c + " · " + h.Name
-		}
-		// Label only — the note may say "cash" and a lock screen is public.
-		return Payload{Title: "🏕️ " + who + tr(lang, " je pobral kamp", " collected at the camp"), Body: snippet(str(m, "from_who"), 80), URL: "#/camp"}
-	})
-	writeJSON(w, 201, map[string]any{"id": id})
-}
-
-func (s *Server) updateCamp(w http.ResponseWriter, r *http.Request) {
-	id, _ := pathID(r)
-	if !s.ownerOrSteward(w, r, "camp_takings", id) {
-		return
-	}
 	m, err := readJSON(r)
 	if err != nil {
 		writeErr(w, 400, "bad json")
 		return
 	}
+	on := str(m, "taken_on")
+	if on == "" {
+		on = s.now().Format("2006-01-02")
+	}
+	have, _ := m["have_money"].(bool)
+	state, heldBy, heldAt, handedAt := "arrived", any(nil), any(nil), any(nil)
+	if have {
+		state, heldBy, heldAt, handedAt = "handed", h.ID, "now", "now"
+	}
+	id, err := s.st.Exec(r.Context(), `INSERT INTO camp_takings(house_id, collected_by, from_who, taken_on, notes, state, held_by,
+		held_at, handed_at) VALUES (?,?,?,?,?,?,?, CASE WHEN ? IS NULL THEN NULL ELSE datetime('now') END, CASE WHEN ? IS NULL THEN NULL ELSE datetime('now') END)`,
+		h.ID, str(m, "collected_by"), str(m, "from_who"), on, str(m, "notes"), state, heldBy, heldAt, handedAt)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	s.notify("camp", h.ID, func(lang string) Payload {
+		title := "🏕️ " + h.Name + tr(lang, ": kamper je prišel", ": a camper arrived")
+		if have {
+			title = "🏕️ " + h.Name + tr(lang, " je pobral kamp", " collected at the camp")
+		}
+		return Payload{Title: title, Body: snippet(str(m, "notes"), 80), URL: "#/camp"}
+	})
+	writeJSON(w, 201, map[string]any{"id": id})
+}
+
+// updateCamp: claim (any house, from arrived), handed (holder or steward),
+// back to held (holder or steward), notes (noticer, holder or steward).
+func (s *Server) updateCamp(w http.ResponseWriter, r *http.Request) {
+	h := houseFrom(r)
+	id, _ := pathID(r)
+	m, err := readJSON(r)
+	if err != nil {
+		writeErr(w, 400, "bad json")
+		return
+	}
+	row, err := s.st.One(r.Context(), `SELECT house_id, held_by, state, notes FROM camp_takings WHERE id=?`, id)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if row == nil {
+		writeErr(w, 404, "not found")
+		return
+	}
+	holder, held := row["held_by"].(int64)
+	mayEdit := row["house_id"].(int64) == h.ID || (held && holder == h.ID) || h.IsSteward
+	if claim, _ := m["claim"].(bool); claim {
+		if row["state"] != "arrived" {
+			writeErr(w, 409, "money already claimed")
+			return
+		}
+		s.st.Exec(r.Context(), `UPDATE camp_takings SET state='held', held_by=?, held_at=datetime('now') WHERE id=?`, h.ID, id)
+		if n := str(m, "notes"); n != "" && row["notes"] == "" {
+			s.st.Exec(r.Context(), `UPDATE camp_takings SET notes=? WHERE id=?`, n, id)
+		}
+		s.notify("camp", h.ID, func(lang string) Payload {
+			return Payload{Title: "💰 " + h.Name + tr(lang, " ima denar od kampa", " has the camp money"), Body: snippet(str(m, "notes"), 80), URL: "#/camp"}
+		})
+		w.WriteHeader(204)
+		return
+	}
 	switch str(m, "state") {
 	case "handed":
+		if row["state"] != "held" {
+			writeErr(w, 409, "nobody holds the money yet")
+			return
+		}
+		if holder != h.ID && !h.IsSteward {
+			writeErr(w, 403, "only the house holding it hands it over")
+			return
+		}
 		s.st.Exec(r.Context(), `UPDATE camp_takings SET state='handed', handed_at=datetime('now') WHERE id=?`, id)
 	case "held":
+		if !(held && holder == h.ID) && !h.IsSteward {
+			writeErr(w, 403, "not yours")
+			return
+		}
 		s.st.Exec(r.Context(), `UPDATE camp_takings SET state='held', handed_at=NULL WHERE id=?`, id)
 	}
-	if n, ok := m["notes"]; ok {
+	if n, ok := m["notes"]; ok && str(m, "claim") == "" {
+		if !mayEdit {
+			writeErr(w, 403, "not yours")
+			return
+		}
 		s.st.Exec(r.Context(), `UPDATE camp_takings SET notes=? WHERE id=?`, n, id)
 	}
 	w.WriteHeader(204)

@@ -441,31 +441,53 @@ func TestProjects(t *testing.T) {
 	}
 }
 
-// TestCamp: a collection is a row with no amount; the village hears; hand-over
-// is a state the collecting house or a steward sets.
+// TestCamp: a camper arrives (village hears), a house claims the money
+// (village hears), hands it over; a tick on arrival lands straight in handed.
 func TestCamp(t *testing.T) {
 	_, fake, steward, zagar := newVillage(t)
 	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe")
-	code, obj, _ := zagar.do("POST", "/api/camp", map[string]any{"from_who": "siv kamper", "taken_on": "2026-09-05", "collected_by": "Ana", "notes": "2 noči"})
-	zagar.must(201, code, "camp")
+	code, obj, _ := zagar.do("POST", "/api/camp", map[string]any{"notes": "siv kamper"})
+	zagar.must(201, code, "arrived")
 	id := itoa(obj["id"].(float64))
 	waitFor(t, 1, fake)
 	fake.mu.Lock()
 	var p Payload
 	json.Unmarshal(fake.payloads[0], &p)
+	fake.sent, fake.payloads = nil, nil
 	fake.mu.Unlock()
-	if p.Kind != "camp" || p.Title != "🏕️ Ana · Žagar je pobral kamp" || p.Body != "siv kamper" {
-		t.Fatalf("camp push: %+v", p)
+	if p.Kind != "camp" || p.Title != "🏕️ Žagar: kamper je prišel" || p.Body != "siv kamper" {
+		t.Fatalf("arrival push: %+v", p)
 	}
-	_, _, rows := steward.do("GET", "/api/camp", nil)
+	// Steward cannot hand over what nobody holds; steward claims; Žagar hears... steward is the only phone here.
+	code, _, _ = steward.do("PUT", "/api/camp/"+id, map[string]any{"state": "handed"})
+	steward.must(409, code, "hand over unclaimed")
+	code, _, _ = steward.do("PUT", "/api/camp/"+id, map[string]any{"claim": true, "notes": "2 noči"})
+	steward.must(204, code, "claim")
+	_, _, rows := zagar.do("GET", "/api/camp", nil)
+	if rows[0]["state"] != "held" || rows[0]["held_by_name"] != "S" || rows[0]["notes"] != "siv kamper" {
+		t.Fatalf("after claim (note must not overwrite): %v", rows[0])
+	}
+	code, _, _ = zagar.do("PUT", "/api/camp/"+id, map[string]any{"claim": true})
+	zagar.must(409, code, "double claim")
+	code, _, _ = zagar.do("PUT", "/api/camp/"+id, map[string]any{"state": "handed"})
+	zagar.must(403, code, "non-holder hands over")
+	code, _, _ = steward.do("PUT", "/api/camp/"+id, map[string]any{"state": "handed"})
+	steward.must(204, code, "holder hands over")
+	// Tick "I have the money": straight to handed, holder = noticer.
+	code, _, _ = zagar.do("POST", "/api/camp", map[string]any{"notes": "NL družina", "have_money": true})
+	zagar.must(201, code, "arrived with money")
+	_, _, rows = zagar.do("GET", "/api/camp", nil)
+	var withMoney map[string]any
+	for _, r := range rows {
+		if r["notes"] == "NL družina" {
+			withMoney = r
+		}
+	}
+	if withMoney["state"] != "handed" || withMoney["held_by_name"] != "Žagar" || withMoney["handed_at"] == nil {
+		t.Fatalf("have_money row: %v", withMoney)
+	}
 	if _, ok := rows[0]["amount_cents"]; ok {
 		t.Fatal("camp stores an amount")
-	}
-	code, _, _ = steward.do("PUT", "/api/camp/"+id, map[string]any{"state": "handed"})
-	steward.must(204, code, "handed")
-	_, _, rows = zagar.do("GET", "/api/camp", nil)
-	if rows[0]["state"] != "handed" || rows[0]["handed_at"] == nil {
-		t.Fatalf("handed: %v", rows[0])
 	}
 }

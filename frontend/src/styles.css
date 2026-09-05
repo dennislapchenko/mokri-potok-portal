@@ -85,6 +85,7 @@ details.parchment[open] > summary { border-bottom: 2px solid var(--parch3); padd
 .card.tool .actions { margin-top: .2rem; }
 .card.tool .actions button, .card.tool .actions .btn-file { padding: .1rem .5rem; font-size: .85rem; }
 .card.tool.out { opacity: .8; }
+.card.faded { opacity: .8; }
 .tool-photo { width: 20%; max-width: 110px; min-width: 64px; aspect-ratio: 1; object-fit: cover; border-radius: 14px; border: 2px solid var(--wood3); cursor: zoom-in; align-self: center; background: var(--parch2); }
 .tool-photo.empty { visibility: hidden; }
 .btn-file { display: inline-block; cursor: pointer; border: 2px solid var(--wood2); background: linear-gradient(#e9d8ab, #d3bb84); border-radius: 6px; box-shadow: 0 2px 0 #3a281a; font-size: .9rem; line-height: 1.3; margin: 0; }

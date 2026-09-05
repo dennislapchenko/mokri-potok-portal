@@ -24,7 +24,7 @@ export const ROOMS = [
   { path: "/market", icon: "🧺", name: "Market", short: "Market", sub: "needs, give-aways, runs", nav: true },
   { path: "/shed", icon: "🛠", name: "Tool shed", short: "Shed", sub: "what the village lends", nav: true },
   { path: "/watch", icon: "🕯️", name: "Watchtower", short: "Watch", sub: "who is away", nav: true },
-  { path: "/camp", icon: "🏕️", name: "Campground", short: "Camp", sub: "who collected from whom", nav: false },
+  { path: "/camp", icon: "🏕️", name: "Campground", short: "Camp", sub: "who noticed, who has the money", nav: false },
   { path: "/houses", icon: "🏘️", name: "Houses", short: "Houses", sub: "houses and land", nav: false },
 ];
 
@@ -118,7 +118,7 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
           "/tavern": [num(e.filter((x) => (x.ends_at || x.starts_at) >= today).length, "events ahead"), num(p.filter((x) => x.pinned).length, "pinned")].filter(Boolean).join(" · "),
           "/shed": [num(tools.length - out, "in the shed"), num(out, "out")].filter(Boolean).join(" · "),
           "/projects": [num(projects.filter((x) => x.state === "open").length, "open"), num(projects.reduce((acc, x) => acc + (x.state === "open" ? x.tasks_free : 0), 0), "tasks free to take")].filter(Boolean).join(" · "),
-          "/camp": num(camp.filter((x) => x.state === "held").length, "held"),
+          "/camp": [num(camp.filter((x) => x.state === "arrived").length, "arrived"), num(camp.filter((x) => x.state === "held").length, "held")].filter(Boolean).join(" · "),
         });
       }).catch(() => {});
   }, [t]);

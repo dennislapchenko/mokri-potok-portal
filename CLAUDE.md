@@ -52,8 +52,10 @@ does not ship.
   read `due_at` replaces the assigner nagging in person). No other house
   touches `assigned_to`. The project's creator hears when a task is taken. "3 of 5
   done" is a project's progress; never show a house's count of tasks.
-- **The campground holds no amounts.** One row = a house collected from a
-  camper, a note, held or handed over. No `amount` column, no sums, no plates
+- **The campground holds no amounts.** One row = one camper's stay: a house
+  noticed it (arrived), a house has the money (held), it reached the box
+  (handed). A tick on arrival ("I already have the money") lands the row in
+  handed at once — to be revisited. A note is optional. No `amount` column, no sums, no plates
   in the label ("grey camper", "family from NL"). The cash box is the ledger.
   Who the money is handed *to* is `TBD` — the treasurer question in
   `docs/design-more-rooms.md`. Retention of `from_who` (a steward clears labels

@@ -1,54 +1,73 @@
 import { useState } from "react";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
-import { Crest, Empty, When, canEdit, useList } from "./shared";
+import { Crest, Empty, When, useList } from "./shared";
 
-// Campground: one row = one house collected from one camper, and a note. No
-// amounts — the cash box holds the money, this holds who has it until it is
-// handed over. From-who is a label a villager would say aloud, never a plate.
+// Campground: a camper's stay in three states. A house notices an arrival
+// (optional note), a house says it has the money, then hands it over. Handed
+// rows sink into the log, faded. No amounts, no plates — the box is the ledger.
 export function Camp({ me }: { me: Me }) {
   const { t } = useT();
   const { items, reload } = useList("/camp");
-  const today = new Date().toISOString().slice(0, 10);
-  const [f, setF] = useState({ taken_on: today, from_who: "", collected_by: "", notes: "" });
-  const save = async (e: React.FormEvent) => {
+  const [notes, setNotes] = useState("");
+  const [have, setHave] = useState(false);
+  const [claimFor, setClaimFor] = useState<number | null>(null);
+  const [claimNote, setClaimNote] = useState("");
+
+  const arrived = async (e: React.FormEvent) => {
     e.preventDefault();
-    await api("/camp", { method: "POST", body: f });
-    setF({ taken_on: today, from_who: "", collected_by: "", notes: "" }); reload();
+    await api("/camp", { method: "POST", body: { notes, have_money: have } });
+    setNotes(""); setHave(false); reload();
   };
-  const held = items.filter((x) => x.state === "held");
+  const claim = async (id: number) => {
+    await api(`/camp/${id}`, { method: "PUT", body: { claim: true, notes: claimNote } });
+    setClaimFor(null); setClaimNote(""); reload();
+  };
+  const put = (id: number, body: any) => api(`/camp/${id}`, { method: "PUT", body }).then(reload);
+
+  const live = items.filter((x) => x.state !== "handed"), log = items.filter((x) => x.state === "handed");
+  const Row = ({ x }: { x: any }) => {
+    const holder = x.held_by === me.id;
+    return (
+      <div className={"card" + (x.state === "handed" ? " faded" : "")} style={{ borderLeftColor: x.state === "arrived" ? "var(--green)" : x.state === "held" ? "var(--brass)" : "var(--parch3)" }}>
+        <div className="head">
+          <Crest crest={x.house_crest} color={x.house_color} /><span className="who">{x.house_name}</span>
+          <span className={"tag " + (x.state === "arrived" ? "open" : x.state === "held" ? "taken" : "done")}>
+            {x.state === "arrived" ? "🏕️ " + t("arrived") : x.state === "held" ? `💰 ${x.held_by_crest} ${x.held_by_name}` : "✓ " + t("handed over")}
+          </span>
+          <When iso={x.taken_on} />
+        </div>
+        {x.notes && <div className="body small">{x.notes}</div>}
+        {claimFor === x.id && (
+          <div style={{ display: "flex", gap: ".4rem", margin: ".3rem 0" }}>
+            <input value={claimNote} onChange={(e) => setClaimNote(e.target.value)} maxLength={300} placeholder={x.notes ? t("note already there") : t("a note, optional")} disabled={!!x.notes} autoFocus={!x.notes} />
+            <button className="primary" onClick={() => claim(x.id)}>💰 {t("I have the money")}</button>
+          </div>
+        )}
+        <div className="actions">
+          {x.state === "arrived" && claimFor !== x.id && <button className="primary" onClick={() => (x.notes ? claim(x.id) : setClaimFor(x.id))}>💰 {t("I have the money")}</button>}
+          {x.state === "held" && (holder || me.is_steward === 1) && <button onClick={() => put(x.id, { state: "handed" })}>✓ {t("Handed over")}</button>}
+          {x.state === "handed" && (holder || me.is_steward === 1) && <button className="ghost" onClick={() => put(x.id, { state: "held" })}>{t("Still held")}</button>}
+          {(x.house_id === me.id || holder || me.is_steward === 1) && <button className="ghost" onClick={() => confirm("?") && api(`/camp/${x.id}`, { method: "DELETE" }).then(reload)}>🗑</button>}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="parchment">
-      <h2>🏕️ {t("Campground")} <span className="sub">{t("who collected from whom")}</span></h2>
-      <form className="inline" onSubmit={save}>
+      <h2>🏕️ {t("Campground")} <span className="sub">{t("who noticed, who has the money")}</span></h2>
+      <form className="inline" onSubmit={arrived}>
         <div className="row">
-          <label>{t("Date")}<input type="date" value={f.taken_on} onChange={(e) => setF({ ...f, taken_on: e.target.value })} required /></label>
-          <label>{t("From whom")}<input value={f.from_who} onChange={(e) => setF({ ...f, from_who: e.target.value })} required maxLength={80} placeholder={t("grey camper, family from NL — no plates")} /></label>
-          <label>{t("Collected by (name, optional)")}<input value={f.collected_by} onChange={(e) => setF({ ...f, collected_by: e.target.value })} maxLength={40} /></label>
-          <label>{t("Notes")}<input value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} maxLength={300} placeholder={t("2 nights, paid cash")} /></label>
+          <label style={{ gridColumn: "span 2" }}>{t("A camper arrived")}<input value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={300} placeholder={t("a note, optional — grey camper, 2 nights, no plates")} /></label>
         </div>
-        <div className="submit"><button className="primary" type="submit">💰 {t("I collected")}</button></div>
+        <label className="kind" style={{ marginTop: ".4rem" }}><input type="checkbox" checked={have} onChange={(e) => setHave(e.target.checked)} /> 💰 {t("I already have the money")}</label>
+        <div className="submit"><button className="primary" type="submit">🏕️ {t("Camper arrived")}</button></div>
       </form>
-      {held.length > 0 && <p className="small">{t("Held, not yet handed over:")} {held.map((x) => `${x.house_crest} ${x.house_name}`).filter((v, i, a) => a.indexOf(v) === i).join(", ")}</p>}
-      {items.length === 0 && <Empty text={t("Nothing collected yet.")} />}
-      {items.map((x) => (
-        <div key={x.id} className="card" style={{ opacity: x.state === "handed" ? 0.7 : 1, borderLeftColor: x.state === "handed" ? "var(--parch3)" : "var(--brass)" }}>
-          <div className="head">
-            <Crest crest={x.house_crest} color={x.house_color} /><span className="who">{x.collected_by ? `${x.collected_by} · ` : ""}{x.house_name}</span>
-            <strong>{x.from_who}</strong>
-            <span className={"tag " + (x.state === "handed" ? "done" : "taken")}>{x.state === "handed" ? "✓ " + t("handed over") : t("held")}</span>
-            <When iso={x.taken_on} />
-          </div>
-          {x.notes && <div className="body small">{x.notes}</div>}
-          {canEdit(me, x) && (
-            <div className="actions">
-              {x.state === "held" ? <button onClick={() => api(`/camp/${x.id}`, { method: "PUT", body: { state: "handed" } }).then(reload)}>✓ {t("Handed over")}</button>
-                : <button className="ghost" onClick={() => api(`/camp/${x.id}`, { method: "PUT", body: { state: "held" } }).then(reload)}>{t("Still held")}</button>}
-              <button className="ghost" onClick={() => confirm("?") && api(`/camp/${x.id}`, { method: "DELETE" }).then(reload)}>🗑</button>
-            </div>
-          )}
-        </div>
-      ))}
+      {live.length === 0 && log.length === 0 && <Empty text={t("Nothing yet. The first camper of the season will show up here.")} />}
+      {live.map((x) => <Row key={x.id} x={x} />)}
+      {log.length > 0 && <h3 style={{ marginTop: "1rem", color: "var(--ink2)" }}>📜 {t("Log of campers")}</h3>}
+      {log.map((x) => <Row key={x.id} x={x} />)}
     </div>
   );
 }

@@ -98,13 +98,20 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
         </form>
 
         {items.length > 0 && (
-          <div className="chips">
-            <span className="chip-label">{t("who")}</span>
-            <button className={"chip" + (owner === null ? " on" : "")} onClick={() => setOwner(null)}>{t("Everyone")}</button>
-            {owners.map((h) => <button key={h.id} className={"chip" + (owner === h.id ? " on" : "")} onClick={() => setOwner(owner === h.id ? null : h.id)}>{h.crest} {h.name}</button>)}
-            <span className="chip-gap" />
-            <span className="chip-label">{t("what")}</span>
-            {CATEGORIES.map((c) => <button key={c.id} className={"chip" + (cat === c.id ? " on" : "")} onClick={() => setCat(cat === c.id ? null : c.id)}>{c.icon} {t(c.name)}</button>)}
+          <div className="chip-rows">
+            <div className="chip-row">
+              <span className="chip-label">{t("who")}</span>
+              <div className="chips">
+                <button className={"chip" + (owner === null ? " on" : "")} onClick={() => setOwner(null)}>{t("Everyone")}</button>
+                {owners.map((h) => <button key={h.id} className={"chip" + (owner === h.id ? " on" : "")} onClick={() => setOwner(owner === h.id ? null : h.id)}>{h.crest} {h.name}</button>)}
+              </div>
+            </div>
+            <div className="chip-row">
+              <span className="chip-label">{t("what")}</span>
+              <div className="chips">
+                {CATEGORIES.map((c) => <button key={c.id} className={"chip" + (cat === c.id ? " on" : "")} onClick={() => setCat(cat === c.id ? null : c.id)}>{c.icon} {t(c.name)}</button>)}
+              </div>
+            </div>
           </div>
         )}
         {items.length === 0 && <Empty text={t("The shed is empty. Put something in it.")} />}

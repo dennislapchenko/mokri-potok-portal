@@ -56,6 +56,7 @@ export function Projects({ me }: { me: Me }) {
 export function Project({ me, houses }: { me: Me; houses: { id: number; name: string; crest: string }[] }) {
   const { t } = useT();
   const { id } = useParams();
+  const nav = useNavigate();
   const [p, setP] = useState<any>(null);
   const [tf, setTf] = useState({ title: "", due_at: "", notes: "" });
   const [addTask, setAddTask] = useState(false);
@@ -115,7 +116,7 @@ export function Project({ me, houses }: { me: Me; houses: { id: number; name: st
           {editable && <button style={{ marginLeft: "auto" }} onClick={() => put(`/projects/${p.id}`, { state: p.state === "done" ? "open" : "done" })}>{p.state === "done" ? t("Reopen") : "✓ " + t("Mark finished")}</button>}
         </h2>
         {p.notes && <p>{p.notes}</p>}
-        <h3>{t("Tasks")} <span className="small">{doneTasks.length} / {tasks.length}</span> <button className="ghost" onClick={() => setAddTask(!addTask)}>+ {t("Add a task")}</button></h3>
+        <h3 style={{ display: "flex", alignItems: "center", gap: ".6rem" }}>{t("Tasks")} <span className="small">{doneTasks.length} / {tasks.length}</span> <button className="lesser" onClick={() => setAddTask(!addTask)}>+ {t("Add a task")}</button></h3>
         {addTask && (
           <form className="inline" onSubmit={async (e) => { e.preventDefault(); await api(`/projects/${p.id}/tasks`, { method: "POST", body: tf }); setTf({ title: "", due_at: "", notes: "" }); setAddTask(false); load(); }}>
             <div className="row">
@@ -132,7 +133,7 @@ export function Project({ me, houses }: { me: Me; houses: { id: number; name: st
         {editable && <p className="small" style={{ marginTop: ".6rem" }}><button className="ghost danger" onClick={() => confirm(p.title + "?") && api(`/projects/${p.id}`, { method: "DELETE" }).then(() => location.assign("#/projects"))}>🗑 {t("Delete project")}</button></p>}
       </div>
       <div className="parchment">
-        <h2>🔔 {t("Events")} <Link to={`/tavern?project=${p.id}`} className="btn" style={{ marginLeft: "auto" }}><button>+ {t("Add an event")}</button></Link></h2>
+        <h2>🔔 {t("Events")} <button style={{ marginLeft: "auto" }} onClick={() => nav(`/tavern?project=${p.id}`)}>+ {t("Add an event")}</button></h2>
         {events.length === 0 && <Empty text={t("No dates yet.")} />}
         {events.filter((e) => (e.ends_at || e.starts_at) >= today).map((e) => <EventCard key={e.id} ev={e} me={me} reload={load} />)}
         {events.some((e) => (e.ends_at || e.starts_at) < today) && <h3 className="small" style={{ marginTop: ".8rem" }}>{t("Happened")}</h3>}

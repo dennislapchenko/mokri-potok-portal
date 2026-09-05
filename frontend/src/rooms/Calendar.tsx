@@ -42,7 +42,7 @@ export function EventCard({ ev, me, reload }: { ev: any; me: Me; reload: () => v
       )}
       <div className="actions">
         <button className={ev.mine ? "" : "primary"} onClick={signup}>{ev.mine ? t("I cannot come after all") : "🙋 " + t("I am coming")}{ev.signups > 0 ? ` (${ev.signups})` : ""}</button>
-        {ev.mine === 1 && !noteOpen && <button className="ghost" onClick={() => { setNoteOpen(true); setNoteText(list.find((x) => x.house_id === me.id)?.note || ""); }}>💬 {t("Add a note")}</button>}
+        {ev.mine === 1 && !noteOpen && <button className="lesser" onClick={() => { setNoteOpen(true); setNoteText(list.find((x) => x.house_id === me.id)?.note || ""); }}>💬 {t("Add a note")}</button>}
         {canEdit(me, ev) && <button className="ghost" onClick={() => confirm("?") && api(`/events/${ev.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button>}
       </div>
     </div>

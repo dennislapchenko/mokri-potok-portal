@@ -17,6 +17,10 @@ button:active { transform: translateY(1px); box-shadow: 0 1px 0 #3a281a; }
 button.primary { background: linear-gradient(#d9b45a, #b88d2c); border-color: #5a3d12; }
 button.danger { background: linear-gradient(#c96a5f, #9a3c33); color: #fff3e6; border-color: #4a1a15; }
 button.ghost { background: transparent; box-shadow: none; border-color: transparent; color: var(--ink2); padding: .2rem .5rem; }
+/* House style for "inner" actions — things that add to a section rather than
+   act on the room (add a task, add a note): a real button, one size down,
+   lighter fill, thinner shadow. Use .lesser wherever a ghost reads as a link. */
+button.lesser { font-size: .9rem; padding: .2rem .7rem; background: linear-gradient(#f3e8cc, #e4d3a8); border-width: 1.5px; box-shadow: 0 1px 0 #3a281a; }
 button:disabled { opacity: .5; cursor: default; }
 input, select, textarea { font: inherit; color: var(--ink); background: #fbf3dc; border: 1px solid var(--parch3); border-radius: 4px; padding: .4rem .6rem; width: 100%; }
 textarea { min-height: 4.5rem; resize: vertical; }

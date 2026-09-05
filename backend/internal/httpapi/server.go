@@ -105,6 +105,7 @@ func (s *Server) routes() {
 	m.HandleFunc("DELETE /api/push/subscribe", s.requireHouse(s.unsubscribe))
 	m.HandleFunc("GET /api/me/prefs", s.requireHouse(s.getPrefs))
 	m.HandleFunc("PUT /api/me/prefs", s.requireHouse(s.putPrefs))
+	m.HandleFunc("PUT /api/prefs/global", s.requireSteward(s.putGlobalPrefs))
 	// Exit path: everything as one JSON document (steward only).
 	m.HandleFunc("GET /api/export", s.requireSteward(s.export))
 }

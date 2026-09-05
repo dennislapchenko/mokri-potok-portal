@@ -99,9 +99,11 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
 
         {items.length > 0 && (
           <div className="chips">
+            <span className="chip-label">{t("who")}</span>
             <button className={"chip" + (owner === null ? " on" : "")} onClick={() => setOwner(null)}>{t("Everyone")}</button>
             {owners.map((h) => <button key={h.id} className={"chip" + (owner === h.id ? " on" : "")} onClick={() => setOwner(owner === h.id ? null : h.id)}>{h.crest} {h.name}</button>)}
             <span className="chip-gap" />
+            <span className="chip-label">{t("what")}</span>
             {CATEGORIES.map((c) => <button key={c.id} className={"chip" + (cat === c.id ? " on" : "")} onClick={() => setCat(cat === c.id ? null : c.id)}>{c.icon} {t(c.name)}</button>)}
           </div>
         )}

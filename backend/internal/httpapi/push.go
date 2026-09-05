@@ -124,8 +124,11 @@ func (s *Server) fanout(kind string, build func(lang string) Payload, query stri
 	}()
 }
 
+// subsFor takes the kind twice: once for the house's own off-list, once for the
+// steward's village-wide one.
 const subsFor = `SELECT p.id, p.endpoint, p.p256dh, p.auth, p.lang FROM push_subscriptions p
-	WHERE NOT EXISTS (SELECT 1 FROM notify_off n WHERE n.house_id=p.house_id AND n.kind=?) `
+	WHERE NOT EXISTS (SELECT 1 FROM notify_off n WHERE n.house_id=p.house_id AND n.kind=?)
+	AND NOT EXISTS (SELECT 1 FROM notify_off_global g WHERE g.kind=?) `
 
 // quietHours: between 21:00 and 07:00 only an alarm is worth a buzz. The item
 // still waits in the app — a village that stops trusting its phone at night
@@ -145,7 +148,7 @@ func (s *Server) notify(kind string, fromHouse int64, build func(lang string) Pa
 
 // notifyUrgent ignores quiet hours — alarms only.
 func (s *Server) notifyUrgent(kind string, fromHouse int64, build func(lang string) Payload) {
-	s.fanout(kind, build, subsFor+`AND p.house_id != ?`, kind, fromHouse)
+	s.fanout(kind, build, subsFor+`AND p.house_id != ?`, kind, kind, fromHouse)
 }
 
 // notifyHouse sends to one house only — used when the message is that house's
@@ -154,7 +157,7 @@ func (s *Server) notifyHouse(kind string, toHouse int64, build func(lang string)
 	if s.quietHours() {
 		return
 	}
-	s.fanout(kind, build, subsFor+`AND p.house_id = ?`, kind, toHouse)
+	s.fanout(kind, build, subsFor+`AND p.house_id = ?`, kind, kind, toHouse)
 }
 
 // ---- handlers ------------------------------------------------------------
@@ -219,7 +222,30 @@ func (s *Server) getPrefs(w http.ResponseWriter, r *http.Request) {
 		off = append(off, x["kind"].(string))
 	}
 	subs, _ := s.st.One(r.Context(), `SELECT count(*) AS n FROM push_subscriptions WHERE house_id=?`, houseFrom(r).ID)
-	writeJSON(w, 200, map[string]any{"off": off, "kinds": Kinds, "phones": subs["n"]})
+	grows, _ := s.st.Rows(r.Context(), `SELECT kind FROM notify_off_global`)
+	goff := []string{}
+	for _, x := range grows {
+		goff = append(goff, x["kind"].(string))
+	}
+	writeJSON(w, 200, map[string]any{"off": off, "global_off": goff, "kinds": Kinds, "phones": subs["n"]})
+}
+
+// putGlobalPrefs: a steward mutes kinds for every house at once — the lever for
+// "the village finds needs too noisy" without asking each phone.
+func (s *Server) putGlobalPrefs(w http.ResponseWriter, r *http.Request) {
+	m, err := readJSON(r)
+	if err != nil {
+		writeErr(w, 400, "bad json")
+		return
+	}
+	off, _ := m["off"].([]any)
+	s.st.Exec(r.Context(), `DELETE FROM notify_off_global`)
+	for _, k := range off {
+		if ks, ok := k.(string); ok && contains(Kinds, ks) {
+			s.st.Exec(r.Context(), `INSERT OR IGNORE INTO notify_off_global(kind) VALUES (?)`, ks)
+		}
+	}
+	w.WriteHeader(204)
 }
 
 func (s *Server) putPrefs(w http.ResponseWriter, r *http.Request) {

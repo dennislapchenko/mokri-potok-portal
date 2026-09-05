@@ -310,3 +310,23 @@ func TestSignupNote(t *testing.T) {
 		t.Fatalf("signup_list: %v", evs[0]["signup_list"])
 	}
 }
+
+// TestGlobalMute: a steward mutes a kind for the whole village; a villager
+// cannot; the house list still shows it as off.
+func TestGlobalMute(t *testing.T) {
+	_, fake, steward, zagar := newVillage(t)
+	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	steward.must(204, code, "subscribe")
+	code, _, _ = zagar.do("PUT", "/api/prefs/global", map[string]any{"off": []string{"needs"}})
+	zagar.must(403, code, "villager mutes globally")
+	code, _, _ = steward.do("PUT", "/api/prefs/global", map[string]any{"off": []string{"needs"}})
+	steward.must(204, code, "steward mutes needs")
+	_, prefs, _ := zagar.do("GET", "/api/me/prefs", nil)
+	if g := prefs["global_off"].([]any); len(g) != 1 || g[0] != "needs" {
+		t.Fatalf("global_off: %v", prefs)
+	}
+	zagar.do("POST", "/api/needs", map[string]any{"text": "sol"})
+	waitFor(t, 0, fake)
+	zagar.do("POST", "/api/offers", map[string]any{"text": "okna"})
+	waitFor(t, 1, fake)
+}

@@ -93,6 +93,7 @@ details.parchment[open] > summary { border-bottom: 2px solid var(--parch3); padd
 .chip { padding: .05rem .6rem; font-size: .85rem; border-radius: 999px; }
 .chip.on { background: linear-gradient(#d9b45a, #b88d2c); border-color: #5a3d12; }
 .chip-gap { flex-basis: 100%; height: 0; }
+.chip-label { font-size: .7rem; color: var(--ink3); font-style: italic; min-width: 2.2rem; text-align: right; margin-right: .1rem; }
 .lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(20,12,6,.88); display: flex; align-items: center; justify-content: center; cursor: zoom-out; padding: 1rem; }
 .lightbox img { max-width: 100%; max-height: 100%; border: 4px solid var(--parch); border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
 .balloon { padding: 0 .2rem; font-size: .95rem; }
@@ -152,6 +153,8 @@ details.parchment[open] > summary { border-bottom: 2px solid var(--parch3); padd
 .kinds .small { grid-column: 1 / -1; }
 .kind { display: flex; align-items: center; gap: .4rem; margin: 0; font-size: 1rem; color: var(--ink); }
 .kind input { width: auto; }
+.kind.muted-global { color: var(--ink3); }
+.kinds.global { border-top: 1px dashed var(--parch3); padding-top: .5rem; }
 .gate h2 { justify-content: center; }
 .bottomnav { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(var(--wood2), var(--wood)); border-top: 3px solid #1a100a; display: flex; justify-content: space-around; padding: .3rem 0 calc(.3rem + env(safe-area-inset-bottom)); z-index: 5; }
 .bottomnav a { color: var(--parch2); text-decoration: none; text-align: center; font-size: .68rem; font-family: "IM Fell English", serif; flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }

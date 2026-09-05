@@ -49,9 +49,11 @@ does not ship.
 - **No secrets in this repo, and none needed.** The first steward code is
   generated on first boot and printed to the container log. The VAPID key pair
   for web push is generated on first use and kept in the `settings` table.
-- **Push is opt-in per phone, filtered per house.** A phone subscribes after
-  the villager taps Allow and records the language it subscribed in; the house
-  switches kinds off in `notify_off` (empty = all seven kinds on). The author's
+- **Push is opt-in per phone, filtered per house, mutable village-wide.** A
+  phone subscribes after the villager taps Allow and records the language it
+  subscribed in; the house switches kinds off in `notify_off` (empty = all
+  seven kinds on); a steward mutes a kind for everyone in `notify_off_global`.
+  Both lists are checked on every send. The author's
   house never receives its own event. Push carries a title, a one-line snippet
   and a route, in human words — `banner_test.go` pins every string, so read it
   before changing copy.

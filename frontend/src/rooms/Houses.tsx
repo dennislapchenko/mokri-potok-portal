@@ -20,6 +20,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   const [myCrest, setMyCrest] = useState(me.crest);
   const [myColor, setMyColor] = useState(me.color);
   const [copied, setCopied] = useState<number | null>(null);
+  const [newOpen, setNewOpen] = useState(false);
 
   useEffect(() => { api<any[]>("/devices").then(setDevices).catch(() => {}); }, []);
   useEffect(() => {
@@ -31,7 +32,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     await api("/houses", { method: "POST", body: nh });
-    setNh({ name: "", crest: "🏠", color: "#b5651d", kind: "house" }); await refresh();
+    setNh({ name: "", crest: "🏠", color: "#b5651d", kind: "house" }); setNewOpen(false); await refresh();
   };
   const rotate = async (id: number) => { const i = await api(`/houses/${id}/invite`, { method: "POST" }); setInvites((s) => ({ ...s, [id]: i })); };
   const copy = (id: number, code: string) => { navigator.clipboard?.writeText(inviteLink(code)); setCopied(id); setTimeout(() => setCopied(null), 1500); };
@@ -74,8 +75,8 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
         ))}
         {steward && (<>
           <p className="small">{t("Send this link to the house in WhatsApp. Everyone in the house opens it once.")}</p>
-          <h3 style={{ marginTop: "1rem" }}>{t("New house")}</h3>
-          <form className="inline" onSubmit={create}>
+          <p><button onClick={() => setNewOpen(!newOpen)}>+ {t("New house")}</button></p>
+          {newOpen && <form className="inline" onSubmit={create}>
             <div className="row">
               <label>{t("Name")}<input value={nh.name} onChange={(e) => setNh({ ...nh, name: e.target.value })} required maxLength={60} /></label>
               <label>{t("Crest")}<input value={nh.crest} onChange={(e) => setNh({ ...nh, crest: e.target.value })} maxLength={4} /></label>
@@ -83,7 +84,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
               <label>{t("Kind")}<select value={nh.kind} onChange={(e) => setNh({ ...nh, kind: e.target.value })}><option value="house">{t("house")}</option><option value="common">{t("common land")}</option></select></label>
             </div>
             <div className="submit"><button className="primary" type="submit">{t("Create")}</button></div>
-          </form>
+          </form>}
         </>)}
       </div>
       <div className="parchment">
@@ -96,7 +97,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
           </div>
           <div className="submit"><button type="submit">{t("Save")}</button></div>
         </form>
-        <Notifications />
+        <Notifications steward={steward} />
         <h3>{t("Your devices")}</h3>
         <p><AddPhone /></p>
         {devices.map((d) => (

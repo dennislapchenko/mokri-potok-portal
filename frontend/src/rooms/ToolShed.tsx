@@ -134,7 +134,7 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
           return (
             <div key={w.id} className="card">
               <div className="head"><Crest crest={w.house_crest} color={w.house_color} /><strong>{w.text}</strong><When iso={w.created_at} /></div>
-              <div className="small">{wants.map((h) => `${h.crest} ${h.name}`).join(", ")}</div>
+              <div className="small">🙋 {wants.map((h) => `${h.crest} ${h.name}`).join(", ")}</div>
               <div className="actions">
                 <button className={w.mine ? "" : "primary"} onClick={() => api(`/wishes/${w.id}`, { method: "PUT", body: { want: !w.mine } }).then(wishes.reload)}>{w.mine ? t("Not any more") : "🙋 " + t("I would love that too")}</button>
                 {canEdit(me, w) && <button className="ghost" onClick={() => confirm(w.text + "?") && api(`/wishes/${w.id}`, { method: "DELETE" }).then(wishes.reload)}>✓ {t("It arrived")}</button>}

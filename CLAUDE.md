@@ -100,6 +100,11 @@ does not ship.
   that is already inside. The small keyspace is paid for by a per-IP cap on
   `/api/join` and by burning every live pairing code after five wrong guesses.
   Do not widen either without redoing that arithmetic.
+- **One date control.** Every date or date-time in the app is `DatePicker.tsx`
+  (parchment button + month grid in the calendar's own classes). Never a native
+  `type=date` / `datetime-local` again — they look foreign and cannot prefill a
+  month without a day. Values stay plain strings: `YYYY-MM-DD` or
+  `YYYY-MM-DDTHH:MM`.
 - **Buttons come in three weights.** `primary` for the one action a card or
   form is for, plain for the rest, `lesser` for inner additions (add a task, add
   a note) — a real button one size down, never a ghost link. `ghost` is for

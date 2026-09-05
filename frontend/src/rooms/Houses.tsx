@@ -12,7 +12,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   const { t } = useT();
   const steward = me.is_steward === 1;
   const [nh, setNh] = useState({ name: "", crest: "🏠", color: "#b5651d", kind: "house" });
-  const [nc, setNc] = useState({ name: "", color: "#7a8f5a" });
+  const [nc, setNc] = useState({ name: "", crest: "🌳", color: "#7a8f5a" });
   const [commonOpen, setCommonOpen] = useState(false);
   const realHouses = houses.filter((h) => h.kind !== "common");
   const commons = houses.filter((h) => h.kind === "common");
@@ -95,9 +95,10 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
           {steward && <button className="lesser" style={{ marginLeft: "auto" }} onClick={() => setCommonOpen(!commonOpen)}>+ {t("Add a place")}</button>}
         </h2>
         {commonOpen && (
-          <form className="inline" onSubmit={async (e) => { e.preventDefault(); await api("/houses", { method: "POST", body: { name: nc.name, crest: "🌳", color: nc.color, kind: "common" } }); setNc({ name: "", color: "#7a8f5a" }); setCommonOpen(false); await refresh(); }}>
+          <form className="inline" onSubmit={async (e) => { e.preventDefault(); await api("/houses", { method: "POST", body: { name: nc.name, crest: nc.crest || "🌳", color: nc.color, kind: "common" } }); setNc({ name: "", crest: "🌳", color: "#7a8f5a" }); setCommonOpen(false); await refresh(); }}>
             <div className="row">
               <label>{t("Name")}<input value={nc.name} onChange={(e) => setNc({ ...nc, name: e.target.value })} required maxLength={60} placeholder={t("Event grounds")} /></label>
+              <label>{t("Crest")}<input value={nc.crest} onChange={(e) => setNc({ ...nc, crest: e.target.value })} maxLength={4} /></label>
               <label>{t("Colour")}<input type="color" value={nc.color} onChange={(e) => setNc({ ...nc, color: e.target.value })} /></label>
             </div>
             <div className="submit"><button className="primary" type="submit">{t("Create")}</button></div>
@@ -106,7 +107,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
         {commons.length === 0 && <p className="small muted">{t("None yet.")}</p>}
         {commons.map((h) => (
           <div key={h.id} className="common-row">
-            <span className="swatch" style={{ background: h.color }} /> <strong>{h.name}</strong>
+            <Crest crest={h.crest} color={h.color} /> <strong>{h.name}</strong>
             <span className="small">{(h.parcels || []).length} {t("parcels")}</span>
             {steward && <button className="lesser" onClick={() => startAssign(h)}>🗺️ {t("Assign land")}</button>}
             {steward && <button className="ghost" onClick={() => confirm(h.name + "?") && api(`/houses/${h.id}`, { method: "DELETE" }).then(refresh)}>🗑</button>}

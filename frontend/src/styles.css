@@ -68,9 +68,20 @@ main { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 1rem 1r
 .tag { display: inline-block; font-size: .78rem; padding: 0 .5rem; border-radius: 999px; background: var(--parch3); color: var(--ink2); }
 .tag.open { background: #dfe8cf; } .tag.taken, .tag.claimed { background: #f0d9a8; } .tag.done { background: #ddd; }
 .tag.alarm { background: #f2c2c2; color: var(--red); } .tag.work { background: #cfe0c2; }
-.due { display: flex; align-items: center; gap: .2rem; }
-.due input[type=date] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.due button { padding: .1rem .3rem; font-size: 1rem; }
+/* DatePicker: a field-shaped button and a small parchment popover that reuses
+   the calendar grid classes, so a date looks the same everywhere. */
+.dp { position: relative; display: block; }
+.dp-btn { width: 100%; text-align: left; font-family: Alegreya, serif; background: #fbf3dc; border: 1px solid var(--parch3); box-shadow: none; padding: .4rem .6rem; border-radius: 4px; color: var(--ink); }
+.dp-btn.empty { color: var(--ink3); font-style: italic; }
+.dp-req { position: absolute; opacity: 0; width: 1px; height: 1px; left: .5rem; bottom: 0; pointer-events: none; }
+.dp-pop { position: absolute; z-index: 20; top: calc(100% + .3rem); left: 0; width: min(320px, 92vw); background: var(--parch); border: 3px solid #7a5a3a; border-radius: 10px; padding: .6rem; box-shadow: var(--shadow); }
+.dp-grid .cal-day { min-height: 2.1rem; align-items: center; justify-content: center; }
+.dp-grid .cal-day .n { align-self: center; font-size: .85rem; }
+.dp-time { display: flex; align-items: center; gap: .3rem; margin-top: .5rem; font-size: 1rem; }
+.dp-time select { width: auto; padding: .15rem .3rem; }
+.dp-foot { display: flex; gap: .4rem; justify-content: flex-end; margin-top: .5rem; }
+a.plain { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--ink3); }
+a.plain:hover { color: var(--blue); }
 .tag.place { background: #e6dcc0; color: var(--wood2); font-size: .85rem; margin-right: .2rem; }
 
 form.inline { display: grid; gap: .3rem; grid-template-columns: 1fr; margin-bottom: 1rem; }

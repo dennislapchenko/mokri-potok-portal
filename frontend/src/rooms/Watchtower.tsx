@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
 import { Crest, Empty, When, canEdit, useList } from "./shared";
+import { DatePicker } from "../DatePicker";
 
 export function Watchtower({ me }: { me: Me }) {
   const { t } = useT();
@@ -19,8 +20,8 @@ export function Watchtower({ me }: { me: Me }) {
       <p className="small">{t("Only logged-in houses see this room.")}</p>
       <form className="inline" onSubmit={save}>
         <div className="row">
-          <label>{t("From")}<input type="date" value={f.from_date} onChange={(e) => setF({ ...f, from_date: e.target.value })} required /></label>
-          <label>{t("To")}<input type="date" value={f.to_date} onChange={(e) => setF({ ...f, to_date: e.target.value })} required min={f.from_date} /></label>
+          <label>{t("From")}<DatePicker required value={f.from_date} onChange={(v) => setF({ ...f, from_date: v, to_date: f.to_date && f.to_date < v ? v : f.to_date })} /></label>
+          <label>{t("To")}<DatePicker required value={f.to_date} onChange={(v) => setF({ ...f, to_date: v })} /></label>
         </div>
         <label>{t("Notes")}<textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} placeholder={t("What needs care (animals, watering, greenhouse)")} maxLength={2000} /></label>
         <div className="submit"><button className="primary" type="submit">🧳 {t("Mark us away")}</button></div>

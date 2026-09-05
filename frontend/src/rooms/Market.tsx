@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api, type House, type Me } from "../api";
 import { useT } from "../i18n";
 import { Crest, Empty, When, canEdit, useList } from "./shared";
+import { DatePicker } from "../DatePicker";
 
 export function Market({ me, houses }: { me: Me; houses: House[] }) {
   const { t } = useT();
@@ -61,7 +62,7 @@ export function Market({ me, houses }: { me: Me; houses: House[] }) {
         {tab === "runs" && (
           <div className="row">
             <label>{t("Destination")}<input value={run.destination} onChange={(e) => setRun({ ...run, destination: e.target.value })} required maxLength={120} /></label>
-            <label>{t("Leaving at")}<input type="datetime-local" value={run.cutoff_at} onChange={(e) => setRun({ ...run, cutoff_at: e.target.value })} required /></label>
+            <label>{t("Leaving at")}<DatePicker time required value={run.cutoff_at} onChange={(v) => setRun({ ...run, cutoff_at: v })} /></label>
             <label>{t("Notes")}<input value={run.notes} onChange={(e) => setRun({ ...run, notes: e.target.value })} maxLength={300} /></label>
           </div>
         )}

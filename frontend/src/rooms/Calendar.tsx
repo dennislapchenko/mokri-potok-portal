@@ -3,11 +3,12 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
 import { Crest, When, canEdit, useList } from "./shared";
+import { DatePicker } from "../DatePicker";
 
 export const ICON: Record<string, string> = { event: "🔔", work: "🤝", alarm: "🚨" };
 
 // EventCard is shared with the project page: same card, same sign-ups.
-export function EventCard({ ev, me, reload }: { ev: any; me: Me; reload: () => void }) {
+export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; reload: () => void; linkToTavern?: boolean }) {
   const { t } = useT();
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteText, setNoteText] = useState("");
@@ -19,7 +20,7 @@ export function EventCard({ ev, me, reload }: { ev: any; me: Me; reload: () => v
     <div className="card" style={{ borderLeftColor: ev.kind === "alarm" ? "var(--red)" : ev.kind === "work" ? "var(--green)" : "var(--brass)" }}>
       <div className="head">
         <Crest crest={ev.house_crest} color={ev.house_color} />
-        <strong>{ICON[ev.kind]} {ev.title}</strong>
+        <strong>{ICON[ev.kind]} {linkToTavern ? <Link to={`/tavern?day=${ev.starts_at.slice(0, 10)}`} className="plain">{ev.title}</Link> : ev.title}</strong>
         {ev.kind !== "event" && <span className={"tag " + ev.kind}>{t(ev.kind)}</span>}
         {ev.project_id && <Link to={`/projects/${ev.project_id}`} className="tag project-chip">📋 {ev.project_title}{ev.task_title ? ` · ${ev.task_title}` : ""}</Link>}
         <span className="when"><When iso={ev.starts_at} />{ev.ends_at ? <> → <When iso={ev.ends_at} /></> : null}</span>
@@ -68,7 +69,9 @@ export function Calendar({ me }: { me: Me }) {
   }, [f.project_id]);
   useEffect(() => {
     const pid = params.get("project");
-    if (pid && !open) { const d = defaultDay(); setF((x) => ({ ...x, project_id: pid, starts_at: d + "T09:00", ends_at: d + "T17:00" })); setOpen(true); }
+    if (pid && !open) { const d = defaultDay(); setF((x) => ({ ...x, project_id: pid, kind: "work", starts_at: d + "T09:00", ends_at: d + "T17:00" })); setOpen(true); }
+    const dd = params.get("day");
+    if (dd && /^\d{4}-\d{2}-\d{2}$/.test(dd)) { setDay(dd); setCursor(new Date(dd + "T00:00")); }
   }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
   const [cursor, setCursor] = useState(() => new Date());
   const [day, setDay] = useState<string | null>(null);
@@ -157,8 +160,8 @@ export function Calendar({ me }: { me: Me }) {
             <label>{t("Kind")}<select value={f.kind} onChange={set("kind")}><option value="event">🔔 {t("event")}</option><option value="work">🤝 {t("work")}</option><option value="alarm">🚨 {t("alarm")}</option></select></label>
           </div>
           <div className="row">
-            <label>{t("Starts")}<input type="datetime-local" value={f.starts_at} onChange={set("starts_at")} required /></label>
-            <label>{t("Ends")}<input type="datetime-local" value={f.ends_at} onChange={set("ends_at")} /></label>
+            <label>{t("Starts")}<DatePicker time required value={f.starts_at} onChange={(v) => set("starts_at")({ target: { value: v } } as any)} /></label>
+            <label>{t("Ends")}<DatePicker time value={f.ends_at} onChange={(v) => set("ends_at")({ target: { value: v } } as any)} defaultTime="17:00" /></label>
             <label>{t("Place")}<input value={f.place} onChange={set("place")} maxLength={120} /></label>
           </div>
           {projects.items.filter((p) => p.state === "open").length > 0 && (

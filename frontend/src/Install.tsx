@@ -27,7 +27,12 @@ export function InstallBanner() {
     window.addEventListener("appinstalled", onInstalled);
     mq.addEventListener?.("change", onMode);
     pushState().then(setPush);
+    const onFocus = () => pushState().then(setPush);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
     return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);
       mq.removeEventListener?.("change", onMode);
@@ -48,7 +53,7 @@ export function InstallBanner() {
   } else if (!standalone) {
     body = <><strong>{t("Install the village on this phone")}</strong>: {t("browser menu → Install app / Add to Home Screen.")}<Signin /></>;
   } else {
-    body = <><strong>{t("Ring the bell for you too?")}</strong> {t("Get a notification when a house posts, needs something, drives to town, adds an event or goes away.")} <button className="primary" onClick={() => enablePush().then(setPush)}>🔔 {t("Enable notifications")}</button></>;
+    body = <><strong>{t("Ring the bell for you too?")}</strong> {t("Get a notification when a house posts, needs something, drives to town, adds an event or goes away.")} <button className="primary" onClick={() => enablePush().catch(() => undefined).then(() => pushState()).then((s) => { setPush(s); if (s !== "off") setDismissed(true); })}>🔔 {t("Enable notifications")}</button></>;
   }
   return (
     <div className="card banner">

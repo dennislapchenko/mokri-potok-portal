@@ -58,10 +58,12 @@ export default function App() {
       <main>
         {state === "loading" && <div className="parchment">{t("Loading…")}</div>}
         {state === "gate" && (
-          <Routes>
-            <Route path="/join/:code" element={<Gate onJoined={refresh} />} />
-            <Route path="*" element={<Gate onJoined={refresh} />} />
-          </Routes>
+          <div className="gate-bg" style={{ "--bg": `url(${import.meta.env.BASE_URL}backdrop.jpg)` } as React.CSSProperties}>
+            <Routes>
+              <Route path="/join/:code" element={<Gate onJoined={refresh} />} />
+              <Route path="*" element={<Gate onJoined={refresh} />} />
+            </Routes>
+          </div>
         )}
         {state === "in" && me && (
           <Routes>
@@ -71,7 +73,7 @@ export default function App() {
             <Route path="/bell" element={<Hall me={me} />} />
             <Route path="/market" element={<Market me={me} houses={houses} />} />
             <Route path="/watch" element={<Watchtower me={me} />} />
-            <Route path="/shed" element={<ToolShed me={me} />} />
+            <Route path="/shed" element={<ToolShed me={me} houses={houses} />} />
             <Route path="/houses" element={<Houses me={me} houses={houses} refresh={refresh} logout={logout} />} />
             <Route path="/join/:code" element={<Home me={me} houses={houses} />} />
             <Route path="*" element={<Home me={me} houses={houses} />} />

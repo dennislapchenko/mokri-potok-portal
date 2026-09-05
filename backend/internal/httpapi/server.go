@@ -75,6 +75,13 @@ func (s *Server) routes() {
 	m.HandleFunc("POST /api/tools", s.requireHouse(s.createTool))
 	m.HandleFunc("PUT /api/tools/{id}", s.requireHouse(s.updateTool))
 	m.HandleFunc("DELETE /api/tools/{id}", s.requireHouse(s.deleteRow("tools")))
+	m.HandleFunc("GET /api/tools/{id}/photo", s.requireHouse(s.getToolPhoto))
+	m.HandleFunc("PUT /api/tools/{id}/photo", s.requireHouse(s.putToolPhoto))
+	m.HandleFunc("DELETE /api/tools/{id}/photo", s.requireHouse(s.deleteToolPhoto))
+	m.HandleFunc("GET /api/wishes", s.requireHouse(s.listWishes))
+	m.HandleFunc("POST /api/wishes", s.requireHouse(s.createWish))
+	m.HandleFunc("PUT /api/wishes/{id}", s.requireHouse(s.updateWish))
+	m.HandleFunc("DELETE /api/wishes/{id}", s.requireHouse(s.deleteRow("wishes")))
 	// Market
 	m.HandleFunc("GET /api/runs", s.requireHouse(s.listRuns))
 	m.HandleFunc("POST /api/runs", s.requireHouse(s.createRun))
@@ -593,7 +600,7 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request) {
 func (s *Server) listEvents(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.st.Rows(r.Context(), `SELECT e.*,`+houseJoin+`,
 		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id) AS signups,
-		(SELECT group_concat(h2.crest || ' ' || h2.name, ', ') FROM event_signups s JOIN houses h2 ON h2.id=s.house_id WHERE s.event_id=e.id) AS signup_names,
+		(SELECT json_group_array(json_object('house_id', h2.id, 'name', h2.name, 'crest', h2.crest, 'note', s.note)) FROM event_signups s JOIN houses h2 ON h2.id=s.house_id WHERE s.event_id=e.id) AS signup_list,
 		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id AND s.house_id=?) AS mine
 		FROM events e JOIN houses h ON h.id=e.house_id
 		WHERE e.starts_at >= date('now','-60 days') ORDER BY e.starts_at LIMIT 500`, houseFrom(r).ID)
@@ -892,8 +899,12 @@ func (s *Server) updateAway(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 	out := map[string]any{"exported_at": time.Now().UTC().Format(time.RFC3339)}
-	for _, t := range []string{"houses", "house_parcels", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools"} {
-		rows, err := s.st.Rows(r.Context(), `SELECT * FROM `+t)
+	for _, t := range []string{"houses", "house_parcels", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants"} {
+		cols := "*"
+		if t == "tools" { // photos are bytes, not text — they stay in the SQLite backup
+			cols = "id, house_id, name, notes, category, held_by, held_since, reminded_at, created_at"
+		}
+		rows, err := s.st.Rows(r.Context(), `SELECT `+cols+` FROM `+t)
 		if err != nil {
 			fail(w, err)
 			return
@@ -956,7 +967,8 @@ func (s *Server) signOff(w http.ResponseWriter, r *http.Request) {
 // ---- tool shed -----------------------------------------------------------
 
 func (s *Server) listTools(w http.ResponseWriter, r *http.Request) {
-	rows, err := s.st.Rows(r.Context(), `SELECT x.*,`+houseJoin+`, t.name AS held_by_name, t.crest AS held_by_crest
+	rows, err := s.st.Rows(r.Context(), `SELECT x.id, x.house_id, x.name, x.notes, x.category, x.held_by, x.held_since, x.created_at,
+		(x.photo IS NOT NULL) AS has_photo,`+houseJoin+`, t.name AS held_by_name, t.crest AS held_by_crest
 		FROM tools x JOIN houses h ON h.id=x.house_id LEFT JOIN houses t ON t.id=x.held_by ORDER BY h.name, x.name`)
 	if err != nil {
 		fail(w, err)
@@ -972,7 +984,7 @@ func (s *Server) createTool(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "name required")
 		return
 	}
-	id, err := s.st.Exec(r.Context(), `INSERT INTO tools(house_id, name, notes) VALUES (?,?,?)`, h.ID, str(m, "name"), str(m, "notes"))
+	id, err := s.st.Exec(r.Context(), `INSERT INTO tools(house_id, name, notes, category) VALUES (?,?,?,?)`, h.ID, str(m, "name"), str(m, "notes"), validCategory(str(m, "category")))
 	if err != nil {
 		fail(w, err)
 		return
@@ -1037,13 +1049,17 @@ func (s *Server) updateTool(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	for _, k := range []string{"name", "notes"} {
+	for _, k := range []string{"name", "notes", "category"} {
 		if _, ok := m[k]; ok {
 			if !mayEdit {
 				writeErr(w, 403, "not yours")
 				return
 			}
-			s.st.Exec(r.Context(), `UPDATE tools SET `+k+`=? WHERE id=?`, str(m, k), id)
+			v := str(m, k)
+			if k == "category" {
+				v = validCategory(v)
+			}
+			s.st.Exec(r.Context(), `UPDATE tools SET `+k+`=? WHERE id=?`, v, id)
 		}
 	}
 	w.WriteHeader(204)

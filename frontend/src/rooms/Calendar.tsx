@@ -53,6 +53,12 @@ export function Calendar({ me }: { me: Me }) {
     reload();
   };
   const signup = (ev: any) => api(`/events/${ev.id}/signup`, { method: ev.mine ? "DELETE" : "POST" }).then(reload);
+  // A sign-up may carry a line ("pridem s koso"); the list shows a balloon that
+  // opens it. Re-posting the sign-up with a note is the upsert the API already has.
+  const [noteFor, setNoteFor] = useState<number | null>(null);
+  const [noteText, setNoteText] = useState("");
+  const [openNote, setOpenNote] = useState<string | null>(null);
+  const saveNote = async (ev: any) => { await api(`/events/${ev.id}/signup`, { method: "POST", body: { note: noteText } }); setNoteFor(null); setNoteText(""); reload(); };
 
   // An event occupies every day from its start to its end.
   const byDay = useMemo(() => {
@@ -97,11 +103,26 @@ export function Calendar({ me }: { me: Me }) {
         <span className="when"><When iso={ev.starts_at} />{ev.ends_at ? <> → <When iso={ev.ends_at} /></> : null}</span>
       </div>
       {(ev.place || ev.notes) && <div className="body small">{ev.place && <>📍 {ev.place} </>}{ev.notes}</div>}
-      <div className="small">🙋 {ev.signups > 0 ? ev.signup_names : <span className="muted">{t("nobody has signed up yet")}</span>}</div>
+      <div className="small signers">🙋 {ev.signups > 0 ? (JSON.parse(ev.signup_list || "[]") as any[]).map((sgn, i) => {
+        const key = `${ev.id}-${sgn.house_id}`;
+        return (
+          <span key={key}>{i > 0 ? ", " : ""}{sgn.crest} {sgn.name}
+            {sgn.note && <button className="ghost balloon" title={sgn.note} onClick={() => setOpenNote(openNote === key ? null : key)}>💬</button>}
+            {openNote === key && <span className="note-bubble">{sgn.note}</span>}
+          </span>
+        );
+      }) : <span className="muted">{t("nobody has signed up yet")}</span>}</div>
+      {noteFor === ev.id && (
+        <div className="row" style={{ display: "flex", gap: ".4rem", margin: ".3rem 0" }}>
+          <input value={noteText} onChange={(e) => setNoteText(e.target.value)} maxLength={200} placeholder={t("e.g. I bring the scythe")} autoFocus />
+          <button className="primary" onClick={() => saveNote(ev)}>{t("Save")}</button>
+        </div>
+      )}
       <div className="actions">
         <button className={ev.mine ? "" : "primary"} onClick={() => signup(ev)}>
           {ev.mine ? t("I cannot come after all") : "🙋 " + t("I am coming")}{ev.signups > 0 ? ` (${ev.signups})` : ""}
         </button>
+        {ev.mine === 1 && noteFor !== ev.id && <button className="ghost" onClick={() => { setNoteFor(ev.id); setNoteText((JSON.parse(ev.signup_list || "[]") as any[]).find((x) => x.house_id === me.id)?.note || ""); }}>💬 {t("Add a note")}</button>}
         {canEdit(me, ev) && <button className="ghost" onClick={() => confirm("?") && api(`/events/${ev.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button>}
       </div>
     </div>

@@ -1,7 +1,10 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -223,5 +226,87 @@ func TestToolReminder(t *testing.T) {
 	steward.do("PUT", "/api/tools/"+id, map[string]any{"take": false})
 	if n, _ := srv.remindTools(context.Background()); n != 0 {
 		t.Fatalf("reminded a returned tool: %d", n)
+	}
+}
+
+// TestShedPhotosWishes: a tool gets a category and a photo, the list carries a
+// flag not the bytes, the photo comes back with its type, and the wishlist
+// collects house names, not a score.
+func TestShedPhotosWishes(t *testing.T) {
+	srv, _, steward, zagar := newVillage(t)
+	code, obj, _ := zagar.do("POST", "/api/tools", map[string]any{"name": "Kosilnica", "category": "garden"})
+	zagar.must(201, code, "tool")
+	id := itoa(obj["id"].(float64))
+
+	// Photo: raw bytes with a type; the steward may not upload to Žagar's tool? Stewards may.
+	req := httptest.NewRequest("PUT", "/api/tools/"+id+"/photo", bytes.NewReader([]byte("\xff\xd8jpegbytes")))
+	req.Header.Set("Authorization", "Bearer "+zagar.token)
+	req.Header.Set("Content-Type", "image/jpeg")
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != 204 {
+		t.Fatalf("photo upload: %d %s", rec.Code, rec.Body.String())
+	}
+	_, _, tools := steward.do("GET", "/api/tools", nil)
+	if tools[0]["category"] != "garden" || tools[0]["has_photo"].(float64) != 1 {
+		t.Fatalf("list: %v", tools[0])
+	}
+	if _, ok := tools[0]["photo"]; ok {
+		t.Fatal("list leaks the blob")
+	}
+	req = httptest.NewRequest("GET", "/api/tools/"+id+"/photo", nil)
+	req.Header.Set("Authorization", "Bearer "+steward.token)
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != 200 || rec.Header().Get("Content-Type") != "image/jpeg" || rec.Body.Len() != 11 {
+		t.Fatalf("photo get: %d %s %d", rec.Code, rec.Header().Get("Content-Type"), rec.Body.Len())
+	}
+	// Unknown category falls back to other.
+	code, _, _ = zagar.do("PUT", "/api/tools/"+id, map[string]any{"category": "spaceships"})
+	zagar.must(204, code, "category")
+	_, _, tools = zagar.do("GET", "/api/tools", nil)
+	if tools[0]["category"] != "other" {
+		t.Fatalf("category: %v", tools[0]["category"])
+	}
+
+	// Wishlist.
+	code, obj, _ = zagar.do("POST", "/api/wishes", map[string]any{"text": "Cepilec drv"})
+	zagar.must(201, code, "wish")
+	wid := itoa(obj["id"].(float64))
+	code, _, _ = steward.do("PUT", "/api/wishes/"+wid, map[string]any{"want": true})
+	steward.must(204, code, "want")
+	_, _, wishes := steward.do("GET", "/api/wishes", nil)
+	var wants []map[string]any
+	json.Unmarshal([]byte(wishes[0]["wants"].(string)), &wants)
+	if len(wants) != 2 || wishes[0]["mine"].(float64) != 1 {
+		t.Fatalf("wants: %v", wishes[0])
+	}
+	code, _, _ = steward.do("PUT", "/api/wishes/"+wid, map[string]any{"want": false})
+	steward.must(204, code, "unwant")
+	_, _, wishes = steward.do("GET", "/api/wishes", nil)
+	json.Unmarshal([]byte(wishes[0]["wants"].(string)), &wants)
+	if len(wants) != 1 {
+		t.Fatalf("unwant: %v", wishes[0]["wants"])
+	}
+	// Export must not choke on the blob.
+	code, exp, _ := steward.do("GET", "/api/export", nil)
+	steward.must(200, code, "export")
+	if _, ok := exp["tools"].([]any)[0].(map[string]any)["photo"]; ok {
+		t.Fatal("export carries the blob")
+	}
+}
+
+// TestSignupNote: a sign-up may carry a note, and the event list returns each
+// signer with it.
+func TestSignupNote(t *testing.T) {
+	_, _, steward, zagar := newVillage(t)
+	_, obj, _ := zagar.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-06T08:00"})
+	id := itoa(obj["id"].(float64))
+	steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"note": "pridem s koso"})
+	_, _, evs := zagar.do("GET", "/api/events", nil)
+	var list []map[string]any
+	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
+	if len(list) != 1 || list[0]["note"] != "pridem s koso" || list[0]["name"] != "S" {
+		t.Fatalf("signup_list: %v", evs[0]["signup_list"])
 	}
 }

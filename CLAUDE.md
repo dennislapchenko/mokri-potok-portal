@@ -19,7 +19,9 @@ does not ship.
   row per phone tells them apart. Never add per-person accounts without a
   decision recorded in the plan.
 - **Nothing is public.** Every API route except `/api/healthz`, `/api/status`,
-  `/api/bootstrap`, `/api/join` requires a bearer token. Away-notices are
+  `/api/bootstrap`, `/api/join` requires a bearer token. The one public image
+  is `backdrop.jpg` behind the gate — the owner chose it knowing the repo is
+  public; provenance `TBD`. Away-notices are
   burglary information: they never leave the logged-in app (no digests, no feeds).
 - **No tallies of favours.** "Taken by", "claimed by", "watched by" are
   acknowledgments. No counts, points, leaderboards, streaks. Ever.
@@ -35,6 +37,13 @@ does not ship.
   (day 1, 3, 7, 15), read off two timestamps — never a counter, never the
   owner, never in quiet hours. A cap "after N reminders" would need a count;
   do not add one.
+- **Photos stay in the database.** A tool photo is shrunk in the browser and
+  stored as a BLOB, so the SQLite backup is the whole village. The list and the
+  export never carry the bytes; `GET /api/tools/{id}/photo` needs a token.
+  The export hardcodes the `tools` column list — a new `tools` column must be
+  added there too, or it silently drops out of the exit path.
+- **Wishlist names are not votes.** Never sort, badge or count by how many
+  houses want a thing. A wish ends when the wisher marks it arrived.
 - **Exit is designed.** `GET /api/export` (steward) dumps everything as JSON;
   `VACUUM INTO` backups land nightly in `${DATA_DIR}/backups/`. Keep both working.
 - **No secrets in this repo, and none needed.** The first steward code is
@@ -79,7 +88,10 @@ does not ship.
 backend/            Go: main.go, internal/{config,store,httpapi}; migrations embedded
 frontend/           Vite + React; src/rooms/* one file per room. Hall.tsx = Calendar.tsx + Board.tsx
                     stacked, because the tavern is one door; src/map/VillageMap.tsx
-frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons; src/push.ts, src/Install.tsx, src/AddPhone.tsx
+frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons, backdrop.jpg (aerial photo behind the gate)
+                    src/push.ts, src/Install.tsx, src/AddPhone.tsx, src/photo.ts (auth'd photo fetch + browser-side shrink)
+backend/internal/httpapi/shed.go   tool photos as BLOBs (≤2 MB, served with auth), wishlist; remind.go = return nudges
+docs/               design docs the owner and the assistant decide on together (navigation growth, Projects, Campground)
                     icon.svg is hand-drawn paths, full-bleed, content inside the central 80 % safe circle
                     (an emoji glyph renders off-centre and monochrome — do not go back to one)
 frontend/public/data/  parcels.geojson (cadastre), channels.json (modelled water, dashed)

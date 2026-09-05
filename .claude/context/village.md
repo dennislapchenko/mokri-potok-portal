@@ -28,7 +28,7 @@ the shop, when the work party is — with a game-like village map as the door.
 | Watchtower | "We are away from … to …, please watch the land." Dates, care notes, one watcher. The room that justifies the app. |
 | Market | "Going to the shop, anyone need anything?" Needs with states, give-aways, shop runs with a cut-off. |
 | Tavern (the hall) | One room, three parts stacked: pinned notices on top, then the month calendar (kinds: event, work party, alarm, with sign-ups), then the message board. Merged 2026-09-04 — two doors to one gathering place crowded the bottom bar, and the board alone was never worth a door. `/bell` stays a route alias because notifications already sent point at it. |
-| Tool shed | Who lends what, and who holds it now. A tool comes back; a give-away does not. The holder gets a nudge after a day, then at doubling gaps — a reminder, not a ledger. |
+| Tool shed | Who lends what, and who holds it now, with a photo, a category (power, garden, other) and a filter by owner house. A tool comes back; a give-away does not. The holder gets a nudge after a day, then at doubling gaps — a reminder, not a ledger. A folded **wishlist** underneath: tools the village lacks, with the names of houses that would love one — names, never a count. |
 | Work bees | Any event takes sign-ups. The house that called it hears who is coming. A headcount for the day, never a score. |
 
 | Notifications | Installed as a home-screen app (PWA), each phone can allow push. Every new post, need, give-away, run, event or away notice rings the other houses; a house switches kinds off in the Houses room. Away pushes name nothing. All six on by default is sized for a handful of houses — revisit the defaults and quiet hours when more join. |
@@ -40,7 +40,10 @@ Later, only if the houses ask: growing plans (Fields), per-house frost log
 ## Things that are deliberately not here
 
 - Renown points, quests, leaderboards. Counted reciprocity turns into debt.
-- Photo uploads (v0). Money of any kind. Public pages.
+- Money of any kind. Public pages — with one exception: the gate (login page)
+  stands in front of the aged aerial photo of the village, by the owner's
+  choice, on a repo that is itself public. Provenance of that image: `TBD`
+  (own screenshot of a map service; licence not recorded).
 - WhatsApp login via Meta's Business API — the invite link *is* the WhatsApp login.
 - Offline caching in the service worker. A stale shell after a deploy costs
   more than a reload on village Wi-Fi.

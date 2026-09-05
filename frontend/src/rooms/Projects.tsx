@@ -90,7 +90,7 @@ export function Project({ me }: { me: Me }) {
         )}
         <div className="actions">
           {x.state === "open" && !x.assigned_to && <button className="primary" onClick={() => put(`/tasks/${x.id}`, { take: true })}>🙋 {t("I take it")}</button>}
-          {x.state === "open" && mine && <button onClick={() => put(`/tasks/${x.id}`, { take: false })}>{t("Let it go")}</button>}
+          {x.state === "open" && mine && <button onClick={() => put(`/tasks/${x.id}`, { take: false })}>{t("Let it go")}</button>}{/* only the holder — nobody ejects a house */}
           {x.state === "open" && (mine || creator) && closing !== x.id && <button onClick={() => setClosing(x.id)}>✓ {t("Done")}</button>}
           {x.state === "done" && (mine || creator) && <button className="ghost" onClick={() => put(`/tasks/${x.id}`, { state: "open" })}>{t("Reopen")}</button>}
           {creator && <button className="ghost" onClick={() => confirm(x.title + "?") && api(`/tasks/${x.id}`, { method: "DELETE" }).then(load)}>🗑</button>}

@@ -12,8 +12,8 @@ survived.
 - Put **Projects** and **Campground** on the Home map as tiles with `nav: false`, the way Houses lives today. The bottom bar stays five.
 - The **Tavern calendar is the daily door to Projects**: a project event shows a project chip, and the chip opens the project. The tile is the second door.
 - Campground is a rare action (a few times a month, `TBD`), so two taps from anywhere is enough.
-- Projects gets one new push kind, `projects`. Campground gets none. Quiet hours apply to both.
-- Campground records amounts. It stays a list because the only sum is the collective's, never a house's. That guard is a rule, not a schema.
+- Projects gets one new push kind, `projects`; Campground got one too, `camp` (owner's change). Quiet hours apply to both.
+- ~~Campground records amounts.~~ **Built without amounts** (owner's change): a collection and a note, held or handed over. The ledger is the cash box.
 
 ## Navigation options
 
@@ -46,7 +46,7 @@ flowchart LR
 
 A project is a long job. Tasks are its parts, each with a due date and one house that holds it. Events are its dates and live in the existing `events` table.
 
-### Data model (migration `007_projects.sql`, append-only)
+### Data model (built as `009_projects_camp.sql`, append-only)
 
 | Table | Fields | Notes |
 | --- | --- | --- |
@@ -102,7 +102,7 @@ Deleting a project deletes its tasks. Its events stay in the calendar with the l
 | New event on a project | `events` (existing) | All houses but the author | Waits |
 | Due reminder | — | — | Not in v0. If added, read off `due_at` and one `reminded_at`, like tools. No counter. |
 
-`Kinds` grows to eight. The `notify_off` comment, the "all seven kinds" line in CLAUDE.md, the Houses prefs screen and `banner_test.go` change in the same commit.
+`Kinds` grows to nine (`projects`, `camp`). The `notify_off` comment, the "all seven kinds" line in CLAUDE.md, the Houses prefs screen and `banner_test.go` change in the same commit.
 Lock-screen line: a task push names a house and a date. It says nothing about an empty house, so it sits on the "named" side of the rule. Free-text titles can leak anything, same as events today.
 
 ### "Completed stays visible"
@@ -119,11 +119,11 @@ Done is a state, not a deletion. The list shows open projects on top and done on
 
 The village has a parking spot listed on park4night. A house collects money from a camper. The room records one collection per row.
 
-### Data model (migration `008_camp.sql`)
+### Data model (built in `009_projects_camp.sql`)
 
 | Table | Fields | Notes |
 | --- | --- | --- |
-| `camp_takings` | `id`, `house_id` (who collected), `collected_by` (optional first name, like `posts.author`), `from_who` free text, `amount_cents`, `taken_on` date, `notes`, `state` held/handed, `handed_at`, `created_at` | Currency is EUR, implied. One row is one fact. |
+| `camp_takings` | `id`, `house_id` (who collected), `collected_by` (optional first name, like `posts.author`), `from_who` free text, `taken_on` date, `notes`, `state` held/handed, `handed_at`, `created_at` | **No amount** — owner's change. One row is one fact. |
 
 No plate column, no phone, no photo, no nights count. `from_who` is a label a villager would say aloud: "grey camper", "family from NL".
 
@@ -143,7 +143,9 @@ No plate column, no phone, no photo, no nights count. `from_who` is a label a vi
 - The one-page privacy note in the plan needs a line about campers. The collective as data controller is `TBD` (legal form, `SITE.md` § Tenure).
 - Income of the collective from a listed parking spot may have tax or registration consequences. The app records; it does not decide. *Requires professional verification*, 2026-09-05. Ask the board before the room ships.
 
-### Who sees totals
+### Who sees totals — moot
+
+Built without amounts, so there are no totals. Everyone sees every row. The table below is the argument that was had before the owner removed the number.
 
 | Choice | For | Against |
 | --- | --- | --- |

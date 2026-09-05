@@ -234,6 +234,7 @@ const sl: Record<string, string> = {
   "held": "drži",
   "Handed over": "Oddano",
   "Still held": "Še drži",
+  "No amounts here — the cash box is the ledger. \"Handed over\" means this house no longer holds it; to whom is still to be agreed by the collective.": "Tu ni zneskov — blagajna je knjiga. \"Oddano\" pomeni, da hiša denarja ne drži več; komu, se skupnost še dogovori.",
   "what": "kaj",
   "Switched off for the whole village by": "Za celo vas izklopil",
   "Village-wide (steward): kinds switched off here reach nobody, whatever each house chose. Alarms always ring.": "Za celo vas (oskrbnik): kar je tu izklopljeno, ne doseže nikogar, ne glede na izbiro hiš. Alarm zvoni vedno.",

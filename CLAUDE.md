@@ -44,15 +44,20 @@ does not ship.
   added there too, or it silently drops out of the exit path.
 - **Wishlist names are not votes.** Never sort, badge or count by how many
   houses want a thing. A wish ends when the wisher marks it arrived.
-- **A task is taken, never assigned.** `project_tasks.assigned_to` is written
-  only by the house that takes it (owner's decision 2026-09-05). No UI and no
-  endpoint lets a creator or steward put a task on another house. "3 of 5
+- **A task is taken, never assigned — and never taken away.** `assigned_to` is
+  written only by the house that takes it and cleared only by that same house
+  (owner's decision 2026-09-05). No UI and no endpoint lets a creator or
+  steward put a task on a house or eject one. The project's creator hears when
+  a task is taken; a task's creator who is not the project's does not. "3 of 5
   done" is a project's progress; never show a house's count of tasks.
 - **The campground holds no amounts.** One row = a house collected from a
   camper, a note, held or handed over. No `amount` column, no sums, no plates
   in the label ("grey camper", "family from NL"). The cash box is the ledger.
   Who the money is handed *to* is `TBD` — the treasurer question in
-  `docs/design-more-rooms.md`.
+  `docs/design-more-rooms.md`. Retention of `from_who` (a steward clears labels
+  older than 12 months, by a button) is `TBD` and not built; a privacy note
+  decides it. The `camp` push carries the house and the camper label, never
+  the note.
 - **Done is a state, never a deletion.** Finished projects and closed tasks
   stay readable with their closing notes. Nothing archives itself.
 - **Exit is designed.** `GET /api/export` (steward) dumps everything as JSON;

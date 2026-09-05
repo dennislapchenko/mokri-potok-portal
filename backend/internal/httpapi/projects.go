@@ -143,10 +143,25 @@ func (s *Server) updateTask(w http.ResponseWriter, r *http.Request) {
 	}
 	holder, held := t["assigned_to"].(int64)
 	creator := t["house_id"].(int64) == h.ID || t["project_house"].(int64) == h.ID || h.IsSteward
+	// Permission checks first, writes after: a mixed body must not half-apply.
+	for _, k := range []string{"title", "notes", "due_at"} {
+		if _, ok := m[k]; ok && !creator {
+			writeErr(w, 403, "not yours")
+			return
+		}
+	}
+	if st := str(m, "state"); (st == "done" || st == "open") && !(held && holder == h.ID) && !creator {
+		writeErr(w, 403, "not yours")
+		return
+	}
 	if take, ok := m["take"].(bool); ok {
 		if take {
 			if held {
 				writeErr(w, 409, "already taken")
+				return
+			}
+			if t["state"] != "open" {
+				writeErr(w, 409, "task is done")
 				return
 			}
 			s.st.Exec(r.Context(), `UPDATE project_tasks SET assigned_to=? WHERE id=?`, h.ID, id)
@@ -157,8 +172,10 @@ func (s *Server) updateTask(w http.ResponseWriter, r *http.Request) {
 				})
 			}
 		} else {
-			if !(held && holder == h.ID) && !creator {
-				writeErr(w, 403, "not yours")
+			// Only the holder lets a task go — symmetric with "never assigned":
+			// nobody puts a house on a task, nobody takes a house off one.
+			if !(held && holder == h.ID) {
+				writeErr(w, 403, "only the house that took it can let it go")
 				return
 			}
 			s.st.Exec(r.Context(), `UPDATE project_tasks SET assigned_to=NULL WHERE id=?`, id)
@@ -166,24 +183,12 @@ func (s *Server) updateTask(w http.ResponseWriter, r *http.Request) {
 	}
 	switch str(m, "state") {
 	case "done":
-		if !(held && holder == h.ID) && !creator {
-			writeErr(w, 403, "not yours")
-			return
-		}
 		s.st.Exec(r.Context(), `UPDATE project_tasks SET state='done', done_at=datetime('now'), closing_note=? WHERE id=?`, str(m, "closing_note"), id)
 	case "open":
-		if !(held && holder == h.ID) && !creator {
-			writeErr(w, 403, "not yours")
-			return
-		}
 		s.st.Exec(r.Context(), `UPDATE project_tasks SET state='open', done_at=NULL WHERE id=?`, id)
 	}
 	for _, k := range []string{"title", "notes", "due_at"} {
 		if _, ok := m[k]; ok {
-			if !creator {
-				writeErr(w, 403, "not yours")
-				return
-			}
 			s.st.Exec(r.Context(), `UPDATE project_tasks SET `+k+`=? WHERE id=?`, nullIfEmpty(str(m, k)), id)
 		}
 	}
@@ -239,7 +244,8 @@ func (s *Server) createCamp(w http.ResponseWriter, r *http.Request) {
 		if c := str(m, "collected_by"); c != "" {
 			who = c + " · " + h.Name
 		}
-		return Payload{Title: "🏕️ " + who + tr(lang, " je pobral kamp", " collected at the camp"), Body: snippet(join(" — ", str(m, "from_who"), str(m, "notes")), 120), URL: "#/camp"}
+		// Label only — the note may say "cash" and a lock screen is public.
+		return Payload{Title: "🏕️ " + who + tr(lang, " je pobral kamp", " collected at the camp"), Body: snippet(str(m, "from_who"), 80), URL: "#/camp"}
 	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }

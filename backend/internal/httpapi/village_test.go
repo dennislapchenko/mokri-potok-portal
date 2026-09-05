@@ -381,8 +381,13 @@ func TestProjects(t *testing.T) {
 	third.token = j["token"].(string)
 	code, _, _ = third.do("PUT", "/api/tasks/"+tid, map[string]any{"state": "done"})
 	third.must(403, code, "stranger closes")
+	// The project creator cannot eject the holder; only the holder lets go.
+	code, _, _ = zagar.do("PUT", "/api/tasks/"+tid, map[string]any{"take": false})
+	zagar.must(403, code, "creator ejects holder")
 	code, _, _ = steward.do("PUT", "/api/tasks/"+tid, map[string]any{"state": "done", "closing_note": "kupljeno pri Bauhausu"})
 	steward.must(204, code, "holder closes")
+	code, _, _ = zagar.do("PUT", "/api/tasks/"+tid, map[string]any{"take": true})
+	zagar.must(409, code, "take a done task")
 
 	// Event linked to the task inherits the project.
 	code, _, _ = zagar.do("POST", "/api/events", map[string]any{"title": "Postavljanje", "kind": "work", "starts_at": "2026-09-27T09:00", "task_id": json.Number(tid)})
@@ -430,7 +435,7 @@ func TestCamp(t *testing.T) {
 	var p Payload
 	json.Unmarshal(fake.payloads[0], &p)
 	fake.mu.Unlock()
-	if p.Kind != "camp" || p.Title != "🏕️ Ana · Žagar je pobral kamp" || p.Body != "siv kamper — 2 noči" {
+	if p.Kind != "camp" || p.Title != "🏕️ Ana · Žagar je pobral kamp" || p.Body != "siv kamper" {
 		t.Fatalf("camp push: %+v", p)
 	}
 	_, _, rows := steward.do("GET", "/api/camp", nil)

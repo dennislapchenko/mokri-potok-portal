@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { api, type House, type Me } from "../api";
 import { useT } from "../i18n";
 import { photoURL, uploadPhoto } from "../photo";
@@ -63,12 +64,12 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
     <div className={"card tool" + (x.held_by ? " out" : "")} style={{ borderLeftColor: x.held_by ? "var(--parch3)" : "var(--green)" }}>
       <div className="tool-main">
         <div className="head">
-          <Crest crest={x.house_crest} color={x.house_color} />
+          <Link to="/houses" title={x.house_name} className="crest-link"><Crest crest={x.house_crest} color={x.house_color} /></Link>
           <strong>{x.name}</strong>
           <span className="tag">{catOf(x.category).icon} {t(catOf(x.category).name)}</span>
           {x.held_by ? <span className="tag taken">{x.held_by_crest} {x.held_by_name}</span> : <span className="tag open">{t("in the shed")}</span>}
         </div>
-        <div className="small">{x.house_name}{x.held_since ? <> · <When iso={x.held_since} /></> : null}{x.notes ? <> · {x.notes}</> : null}</div>
+        {(x.held_since || x.notes) && <div className="small">{x.held_since ? <When iso={x.held_since} /> : null}{x.held_since && x.notes ? " · " : ""}{x.notes}</div>}
         <div className="actions">
           {!x.held_by && <button className="primary" onClick={() => take(x.id, true)}>🤲 {t("I take it")}</button>}
           {x.held_by === me.id && <button onClick={() => take(x.id, false)}>↩ {t("I brought it back")}</button>}

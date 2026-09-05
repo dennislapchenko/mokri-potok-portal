@@ -24,7 +24,7 @@ export function EventCard({ ev, me, reload }: { ev: any; me: Me; reload: () => v
         {ev.project_id && <Link to={`/projects/${ev.project_id}`} className="tag project-chip">📋 {ev.project_title}{ev.task_title ? ` · ${ev.task_title}` : ""}</Link>}
         <span className="when"><When iso={ev.starts_at} />{ev.ends_at ? <> → <When iso={ev.ends_at} /></> : null}</span>
       </div>
-      {(ev.place || ev.notes) && <div className="body small">{ev.place && <>📍 {ev.place} </>}{ev.notes}</div>}
+      {(ev.place || ev.notes) && <div className="body small">{ev.place && <span className="tag place">📍 {ev.place}</span>}{ev.place && ev.notes ? " " : ""}{ev.notes}</div>}
       <div className="small signers">🙋 {ev.signups > 0 ? list.map((sgn, i) => {
         const key = `${ev.id}-${sgn.house_id}`;
         return (

@@ -12,6 +12,10 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   const { t } = useT();
   const steward = me.is_steward === 1;
   const [nh, setNh] = useState({ name: "", crest: "🏠", color: "#b5651d", kind: "house" });
+  const [nc, setNc] = useState({ name: "", color: "#7a8f5a" });
+  const [commonOpen, setCommonOpen] = useState(false);
+  const realHouses = houses.filter((h) => h.kind !== "common");
+  const commons = houses.filter((h) => h.kind === "common");
   const [invites, setInvites] = useState<Record<number, { code?: string; expires_at?: string }>>({});
   const [assign, setAssign] = useState<House | null>(null);
   const [sel, setSel] = useState<string[]>([]);
@@ -25,7 +29,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   useEffect(() => { api<any[]>("/devices").then(setDevices).catch(() => {}); }, []);
   useEffect(() => {
     if (!steward) return;
-    houses.forEach((h) => api(`/houses/${h.id}/invite`).then((i) => setInvites((s) => ({ ...s, [h.id]: i }))).catch(() => {}));
+    houses.filter((h) => h.kind !== "common").forEach((h) => api(`/houses/${h.id}/invite`).then((i) => setInvites((s) => ({ ...s, [h.id]: i }))).catch(() => {}));
   }, [houses, steward]);
 
   const inviteLink = (code: string) => `${location.origin}${location.pathname}#/join/${code}`;
@@ -55,7 +59,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
       )}
       <div className="parchment">
         <h2>🏘️ {t("Houses")} <span className="sub">{t("houses and land")}</span></h2>
-        {houses.map((h) => (
+        {realHouses.map((h) => (
           <div key={h.id} className="card" style={{ borderLeftColor: h.color }}>
             <div className="head"><Crest crest={h.crest} color={h.color} /><span className="who">{h.name}</span>{h.kind === "common" && <span className="tag">{t("common land")}</span>}{h.is_steward === 1 && <span className="tag">🗝️ {t("Steward")}</span>}<span className="when">{(h.parcels || []).length} {t("parcels")}{h.parcels?.length ? ": " + h.parcels.join(", ") : ""}</span></div>
             {steward && (
@@ -81,11 +85,33 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
               <label>{t("Name")}<input value={nh.name} onChange={(e) => setNh({ ...nh, name: e.target.value })} required maxLength={60} /></label>
               <label>{t("Crest")}<input value={nh.crest} onChange={(e) => setNh({ ...nh, crest: e.target.value })} maxLength={4} /></label>
               <label>{t("Colour")}<input type="color" value={nh.color} onChange={(e) => setNh({ ...nh, color: e.target.value })} /></label>
-              <label>{t("Kind")}<select value={nh.kind} onChange={(e) => setNh({ ...nh, kind: e.target.value })}><option value="house">{t("house")}</option><option value="common">{t("common land")}</option></select></label>
             </div>
             <div className="submit"><button className="primary" type="submit">{t("Create")}</button></div>
           </form>}
         </>)}
+      </div>
+      <div className="parchment commons">
+        <h2>🌳 {t("Common places")} <span className="sub">{t("event grounds, parking, shared land — land on the map, not accounts")}</span>
+          {steward && <button className="lesser" style={{ marginLeft: "auto" }} onClick={() => setCommonOpen(!commonOpen)}>+ {t("Add a place")}</button>}
+        </h2>
+        {commonOpen && (
+          <form className="inline" onSubmit={async (e) => { e.preventDefault(); await api("/houses", { method: "POST", body: { name: nc.name, crest: "🌳", color: nc.color, kind: "common" } }); setNc({ name: "", color: "#7a8f5a" }); setCommonOpen(false); await refresh(); }}>
+            <div className="row">
+              <label>{t("Name")}<input value={nc.name} onChange={(e) => setNc({ ...nc, name: e.target.value })} required maxLength={60} placeholder={t("Event grounds")} /></label>
+              <label>{t("Colour")}<input type="color" value={nc.color} onChange={(e) => setNc({ ...nc, color: e.target.value })} /></label>
+            </div>
+            <div className="submit"><button className="primary" type="submit">{t("Create")}</button></div>
+          </form>
+        )}
+        {commons.length === 0 && <p className="small muted">{t("None yet.")}</p>}
+        {commons.map((h) => (
+          <div key={h.id} className="common-row">
+            <span className="swatch" style={{ background: h.color }} /> <strong>{h.name}</strong>
+            <span className="small">{(h.parcels || []).length} {t("parcels")}</span>
+            {steward && <button className="lesser" onClick={() => startAssign(h)}>🗺️ {t("Assign land")}</button>}
+            {steward && <button className="ghost" onClick={() => confirm(h.name + "?") && api(`/houses/${h.id}`, { method: "DELETE" }).then(refresh)}>🗑</button>}
+          </div>
+        ))}
       </div>
       <div className="parchment">
         <h2>{me.crest} {t("Your house")}</h2>

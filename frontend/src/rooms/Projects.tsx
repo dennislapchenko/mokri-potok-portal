@@ -53,7 +53,8 @@ export function Projects({ me }: { me: Me }) {
   );
 }
 
-export function Project({ me, houses }: { me: Me; houses: { id: number; name: string; crest: string }[] }) {
+export function Project({ me, houses: allHouses }: { me: Me; houses: { id: number; name: string; crest: string; kind?: string }[] }) {
+  const houses = allHouses.filter((h) => h.kind !== "common"); // land does not take tasks
   const { t } = useT();
   const { id } = useParams();
   const nav = useNavigate();

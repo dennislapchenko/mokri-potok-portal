@@ -450,6 +450,11 @@ func (s *Server) createHouse(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	if kind == "common" {
+		// A common place is land on the map, not an account: no invite.
+		writeJSON(w, 201, map[string]any{"id": id})
+		return
+	}
 	inv, err := s.newInvite(r.Context(), id)
 	if err != nil {
 		fail(w, err)

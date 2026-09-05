@@ -17,7 +17,11 @@ does not ship.
 
 - **A house is the account.** Everyone in a house shares one identity; a device
   row per phone tells them apart. Never add per-person accounts without a
-  decision recorded in the plan.
+  decision recorded in the plan. A **common place** (`houses.kind = common`:
+  event grounds, parking) shares the table because the map colours it, but it
+  is land, not an account: no invite, no login, never offered where a house is
+  meant (hand a task to, notifications, invite links). The UI keeps it in its
+  own small block.
 - **Nothing is public.** Every API route except `/api/healthz`, `/api/status`,
   `/api/bootstrap`, `/api/join` requires a bearer token. The one public image
   is `backdrop.jpg` behind the gate — the owner chose it knowing the repo is

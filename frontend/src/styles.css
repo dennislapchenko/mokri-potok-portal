@@ -68,6 +68,9 @@ main { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 1rem 1r
 .tag { display: inline-block; font-size: .78rem; padding: 0 .5rem; border-radius: 999px; background: var(--parch3); color: var(--ink2); }
 .tag.open { background: #dfe8cf; } .tag.taken, .tag.claimed { background: #f0d9a8; } .tag.done { background: #ddd; }
 .tag.alarm { background: #f2c2c2; color: var(--red); } .tag.work { background: #cfe0c2; }
+.due { display: flex; align-items: center; gap: .2rem; }
+.due input[type=date] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.due button { padding: .1rem .3rem; font-size: 1rem; }
 .tag.place { background: #e6dcc0; color: var(--wood2); font-size: .85rem; margin-right: .2rem; }
 
 form.inline { display: grid; gap: .3rem; grid-template-columns: 1fr; margin-bottom: 1rem; }

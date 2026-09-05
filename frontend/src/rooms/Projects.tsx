@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
 import { EventCard } from "./Calendar";
-import { Crest, Empty, When, canEdit, useList } from "./shared";
+import { Crest, DueInput, Empty, When, canEdit, dueOrEmpty, useList, yearPrefix } from "./shared";
 
 // Projects: a long job split into tasks. A task is taken, never handed to a
 // house. Done is a state that stays visible. "3 of 5" is a project's progress,
@@ -13,14 +13,13 @@ export function Projects({ me }: { me: Me }) {
   const { t } = useT();
   const { items, reload } = useList("/projects");
   const [open, setOpen] = useState(false);
-  const today = new Date().toISOString().slice(0, 10);
-  const [f, setF] = useState({ title: "", due_at: today, notes: "" });
+  const [f, setF] = useState({ title: "", due_at: yearPrefix(), notes: "" });
   const nav = useNavigate();
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { id } = await api<{ id: number }>("/projects", { method: "POST", body: f });
-    setF({ title: "", due_at: today, notes: "" }); setOpen(false); reload();
+    const { id } = await api<{ id: number }>("/projects", { method: "POST", body: { ...f, due_at: dueOrEmpty(f.due_at) } });
+    setF({ title: "", due_at: yearPrefix(), notes: "" }); setOpen(false); reload();
     nav(`/projects/${id}`);
   };
   const live = items.filter((p) => p.state === "open"), done = items.filter((p) => p.state === "done");
@@ -41,7 +40,7 @@ export function Projects({ me }: { me: Me }) {
         <form className="inline" onSubmit={create}>
           <div className="row">
             <label>{t("Title")}<input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} required maxLength={120} /></label>
-            <label>{t("Due")}<input type="date" value={f.due_at} onChange={(e) => setF({ ...f, due_at: e.target.value })} /></label>
+            <label>{t("Due")}<DueInput value={f.due_at} onChange={(v) => setF({ ...f, due_at: v })} /></label>
           </div>
           <label>{t("Notes")}<textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} maxLength={2000} /></label>
           <div className="submit"><button className="primary" type="submit">{t("Create")}</button></div>
@@ -60,8 +59,7 @@ export function Project({ me, houses: allHouses }: { me: Me; houses: { id: numbe
   const { id } = useParams();
   const nav = useNavigate();
   const [p, setP] = useState<any>(null);
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const [tf, setTf] = useState({ title: "", due_at: todayIso, notes: "" });
+  const [tf, setTf] = useState({ title: "", due_at: yearPrefix(), notes: "" });
   const [addTask, setAddTask] = useState(false);
   const [closing, setClosing] = useState<number | null>(null);
   const [note, setNote] = useState("");
@@ -121,10 +119,10 @@ export function Project({ me, houses: allHouses }: { me: Me; houses: { id: numbe
         {p.notes && <p>{p.notes}</p>}
         <h3 style={{ display: "flex", alignItems: "center", gap: ".6rem" }}>{t("Tasks")} <span className="small">{doneTasks.length} / {tasks.length}</span> <button className="lesser" onClick={() => setAddTask(!addTask)}>+ {t("Add a task")}</button></h3>
         {addTask && (
-          <form className="inline" onSubmit={async (e) => { e.preventDefault(); await api(`/projects/${p.id}/tasks`, { method: "POST", body: tf }); setTf({ title: "", due_at: todayIso, notes: "" }); setAddTask(false); load(); }}>
+          <form className="inline" onSubmit={async (e) => { e.preventDefault(); await api(`/projects/${p.id}/tasks`, { method: "POST", body: { ...tf, due_at: dueOrEmpty(tf.due_at) } }); setTf({ title: "", due_at: yearPrefix(), notes: "" }); setAddTask(false); load(); }}>
             <div className="row">
               <label>{t("Title")}<input value={tf.title} onChange={(e) => setTf({ ...tf, title: e.target.value })} required maxLength={120} /></label>
-              <label>{t("Due")}<input type="date" value={tf.due_at} onChange={(e) => setTf({ ...tf, due_at: e.target.value })} /></label>
+              <label>{t("Due")}<DueInput value={tf.due_at} onChange={(v) => setTf({ ...tf, due_at: v })} /></label>
               <label>{t("Notes")}<input value={tf.notes} onChange={(e) => setTf({ ...tf, notes: e.target.value })} maxLength={300} /></label>
             </div>
             <div className="submit"><button className="primary" type="submit">{t("Save")}</button></div>

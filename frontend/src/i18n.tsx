@@ -238,6 +238,8 @@ const sl: Record<string, string> = {
   "Add a place": "Dodaj prostor",
   "Event grounds": "Prireditveni prostor",
   "None yet.": "Še nič.",
+  "YYYY-MM-DD, or leave the year alone for no date": "LLLL-MM-DD, ali pustite samo leto za brez datuma",
+  "Pick a date": "Izberi datum",
   "Date": "Datum",
   "From whom": "Od koga",
   "grey camper, family from NL — no plates": "siv kamper, družina iz NL — brez tablic",

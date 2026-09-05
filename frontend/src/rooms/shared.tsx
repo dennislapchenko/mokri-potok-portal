@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { useT } from "../i18n";
 
@@ -28,3 +28,20 @@ export function Empty({ text }: { text: string }) {
 }
 
 export const canEdit = (me: { id: number; is_steward: number }, row: { house_id: number }) => row.house_id === me.id || me.is_steward === 1;
+
+// DueInput: a date typed as YYYY-MM-DD with the year already there, because a
+// native date field cannot hold a year alone. The 📅 opens the native picker.
+// An unfinished value ("2026-") counts as no date.
+export const yearPrefix = () => new Date().getFullYear() + "-";
+export const dueOrEmpty = (v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "");
+export function DueInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useT();
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <span className="due">
+      <input value={value} onChange={(e) => onChange(e.target.value)} inputMode="numeric" placeholder={yearPrefix() + "MM-DD"} pattern="\\d{4}-\\d{2}-\\d{2}|\\d{4}-?" title={t("YYYY-MM-DD, or leave the year alone for no date")} />
+      <input ref={ref} type="date" tabIndex={-1} aria-hidden="true" onChange={(e) => e.target.value && onChange(e.target.value)} />
+      <button type="button" className="ghost" aria-label={t("Pick a date")} onClick={() => { const el = ref.current; if (!el) return; (el as any).showPicker ? (el as any).showPicker() : el.click(); }}>📅</button>
+    </span>
+  );
+}

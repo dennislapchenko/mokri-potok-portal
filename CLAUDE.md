@@ -98,10 +98,11 @@ does not ship.
   Do not widen either without redoing that arithmetic.
 - **Slovenian first.** Every user-facing string goes through `t()` in
   `frontend/src/i18n.tsx` with a Slovenian entry. English is the fallback key.
-- **The bottom bar fits five.** Village plus four rooms. A new room either
-  replaces one, merges into one, or lives off the bar like Houses, Projects and
-  Campground do — tiles on the Home map, two taps from anywhere. Projects has a
-  second door: the 📋 chip on a calendar event. Rooms carry a `short` label for
+- **The bottom bar fits five.** Village plus four rooms — Hall, Projects,
+  Market, Shed (owner's pick 2026-09-05). A new room either replaces one, merges
+  into one, or lives off the bar like Watchtower, Campground and Houses do —
+  tiles on the Home map, two taps from anywhere. Projects has a second door: the
+  📋 chip on a calendar event. Rooms carry a `short` label for
   the bar because a phone gives each item about 60 px. Rationale and the
   options rejected: `docs/design-more-rooms.md`.
 - **Old notification links must keep working.** Payload URLs live in the

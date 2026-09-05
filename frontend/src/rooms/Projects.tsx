@@ -53,7 +53,7 @@ export function Projects({ me }: { me: Me }) {
   );
 }
 
-export function Project({ me }: { me: Me }) {
+export function Project({ me, houses }: { me: Me; houses: { id: number; name: string; crest: string }[] }) {
   const { t } = useT();
   const { id } = useParams();
   const [p, setP] = useState<any>(null);
@@ -90,7 +90,14 @@ export function Project({ me }: { me: Me }) {
         )}
         <div className="actions">
           {x.state === "open" && !x.assigned_to && <button className="primary" onClick={() => put(`/tasks/${x.id}`, { take: true })}>🙋 {t("I take it")}</button>}
-          {x.state === "open" && mine && <button onClick={() => put(`/tasks/${x.id}`, { take: false })}>{t("Let it go")}</button>}{/* only the holder — nobody ejects a house */}
+          {x.state === "open" && mine && <button onClick={() => put(`/tasks/${x.id}`, { take: false })}>{t("Let it go")}</button>}
+          {x.state === "open" && creator && !mine && x.assigned_to && <button className="ghost" onClick={() => put(`/tasks/${x.id}`, { take: false })}>{t("Clear")}</button>}
+          {x.state === "open" && creator && (
+            <select className="assign" value="" onChange={(e) => e.target.value && put(`/tasks/${x.id}`, { assigned_to: Number(e.target.value) })}>
+              <option value="">🤝 {t("Hand to")}…</option>
+              {houses.filter((h) => h.id !== x.assigned_to).map((h) => <option key={h.id} value={h.id}>{h.crest} {h.name}</option>)}
+            </select>
+          )}
           {x.state === "open" && (mine || creator) && closing !== x.id && <button onClick={() => setClosing(x.id)}>✓ {t("Done")}</button>}
           {x.state === "done" && (mine || creator) && <button className="ghost" onClick={() => put(`/tasks/${x.id}`, { state: "open" })}>{t("Reopen")}</button>}
           {creator && <button className="ghost" onClick={() => confirm(x.title + "?") && api(`/tasks/${x.id}`, { method: "DELETE" }).then(load)}>🗑</button>}

@@ -20,7 +20,6 @@ export function Camp({ me }: { me: Me }) {
   return (
     <div className="parchment">
       <h2>🏕️ {t("Campground")} <span className="sub">{t("who collected from whom")}</span></h2>
-      <p className="small">{t("No amounts here — the cash box is the ledger. \"Handed over\" means this house no longer holds it; to whom is still to be agreed by the collective.")}</p>
       <form className="inline" onSubmit={save}>
         <div className="row">
           <label>{t("Date")}<input type="date" value={f.taken_on} onChange={(e) => setF({ ...f, taken_on: e.target.value })} required /></label>

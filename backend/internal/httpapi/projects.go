@@ -121,9 +121,10 @@ func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
-// updateTask: any house takes a free task or lets it go; the holder, the
-// creator or a steward closes it (with an optional closing note) or reopens it;
-// creator or steward edits title, notes, due date.
+// updateTask: any house takes a free task; the holder lets it go. The task's
+// creator, the project's creator or a steward may also assign a house
+// (things get agreed in real life) or clear the holder, close with a note,
+// reopen, and edit title, notes, due date. The assigned house is told.
 func (s *Server) updateTask(w http.ResponseWriter, r *http.Request) {
 	h := houseFrom(r)
 	id, _ := pathID(r)
@@ -172,13 +173,31 @@ func (s *Server) updateTask(w http.ResponseWriter, r *http.Request) {
 				})
 			}
 		} else {
-			// Only the holder lets a task go — symmetric with "never assigned":
-			// nobody puts a house on a task, nobody takes a house off one.
-			if !(held && holder == h.ID) {
-				writeErr(w, 403, "only the house that took it can let it go")
+			if !(held && holder == h.ID) && !creator {
+				writeErr(w, 403, "not yours")
 				return
 			}
 			s.st.Exec(r.Context(), `UPDATE project_tasks SET assigned_to=NULL WHERE id=?`, id)
+		}
+	}
+	// Assign: creator only, to a house that exists; the house hears about it.
+	if v, ok := m["assigned_to"].(float64); ok {
+		if !creator {
+			writeErr(w, 403, "only the creator assigns")
+			return
+		}
+		to := int64(v)
+		hs, _ := s.st.One(r.Context(), `SELECT name FROM houses WHERE id=?`, to)
+		if hs == nil {
+			writeErr(w, 404, "no such house")
+			return
+		}
+		s.st.Exec(r.Context(), `UPDATE project_tasks SET assigned_to=? WHERE id=?`, to, id)
+		if to != h.ID {
+			title, ptitle := t["title"].(string), t["project_title"].(string)
+			s.notifyHouse("projects", to, func(lang string) Payload {
+				return Payload{Title: "📋 " + h.Name + tr(lang, " vam predaja: ", " hands you: ") + title, Body: ptitle, URL: "#/projects/" + itoa64(t["project_id"].(int64))}
+			})
 		}
 	}
 	switch str(m, "state") {

@@ -44,11 +44,13 @@ does not ship.
   added there too, or it silently drops out of the exit path.
 - **Wishlist names are not votes.** Never sort, badge or count by how many
   houses want a thing. A wish ends when the wisher marks it arrived.
-- **A task is taken, never assigned — and never taken away.** `assigned_to` is
-  written only by the house that takes it and cleared only by that same house
-  (owner's decision 2026-09-05). No UI and no endpoint lets a creator or
-  steward put a task on a house or eject one. The project's creator hears when
-  a task is taken; a task's creator who is not the project's does not. "3 of 5
+- **A task is taken by any house, or handed to one by its creator.** Any
+  house takes a free task and lets it go. The task's creator, the project's
+  creator or a steward may assign a house (agreed in real life first) or clear
+  the holder — the assigned house is told (owner's decision 2026-09-05, evening,
+  reversing the afternoon's "never assigned": the reminder that will one day
+  read `due_at` replaces the assigner nagging in person). No other house
+  touches `assigned_to`. The project's creator hears when a task is taken. "3 of 5
   done" is a project's progress; never show a house's count of tasks.
 - **The campground holds no amounts.** One row = a house collected from a
   camper, a note, held or handed over. No `amount` column, no sums, no plates

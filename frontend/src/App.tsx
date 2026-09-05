@@ -20,10 +20,10 @@ export type Session = { me: Me; houses: House[]; refresh: () => Promise<void>; l
 // Houses is reached by tapping your own house name in the top bar.
 export const ROOMS = [
   { path: "/tavern", icon: "🍺", name: "Tavern", short: "Hall", sub: "calendar, work bees and the board", nav: true },
-  { path: "/market", icon: "🧺", name: "Market", short: "Market", sub: "needs, give-aways, runs", nav: true },
-  { path: "/watch", icon: "🕯️", name: "Watchtower", short: "Watch", sub: "who is away", nav: true },
-  { path: "/shed", icon: "🛠", name: "Tool shed", short: "Shed", sub: "what the village lends", nav: true },
   { path: "/projects", icon: "📋", name: "Projects", short: "Projects", sub: "long jobs, split into tasks", nav: false },
+  { path: "/market", icon: "🧺", name: "Market", short: "Market", sub: "needs, give-aways, runs", nav: true },
+  { path: "/shed", icon: "🛠", name: "Tool shed", short: "Shed", sub: "what the village lends", nav: true },
+  { path: "/watch", icon: "🕯️", name: "Watchtower", short: "Watch", sub: "who is away", nav: true },
   { path: "/camp", icon: "🏕️", name: "Campground", short: "Camp", sub: "who collected from whom", nav: false },
   { path: "/houses", icon: "🏘️", name: "Houses", short: "Houses", sub: "houses and land", nav: false },
 ];
@@ -79,7 +79,7 @@ export default function App() {
             <Route path="/watch" element={<Watchtower me={me} />} />
             <Route path="/shed" element={<ToolShed me={me} houses={houses} />} />
             <Route path="/projects" element={<Projects me={me} />} />
-            <Route path="/projects/:id" element={<Project me={me} />} />
+            <Route path="/projects/:id" element={<Project me={me} houses={houses} />} />
             <Route path="/camp" element={<Camp me={me} />} />
             <Route path="/houses" element={<Houses me={me} houses={houses} refresh={refresh} logout={logout} />} />
             <Route path="/join/:code" element={<Home me={me} houses={houses} />} />

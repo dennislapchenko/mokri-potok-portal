@@ -381,9 +381,29 @@ func TestProjects(t *testing.T) {
 	third.token = j["token"].(string)
 	code, _, _ = third.do("PUT", "/api/tasks/"+tid, map[string]any{"state": "done"})
 	third.must(403, code, "stranger closes")
-	// The project creator cannot eject the holder; only the holder lets go.
+	// A stranger cannot clear the holder; the creator may (things get agreed
+	// in real life), and may assign — the assigned house hears.
+	_, o2, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Cetrta"})
+	fourth := &client{t: t, h: zagar.h}
+	_, j2, _ := fourth.do("POST", "/api/join", map[string]any{"code": o2["invite"].(map[string]any)["code"]})
+	fourth.token = j2["token"].(string)
+	code, _, _ = fourth.do("PUT", "/api/tasks/"+tid, map[string]any{"take": false})
+	fourth.must(403, code, "stranger clears holder")
+	code, _, _ = fourth.do("PUT", "/api/tasks/"+tid, map[string]any{"assigned_to": 1})
+	fourth.must(403, code, "stranger assigns")
+	code, _, _ = fourth.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/4", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	fourth.must(204, code, "subscribe 4th")
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+	_, me4, _ := fourth.do("GET", "/api/me", nil)
+	code, _, _ = zagar.do("PUT", "/api/tasks/"+tid, map[string]any{"assigned_to": me4["id"]})
+	zagar.must(204, code, "creator assigns")
+	waitFor(t, 1, fake)
 	code, _, _ = zagar.do("PUT", "/api/tasks/"+tid, map[string]any{"take": false})
-	zagar.must(403, code, "creator ejects holder")
+	zagar.must(204, code, "creator clears")
+	code, _, _ = steward.do("PUT", "/api/tasks/"+tid, map[string]any{"take": true})
+	steward.must(204, code, "steward takes again")
 	code, _, _ = steward.do("PUT", "/api/tasks/"+tid, map[string]any{"state": "done", "closing_note": "kupljeno pri Bauhausu"})
 	steward.must(204, code, "holder closes")
 	code, _, _ = zagar.do("PUT", "/api/tasks/"+tid, map[string]any{"take": true})

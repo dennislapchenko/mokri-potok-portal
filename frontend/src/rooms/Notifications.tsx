@@ -45,15 +45,17 @@ export function Notifications({ steward }: { steward: boolean }) {
     <>
       <h3>🔔 {t("Notifications")}</h3>
       {state === "unsupported" && <p className="small">{t("This browser cannot show notifications. Install the portal to the home screen first (iPhone), or use Chrome.")}</p>}
-      {state === "denied" && <p className="small err">{t("Notifications are blocked for this site in the phone's settings.")}</p>}
+      {state === "denied" && <p className="small err">{t("Notifications are blocked for this site in this device's settings.")}</p>}
       {(state === "on" || state === "off") && (
-        <p><button className={state === "on" ? "" : "primary"} disabled={busy} onClick={flip}>{state === "on" ? "🔕 " + t("Turn off on this phone") : "🔔 " + t("Enable notifications")}</button>
-          {prefs && <span className="small" style={{ marginLeft: ".6rem" }}>{prefs.phones} {t("phones of this house receive them")}</span>}</p>
+        <p><button className={state === "on" ? "" : "primary"} disabled={busy} onClick={flip}>{state === "on" ? "🔕 " + t("Turn off on this device") : "🔔 " + t("Enable notifications")}</button>
+          {prefs && <span className="small" style={{ marginLeft: ".6rem" }}>{prefs.phones} {t("devices of this house receive them")}</span>}</p>
       )}
-      <p className="small">{t("Notifications sleep from 21:00 to 07:00. Nothing rings at night unless a phone asks for it.")}</p>
-      {prefs && state === "on" && (
-        <label className="kind"><input type="checkbox" checked={prefs.quiet_ok} onChange={toggleQuiet} /> 🌙 {t("Ring at night on this phone too")}
-          <span className="small muted" style={{ marginLeft: ".4rem" }}>{t("This phone only. The other phones of the house keep sleeping.")}</span></label>
+      {prefs && state !== "unsupported" && (
+        <div className="kinds">
+          <div className="small">🌙 {t("Notifications sleep from 21:00 to 07:00. Nothing rings at night unless a device asks for it.")}</div>
+          <label className="kind wide"><input type="checkbox" checked={prefs.quiet_ok} onChange={toggleQuiet} /> {t("Ring at night on this device too")}</label>
+          <div className="small muted">{t("This device only. The other devices of the house keep sleeping.")}</div>
+        </div>
       )}
       {prefs && (
         <div className="kinds">

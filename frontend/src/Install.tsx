@@ -48,13 +48,13 @@ export function InstallBanner() {
 
   let body: React.ReactNode;
   if (!standalone && isInApp()) {
-    body = <><strong>{t("You are inside WhatsApp's browser.")}</strong> {t("Open this page in Chrome or Safari (menu ⋮ → open in browser), then add it to your home screen. Otherwise the phone forgets you.")}</>;
+    body = <><strong>{t("You are inside WhatsApp's browser.")}</strong> {t("Open this page in Chrome or Safari (menu ⋮ → open in browser), then add it to your home screen. Otherwise the device forgets you.")}</>;
   } else if (!standalone && prompt) {
-    body = <><strong>{t("Install the village on this phone")}</strong> — {t("one tap, then it opens like an app.")} <button className="primary" onClick={() => prompt.prompt()}>📲 {t("Install")}</button><Signin /></>;
+    body = <><strong>{t("Install the village on this device")}</strong> — {t("one tap, then it opens like an app.")} <button className="primary" onClick={() => prompt.prompt()}>📲 {t("Install")}</button><Signin /></>;
   } else if (!standalone && isIOS()) {
-    body = <><strong>{t("Install the village on this phone")}</strong>: {t("tap Share")} {t("below, then")} <em>{t("Add to Home Screen")}</em>.<Signin /></>;
+    body = <><strong>{t("Install the village on this device")}</strong>: {t("tap Share")} {t("below, then")} <em>{t("Add to Home Screen")}</em>.<Signin /></>;
   } else if (!standalone) {
-    body = <><strong>{t("Install the village on this phone")}</strong>: {t("browser menu → Install app / Add to Home Screen.")}<Signin /></>;
+    body = <><strong>{t("Install the village on this device")}</strong>: {t("browser menu → Install app / Add to Home Screen.")}<Signin /></>;
   } else {
     body = <><strong>{t("Ring the bell for you too?")}</strong> {t("Get a notification when a house posts, needs something, drives to town, adds an event or goes away.")} <button className="primary" onClick={() => enablePush().catch(() => undefined).then(() => pushState()).then((s) => { setPush(s); if (s !== "off") setDismissed(true); })}>🔔 {t("Enable notifications")}</button></>;
   }

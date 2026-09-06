@@ -87,7 +87,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
           </div>
         ))}
         {steward && (<>
-          <p className="small">{t("Send the message to the house in WhatsApp. The same link works for every phone in that house, until it expires. A house that lost its session gets a new link with ♻.")}</p>
+          <p className="small">{t("Send the message to the house in WhatsApp. The same link works for every device in that house, until it expires. A house that lost its session gets a new link with ♻.")}</p>
           <p><button onClick={() => setNewOpen(!newOpen)}>+ {t("New house")}</button></p>
           {newOpen && <form className="inline" onSubmit={create}>
             <div className="row">
@@ -139,13 +139,13 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
         <h3>{t("Your devices")}</h3>
         <p><AddPhone /></p>
         {devices.map((d) => (
-          <div key={d.id} className="card"><div className="head"><span>📱 {d.label || "—"}{d.id === me.device_id ? ` (${t("This phone")})` : ""}</span><span className="when">{d.last_seen?.slice(0, 16)}</span></div>
+          <div key={d.id} className="card"><div className="head"><span>📱 {d.label || "—"}{d.id === me.device_id ? ` (${t("This device")})` : ""}</span><span className="when">{d.last_seen?.slice(0, 16)}</span></div>
             {d.id !== me.device_id && <div className="actions"><button className="ghost" onClick={() => api(`/devices/${d.id}`, { method: "DELETE" }).then(() => api<any[]>("/devices").then(setDevices))}>{t("Remove")}</button></div>}
           </div>
         ))}
         <div className="actions" style={{ marginTop: "1rem", display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
-          {steward && <a className="btn" href={`${API}/export`} onClick={async (e) => { e.preventDefault(); const r = await fetch(`${API}/export`, { headers: { Authorization: "Bearer " + (localStorage.getItem("potok.token") || "") } }); const b = await r.blob(); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = "potok-export.json"; a.click(); }}><button type="button">📦 {t("Export everything")}</button></a>}
-          <button className="danger" onClick={logout}>{t("Log out on this phone")}</button>
+          {steward && <button type="button" onClick={async () => { const r = await fetch(`${API}/export`, { headers: { Authorization: "Bearer " + (localStorage.getItem("potok.token") || "") } }); const b = await r.blob(); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = "potok-export.json"; a.click(); URL.revokeObjectURL(u); }}>📦 {t("Export everything")}</button>}
+          <button className="danger" onClick={logout}>{t("Log out on this device")}</button>
         </div>
       </div>
     </>

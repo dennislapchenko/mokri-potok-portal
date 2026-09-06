@@ -139,7 +139,7 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
       <InstallBanner />
       <div className="topper-pick">
         {([["map", "🗺️", "Map"], ["weather", "🌤️", "Weather"], ["tavern", "🍺", "Tavern"]] as [Topper, string, string][]).map(([v, icon, label]) => (
-          <button key={v} className={"chip" + (top === v ? " on" : "")} onClick={() => pick(v)} title={t("this phone only")}>{icon} {t(label)}</button>
+          <button key={v} className={"chip" + (top === v ? " on" : "")} onClick={() => pick(v)} title={t("this device only")}>{icon} {t(label)}</button>
         ))}
       </div>
       {top === "map" && (<>
@@ -194,11 +194,11 @@ function Gate({ onJoined }: { onJoined: () => Promise<void> }) {
     <div className="parchment gate">
       <h2>🏰 {t("Enter the village")}</h2>
       <p className="small">{bootstrap ? t("The village is empty. The first steward founds it with the bootstrap code from the server log.") : t("You need an invite link from a steward. Ask in the WhatsApp group.")}</p>
-      {!bootstrap && <p className="small">{t("Already signed in in your browser? Open the portal there, go to Houses and press Add another phone — it gives you a 6-digit code for this one.")}</p>}
+      {!bootstrap && <p className="small">{t("Already signed in in your browser? Open the portal there, go to Houses and press Add another device — it gives you a 6-digit code for this one.")}</p>}
       <form onSubmit={submit} className="inline">
         <label>{bootstrap ? t("Bootstrap code") : t("Invite or pairing code")}<input value={code} onChange={(e) => setCode(e.target.value)} autoCapitalize="off" autoComplete="off" required /></label>
         {bootstrap && <label>{t("Steward house name")}<input value={name} onChange={(e) => setName(e.target.value)} /></label>}
-        <label>{t("This phone")}<input value={device} onChange={(e) => setDevice(e.target.value)} placeholder={t("e.g. Ana's phone")} /></label>
+        <label>{t("This device")}<input value={device} onChange={(e) => setDevice(e.target.value)} placeholder={t("e.g. Ana's phone or laptop")} /></label>
         {err && <div className="err">{err}</div>}
         <div className="submit"><button className="primary" type="submit">{bootstrap ? t("Found the village") : t("Join")}</button></div>
       </form>

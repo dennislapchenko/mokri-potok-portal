@@ -59,5 +59,5 @@ export function defaultAuthor(me: Me): string {
   } catch { /* ignore */ }
   const label = (me as any).device_label as string | undefined;
   if (!label) return "";
-  return label.replace(/[’']s\s+(phone|telefon).*$/i, "").replace(/\s*(phone|telefon|laptop|iphone|android)\s*$/i, "").trim();
+  return label.replace(/[’']s\s+(phone|telefon).*$/i, "").replace(/\s*(phone|telefon|naprava|laptop|prenosnik|iphone|android)\s*$/i, "").trim();
 }

@@ -215,6 +215,8 @@ a.card:hover { background: #fff8e4; }
 .kind { display: flex; align-items: center; gap: .4rem; margin: 0; font-size: 1rem; color: var(--ink); }
 .kind input { width: auto; }
 .kind.muted-global { color: var(--ink3); }
+/* A single switch inside a two-column grid of kinds: let it have the row. */
+.kind.wide { grid-column: 1 / -1; }
 .kinds.global { border-top: 1px dashed var(--parch3); padding-top: .5rem; }
 .gate h2 { justify-content: center; }
 .bottomnav { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(var(--wood2), var(--wood)); border-top: 3px solid #1a100a; display: flex; justify-content: space-around; padding: .3rem 0 calc(.3rem + env(safe-area-inset-bottom)); z-index: 5; }

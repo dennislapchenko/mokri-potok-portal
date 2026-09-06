@@ -29,15 +29,15 @@ export function AddPhone({ compact }: { compact?: boolean }) {
 
   const expired = pin !== "" && left === 0 && until !== 0 && Date.now() > until;
   if (!pin || expired) {
-    return <button disabled={busy} onClick={make}>➕ {t("Add another phone")}</button>;
+    return <button disabled={busy} onClick={make}>➕ {t("Add another device")}</button>;
   }
   const mm = Math.floor(left / 60), ss = String(left % 60).padStart(2, "0");
   return (
     <div>
       <div className="pin">{pin.slice(0, 3)} {pin.slice(3)}</div>
       <p className="small">
-        {t("On the other phone open the portal and type this code. It works once, and only for")} {mm}:{ss}.
-        {!compact && <> {t("This is how a second phone of the same house gets in, and how you sign in again after adding the portal to your home screen.")}</>}
+        {t("On the other device open the portal and type this code. It works once, and only for")} {mm}:{ss}.
+        {!compact && <> {t("This is how a second device of the same house gets in, and how you sign in again after adding the portal to your home screen.")}</>}
       </p>
     </div>
   );

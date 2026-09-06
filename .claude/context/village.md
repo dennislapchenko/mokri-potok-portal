@@ -27,13 +27,18 @@ the shop, when the work party is — with a game-like village map as the door.
 | Village map (home) | Who lives where. Parcels coloured by house crest; the event ground is a house of kind `common`. |
 | Watchtower | "We are away from … to …, please watch the land." Dates, care notes, one watcher. The room that justifies the app. |
 | Market | "Going to the shop, anyone need anything?" Needs with states, give-aways, shop runs with a cut-off. |
-| Tavern (the hall) | One room, three parts stacked: pinned notices on top, then the month calendar (kinds: event, work party, alarm, with sign-ups), then the message board. Merged 2026-09-04 — two doors to one gathering place crowded the bottom bar, and the board alone was never worth a door. `/bell` stays a route alias because notifications already sent point at it. |
+| Tavern (the hall) | One room, three parts stacked: pinned notices on top, then the month calendar (kinds: event and work party, with sign-ups), then the message board. Merged 2026-09-04 — two doors to one gathering place crowded the bottom bar, and the board alone was never worth a door. `/bell` stays a route alias because notifications already sent point at it. |
 | Tool shed | Who lends what, and who holds it now, with a photo, a category (power, garden, other) and a filter by owner house. A tool comes back; a give-away does not. The holder gets a nudge after a day, then at doubling gaps — a reminder, not a ledger. A folded **wishlist** underneath: tools the village lacks, with the names of houses that would love one — names, never a count. |
 | Projects | A long job split into tasks a house takes, or is handed by the task's creator after agreeing in person. Events belong to a project and show a 📋 chip in the calendar. Finished stays visible. On the phone's bottom bar. |
 | Campground | The village parking spot on park4night. A house notes a camper arrived; a house says it has the money; it is handed over. No amounts, no plates. Everyone hears an arrival and a claim, so nobody collects twice. |
 | Work bees | Any event takes three answers — coming, not coming, maybe — plus its own comment thread. Two kinds only: an ordinary event and a work party. There is no alarm — an emergency is a phone call. The house that called it hears who is coming. A headcount for the day, never a score. |
 
-| Notifications | Installed as a home-screen app (PWA), each phone can allow push. Every new post, need, give-away, run, event or away notice rings the other houses; a house switches kinds off in the Houses room. Away pushes name nothing. All six on by default is sized for a handful of houses — revisit the defaults and quiet hours when more join. |
+| Notifications | Installed as a home-screen app (PWA), each phone can allow push. Every new post, need, give-away, run, event or away notice rings the other houses; a house switches kinds off in the Houses room. Away pushes name nothing. Nothing rings between 21:00 and 07:00 unless that one phone ticked "ring at night too" — the choice is the phone's, not the house's. All kinds on by default is sized for a handful of houses — revisit the defaults when more join. |
+
+An open design, not built: **an account for people who live here without land**
+— someone renting a hut from a house, or using a vacant one part of the year.
+Options and the drawings: `docs/design-membership.md`. The village has to answer
+the away-notice question before any of it is written.
 
 Later, only if the houses ask: growing plans (Fields), per-house frost log
 (Almanac — this site's binding constraint is frost pooling), village knowledge

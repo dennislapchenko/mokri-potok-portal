@@ -112,6 +112,7 @@ func (s *Server) routes() {
 	m.HandleFunc("DELETE /api/push/subscribe", s.requireHouse(s.unsubscribe))
 	m.HandleFunc("GET /api/me/prefs", s.requireHouse(s.getPrefs))
 	m.HandleFunc("PUT /api/me/prefs", s.requireHouse(s.putPrefs))
+	m.HandleFunc("PUT /api/me/device", s.requireHouse(s.putDevicePrefs))
 	m.HandleFunc("PUT /api/prefs/global", s.requireSteward(s.putGlobalPrefs))
 	// Projects
 	m.HandleFunc("GET /api/projects", s.requireHouse(s.listProjects))
@@ -637,7 +638,7 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request) {
 func (s *Server) listEvents(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.st.Rows(r.Context(), `SELECT e.*,`+houseJoin+`, pr.title AS project_title, tk.title AS task_title,
 		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id AND s.state='yes' AND s.answered_version >= e.time_version) AS signups,
-		(SELECT json_group_array(json_object('house_id', h2.id, 'name', h2.name, 'crest', h2.crest, 'note', s.note, 'state', s.state, 'stale', CASE WHEN s.answered_version < e.time_version THEN 1 ELSE 0 END)) FROM event_signups s JOIN houses h2 ON h2.id=s.house_id WHERE s.event_id=e.id) AS signup_list,
+		(SELECT json_group_array(json_object('house_id', h2.id, 'name', h2.name, 'crest', h2.crest, 'state', s.state, 'stale', CASE WHEN s.answered_version < e.time_version THEN 1 ELSE 0 END)) FROM event_signups s JOIN houses h2 ON h2.id=s.house_id WHERE s.event_id=e.id) AS signup_list,
 		(SELECT s.state FROM event_signups s WHERE s.event_id=e.id AND s.house_id=?) AS mine,
 		(SELECT count(*) FROM comments c WHERE c.subject='event' AND c.subject_id=e.id) AS comments,
 		ed.name AS edited_by_name
@@ -1029,22 +1030,17 @@ func (s *Server) signUp(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "no such event")
 		return
 	}
-	// A body without `state` is a note edit: keep the answer the house gave.
-	// A body with an unknown state is a bug, not a yes.
+	// An answer is one of three words and nothing else. A sign-up carries no
+	// note any more (2026-09-06) — the event's comment thread does that job.
 	state := str(m, "state")
-	if _, sent := m["state"]; !sent || state == "" {
-		state = "yes"
-		if prev, _ := s.st.One(r.Context(), `SELECT state FROM event_signups WHERE event_id=? AND house_id=?`, id, h.ID); prev != nil {
-			state = prev["state"].(string)
-		}
-	} else if !contains(signupStates, state) {
+	if !contains(signupStates, state) {
 		writeErr(w, 400, "unknown answer")
 		return
 	}
-	if _, err := s.st.Exec(r.Context(), `INSERT INTO event_signups(event_id, house_id, note, state, answered_at, answered_version)
-		VALUES (?,?,?,?,datetime('now'), COALESCE((SELECT time_version FROM events WHERE id=?),0))
-		ON CONFLICT(event_id, house_id) DO UPDATE SET note=excluded.note, state=excluded.state, answered_at=excluded.answered_at, answered_version=excluded.answered_version`,
-		id, h.ID, str(m, "note"), state, id); err != nil {
+	if _, err := s.st.Exec(r.Context(), `INSERT INTO event_signups(event_id, house_id, state, answered_at, answered_version)
+		VALUES (?,?,?,datetime('now'), COALESCE((SELECT time_version FROM events WHERE id=?),0))
+		ON CONFLICT(event_id, house_id) DO UPDATE SET state=excluded.state, answered_at=excluded.answered_at, answered_version=excluded.answered_version`,
+		id, h.ID, state, id); err != nil {
 		fail(w, err)
 		return
 	}

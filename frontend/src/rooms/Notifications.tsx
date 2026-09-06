@@ -8,7 +8,7 @@ import { disablePush, enablePush, pushState, type PushState } from "../push";
 export function Notifications({ steward }: { steward: boolean }) {
   const { t } = useT();
   const [state, setState] = useState<PushState>("off");
-  const [prefs, setPrefs] = useState<{ off: string[]; global_off: string[]; global_detail: { kind: string; set_by: string | null; set_at: string }[]; kinds: string[]; phones: number } | null>(null);
+  const [prefs, setPrefs] = useState<{ off: string[]; global_off: string[]; global_detail: { kind: string; set_by: string | null; set_at: string }[]; kinds: string[]; phones: number; quiet_ok: boolean } | null>(null);
   const mutedBy = (k: string) => { const d = prefs?.global_detail?.find((x) => x.kind === k); return d ? `${t("Switched off for the whole village by")} ${d.set_by || "?"} · ${d.set_at.slice(0, 10)}` : ""; };
   const [busy, setBusy] = useState(false);
   const load = () => api<any>("/me/prefs").then(setPrefs).catch(() => {});
@@ -20,6 +20,14 @@ export function Notifications({ steward }: { steward: boolean }) {
     const off = prefs.global_off.includes(k) ? prefs.global_off.filter((x) => x !== k) : [...prefs.global_off, k];
     setPrefs({ ...prefs, global_off: off });
     await api("/prefs/global", { method: "PUT", body: { off } });
+  };
+  // Quiet hours are the only device-scoped preference: the phone that rings at
+  // 23:00 belongs to a person, not to the house.
+  const toggleQuiet = async () => {
+    if (!prefs) return;
+    const quiet_ok = !prefs.quiet_ok;
+    setPrefs({ ...prefs, quiet_ok });
+    await api("/me/device", { method: "PUT", body: { quiet_ok } });
   };
   const toggleKind = async (k: string) => {
     if (!prefs) return;
@@ -42,7 +50,11 @@ export function Notifications({ steward }: { steward: boolean }) {
         <p><button className={state === "on" ? "" : "primary"} disabled={busy} onClick={flip}>{state === "on" ? "🔕 " + t("Turn off on this phone") : "🔔 " + t("Enable notifications")}</button>
           {prefs && <span className="small" style={{ marginLeft: ".6rem" }}>{prefs.phones} {t("phones of this house receive them")}</span>}</p>
       )}
-      <p className="small">{t("Notifications sleep from 21:00 to 07:00 — only an alarm rings at night.")}</p>
+      <p className="small">{t("Notifications sleep from 21:00 to 07:00. Nothing rings at night unless a phone asks for it.")}</p>
+      {prefs && state === "on" && (
+        <label className="kind"><input type="checkbox" checked={prefs.quiet_ok} onChange={toggleQuiet} /> 🌙 {t("Ring at night on this phone too")}
+          <span className="small muted" style={{ marginLeft: ".4rem" }}>{t("This phone only. The other phones of the house keep sleeping.")}</span></label>
+      )}
       {prefs && (
         <div className="kinds">
           <div className="small">{t("What the house wants to hear about:")}</div>
@@ -56,7 +68,7 @@ export function Notifications({ steward }: { steward: boolean }) {
       {prefs && prefs.global_off.length > 0 && <div className="small">🔇 {prefs.global_detail.map((d) => `${t(labels[d.kind] || d.kind)}: ${d.set_by || "?"} · ${d.set_at.slice(0, 10)}`).join(" · ")}</div>}
       {prefs && steward && (
         <div className="kinds global">
-          <div className="small">🗝️ {t("Village-wide (steward): kinds switched off here reach nobody, whatever each house chose. Alarms always ring.")}</div>
+          <div className="small">🗝️ {t("Village-wide (steward): kinds switched off here reach nobody, whatever each house chose.")}</div>
           {prefs.kinds.map((k) => (
             <label key={k} className="kind"><input type="checkbox" checked={!prefs.global_off.includes(k)} onChange={() => toggleGlobal(k)} /> {t(labels[k] || k)}</label>
           ))}

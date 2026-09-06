@@ -130,29 +130,34 @@ const subsFor = `SELECT p.id, p.endpoint, p.p256dh, p.auth, p.lang FROM push_sub
 	WHERE NOT EXISTS (SELECT 1 FROM notify_off n WHERE n.house_id=p.house_id AND n.kind=?)
 	AND NOT EXISTS (SELECT 1 FROM notify_off_global g WHERE g.kind=?) `
 
-// quietHours: between 21:00 and 07:00 only an alarm is worth a buzz. The item
-// still waits in the app — a village that stops trusting its phone at night
-// turns notifications off altogether.
+// quietHours: between 21:00 and 07:00 the village sleeps. The item still waits
+// in the app — a village that stops trusting its phone at night turns
+// notifications off altogether.
 func (s *Server) quietHours() bool {
 	h := s.now().Hour()
 	return h >= 21 || h < 7
 }
 
+// nightFilter is the one exception, and it is asked for, never assumed: a phone
+// whose holder ticked "ring at night" keeps ringing. The flag is on the device,
+// so one phone of a house can be awake while the others sleep. A subscription
+// with no device row behind it stays silent — the default is quiet.
+func (s *Server) nightFilter() string {
+	if !s.quietHours() {
+		return ""
+	}
+	return `AND EXISTS (SELECT 1 FROM devices d WHERE d.id=p.device_id AND d.quiet_ok=1) `
+}
+
 // notify tells every house except the one that caused the thing.
 func (s *Server) notify(kind string, fromHouse int64, build func(lang string) Payload) {
-	if s.quietHours() {
-		return
-	}
-	s.fanout(kind, build, subsFor+`AND p.house_id != ?`, kind, kind, fromHouse)
+	s.fanout(kind, build, subsFor+s.nightFilter()+`AND p.house_id != ?`, kind, kind, fromHouse)
 }
 
 // notifyHouse sends to one house only — used when the message is that house's
 // business alone: someone signed up to its work bee, or borrowed its tool.
 func (s *Server) notifyHouse(kind string, toHouse int64, build func(lang string) Payload) {
-	if s.quietHours() {
-		return
-	}
-	s.fanout(kind, build, subsFor+`AND p.house_id = ?`, kind, kind, toHouse)
+	s.fanout(kind, build, subsFor+s.nightFilter()+`AND p.house_id = ?`, kind, kind, toHouse)
 }
 
 // ---- handlers ------------------------------------------------------------
@@ -222,7 +227,13 @@ func (s *Server) getPrefs(w http.ResponseWriter, r *http.Request) {
 	for _, x := range grows {
 		goff = append(goff, x["kind"].(string))
 	}
-	writeJSON(w, 200, map[string]any{"off": off, "global_off": goff, "global_detail": grows, "kinds": Kinds, "phones": subs["n"]})
+	// quiet_ok is THIS phone's, not the house's — the only device-scoped field
+	// the page carries besides the on/off switch.
+	quiet := int64(0)
+	if d, _ := s.st.One(r.Context(), `SELECT quiet_ok FROM devices WHERE id=?`, houseFrom(r).DeviceID); d != nil {
+		quiet, _ = d["quiet_ok"].(int64)
+	}
+	writeJSON(w, 200, map[string]any{"off": off, "global_off": goff, "global_detail": grows, "kinds": Kinds, "phones": subs["n"], "quiet_ok": quiet == 1})
 }
 
 // putGlobalPrefs: a steward mutes kinds for every house at once — the lever for
@@ -269,6 +280,29 @@ func (s *Server) putPrefs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(204)
+}
+
+// putDevicePrefs: this phone alone decides whether quiet hours apply to it.
+// Nothing else about a device is settable from the app.
+func (s *Server) putDevicePrefs(w http.ResponseWriter, r *http.Request) {
+	m, err := readJSON(r)
+	if err != nil {
+		writeErr(w, 400, "bad json")
+		return
+	}
+	ok, _ := m["quiet_ok"].(bool)
+	if _, err := s.st.Exec(r.Context(), `UPDATE devices SET quiet_ok=? WHERE id=?`, boolInt(ok), houseFrom(r).DeviceID); err != nil {
+		fail(w, err)
+		return
+	}
+	w.WriteHeader(204)
+}
+
+func boolInt(b bool) int64 {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 func contains(xs []string, x string) bool {

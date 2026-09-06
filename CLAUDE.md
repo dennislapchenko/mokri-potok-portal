@@ -58,6 +58,10 @@ does not ship.
   price, this link" to a wish. Never count, rank or mark a winner.
 - **An answer is not a headcount.** A sign-up is `yes`, `no` or `maybe`, and
   silence is a fourth thing. Only `yes` is counted; never fold `maybe` into it.
+  It carries **no note** — the sign-up note was removed on 2026-09-06 and the
+  old ones moved into the event's thread (`013_quiet_and_notes.sql`), because a
+  line only the signer can edit and nobody can answer is a worse comment. A
+  POST without a valid state is a 400, never a yes.
   Moving an event's time bumps `events.time_version`, which marks every earlier
   answer stale — a headcount for a day that no longer exists is worse than none.
 - **Any house may edit an event — provisional.** Owner's decision 2026-09-06:
@@ -122,9 +126,16 @@ does not ship.
   is to answer it. Classify a new kind against that line; do not guess.
   The one other exception is the optional author name on a tavern post, which
   the poster typed themselves.
-- **Quiet hours: 21:00–07:00 nothing rings.** Everything waits in the app
-  rather than buzzing a neighbour at night. `s.now()` decides, so tests
-  can move the clock.
+- **Quiet hours: 21:00–07:00 nothing rings, unless a phone asked.** Everything
+  waits in the app rather than buzzing a neighbour at night. `s.now()` decides,
+  so tests can move the clock. The one way through is `devices.quiet_ok`, set by
+  that phone alone (`PUT /api/me/device`): the flag is on the **device**, not the
+  house, because the phone on a bedside table belongs to a person and the other
+  phones of that house did not choose. `nightFilter()` narrows the recipients
+  instead of dropping the send, and a subscription with no device row behind it
+  stays silent — the default is quiet. **Tool return reminders are the
+  exception to the exception**: `remind.go` still skips the whole night cycle,
+  so the nudge lands in the morning. A nudge is not news.
 - **The way back in.** When nobody holds a session — a steward's phone wiped,
   the origin changed — `docker exec <container> /server code "<house>"` on the
   VM rotates that house's invite and prints the link (`cli.go`, `task vm:code`).
@@ -141,6 +152,10 @@ does not ship.
   `type=date` / `datetime-local` again — they look foreign and cannot prefill a
   month without a day. Values stay plain strings: `YYYY-MM-DD` or
   `YYYY-MM-DDTHH:MM`.
+- **The button frame is the house style, not only the button.** A weather
+  forecast day wears `.lesser`'s border, fill and thin shadow (`.w-day`) and is
+  not clickable: no hover, no press. Reuse the frame where a small box needs to
+  belong; never reuse the affordance.
 - **Buttons come in three weights.** `primary` for the one action a card or
   form is for, plain for the rest, `lesser` for inner additions (add a task, add
   a note) — a real button one size down, never a ghost link. `ghost` is for
@@ -165,12 +180,14 @@ backend/            Go: main.go, internal/{config,store,httpapi}; migrations emb
 frontend/           Vite + React; src/rooms/* one file per room (Projects.tsx holds list + page). Hall.tsx = Calendar.tsx + Board.tsx
                     stacked, because the tavern is one door; src/map/VillageMap.tsx
 frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons, backdrop.jpg (aerial photo behind the gate)
-                    src/push.ts, src/Install.tsx, src/AddPhone.tsx, src/photo.ts (auth'd photo fetch + browser-side shrink)
-backend/internal/httpapi/shed.go   tool photos as BLOBs (≤2 MB, served with auth), wishlist; remind.go = return nudges
-                    events.go = RSVP + comments; weather.go = ARSO, server-side; static.go = the embedded frontend
-docs/               design docs the owner and the assistant decide on together (navigation growth, Projects, Campground)
                     icon.svg is hand-drawn paths, full-bleed, content inside the central 80 % safe circle
                     (an emoji glyph renders off-centre and monochrome — do not go back to one)
+                    src/push.ts, src/Install.tsx, src/AddPhone.tsx, src/photo.ts (auth'd photo fetch + browser-side shrink)
+backend/internal/httpapi/shed.go   tool photos as BLOBs (≤2 MB, served with auth), wishlist; remind.go = return nudges
+                    threads.go = comments on any subject + wish options; weather.go = ARSO, server-side; static.go = the embedded frontend
+docs/               design docs the owner and the assistant decide on together (navigation growth, Projects, Campground,
+                    and `design-membership.md` — accounts for people who live here without land, options only, nothing built)
+docs/diagrams/      hand-drawn SVG sketches belonging to those docs
 frontend/public/data/  parcels.geojson (cadastre), channels.json (modelled water, dashed)
 deploy/app/         compose for the VM stack; deploy/infra-log.md = what was done by hand
 .doco-cd.yml        deploy config the VM's doco-cd polls; BE_TAG rolled by CI

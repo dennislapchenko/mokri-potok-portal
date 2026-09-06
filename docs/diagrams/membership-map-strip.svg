@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" width="640" height="420" font-family="Georgia, serif">
+  <title>The home screen: crests on the land, and a strip naming every house</title>
+  <desc>The cadastre map keeps carrying only land. A one-line strip under it names every house in the village, with crest and name and no position, so it draws no line between those with a parcel and those without.</desc>
+  <style>
+    .bg { fill: #f5ead0; }
+    .panel { fill: #efe0bd; stroke: #6b4f2a; stroke-width: 2; rx: 8; }
+    .parcel { fill: #e6d9b4; stroke: #a98f5f; stroke-width: 1; }
+    .ink { fill: #2f2416; font-size: 13px; }
+    .small { fill: #7a6647; font-size: 11px; }
+    .cap { fill: #4a3517; font-size: 14px; font-weight: bold; }
+    .good { fill: #3f6b34; font-size: 11px; }
+  </style>
+  <rect class="bg" x="0" y="0" width="640" height="420"/>
+  <text class="cap" x="24" y="30">Home screen under option F</text>
+  <rect class="panel" x="24" y="46" width="592" height="300"/>
+
+  <!-- crude parcels -->
+  <polygon class="parcel" points="60,80 200,72 210,150 66,160"/>
+  <polygon class="parcel" points="210,150 66,160 74,240 220,232"/>
+  <polygon class="parcel" points="200,72 340,66 350,146 210,150"/>
+  <polygon class="parcel" points="350,146 210,150 220,232 360,226"/>
+  <polygon class="parcel" points="340,66 470,60 482,140 350,146"/>
+  <polygon class="parcel" points="482,140 350,146 360,226 494,220"/>
+  <polygon class="parcel" points="74,240 220,232 232,300 86,308"/>
+  <polygon class="parcel" points="232,300 220,232 360,226 372,296"/>
+  <text x="135" y="125" font-size="20" text-anchor="middle">🗝️</text>
+  <text x="285" y="115" font-size="20" text-anchor="middle">🌲</text>
+  <text x="415" y="110" font-size="20" text-anchor="middle">🏠</text>
+
+  <!-- the strip -->
+  <rect class="panel" x="24" y="356" width="592" height="40"/>
+  <text class="ink" x="40" y="381">🏡 Hiše v vasi: 🗝️ A · 🌲 B · 🏠 C · 🌿 Vrba · 🕯️ Bukev</text>
+  <text class="good" x="24" y="414">every house, landed or not — so the strip says nothing about who owns what</text>
+</svg>

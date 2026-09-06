@@ -16,11 +16,10 @@ const RSVP: { state: string; icon: string; label: string }[] = [
 
 // One event, wherever it is shown. Three answers, never blended: a house that
 // says no is not the same as a house that has not answered, and only "coming"
-// is counted. Comments are the event's own board, one reply level.
+// is counted. A sign-up carries no note — "I bring the scythe" belongs in the
+// comment thread below, which every house reads and can answer.
 export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; reload: () => void; linkToTavern?: boolean }) {
   const { t } = useT();
-  const [note, setNote] = useState("");
-  const [noteOpen, setNoteOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [f, setF] = useState({ title: ev.title, kind: ev.kind, starts_at: ev.starts_at, ends_at: ev.ends_at || "", place: ev.place || "", notes: ev.notes || "" });
   const [showComments, setShowComments] = useState(false);
@@ -28,7 +27,7 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
   const list = JSON.parse(ev.signup_list || "[]") as any[];
   const mine = ev.mine as string | null;
   const by = (s: string) => list.filter((x) => x.state === s);
-  const answer = (state: string) => api(`/events/${ev.id}/signup`, { method: "POST", body: { state, note } }).then(() => { setNoteOpen(false); reload(); });
+  const answer = (state: string) => api(`/events/${ev.id}/signup`, { method: "POST", body: { state } }).then(reload);
   const clear = () => api(`/events/${ev.id}/signup`, { method: "DELETE" }).then(reload);
   const save = async () => { await api(`/events/${ev.id}`, { method: "PUT", body: f }); setEditing(false); reload(); };
 
@@ -39,7 +38,7 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
     return (
       <div className="small signers">{icon} {g.map((sgn, i) => (
         <span key={sgn.house_id} className={sgn.stale ? "stale" : ""}>
-          {i > 0 ? ", " : ""}{sgn.crest} {sgn.name}{sgn.note ? ` — ${sgn.note}` : ""}
+          {i > 0 ? ", " : ""}{sgn.crest} {sgn.name}
         </span>
       ))}</div>
     );
@@ -77,19 +76,12 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
       )}
 
       {RSVP.map((r) => <Group key={r.state} state={r.state} icon={r.icon} />)}
-      {noteOpen && (
-        <div style={{ display: "flex", gap: ".4rem", margin: ".3rem 0" }}>
-          <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder={t("e.g. I bring the scythe")} autoFocus />
-          <button className="lesser" onClick={() => answer(mine || "yes")}>{t("Save")}</button>
-        </div>
-      )}
       <div className="actions">
         {RSVP.map((r) => (
           <button key={r.state} className={mine === r.state ? "primary" : "lesser"} onClick={() => (mine === r.state ? clear() : answer(r.state))} title={mine === r.state ? t("tap again to take it back") : ""}>
             {r.icon} {t(r.label)}{r.state === "yes" && ev.signups > 0 ? ` (${ev.signups})` : ""}
           </button>
         ))}
-        {mine && !noteOpen && <button className="ghost" onClick={() => { setNoteOpen(true); setNote(list.find((x) => x.house_id === me.id)?.note || ""); }}>✎ {t("note")}</button>}
         <button className="ghost" onClick={() => setShowComments(!showComments)}>💬 {t("Comments")} ({ev.comments || 0})</button>
         {!editing && <button className="ghost" onClick={() => setEditing(true)}>✎ {t("Edit")}</button>}
         {canEdit(me, ev) && <button className="ghost" onClick={() => confirm(ev.title + "?") && api(`/events/${ev.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button>}

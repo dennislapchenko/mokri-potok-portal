@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" width="960" height="560" font-family="Georgia, serif">
+  <title>The Houses room today, under option F, and under option A</title>
+  <desc>Three drawings of the same room. Today every row prints a parcel count. Under F the count is gone and a landless house writes its own line. Under A a household is a third kind, visibly grouped.</desc>
+  <style>
+    .bg { fill: #f5ead0; }
+    .panel { fill: #efe0bd; stroke: #6b4f2a; stroke-width: 2; rx: 8; }
+    .card { fill: #f7efd8; stroke: #b99a63; stroke-width: 1.5; rx: 5; }
+    .ink { fill: #2f2416; font-size: 13px; }
+    .h { fill: #4a3517; font-size: 15px; font-weight: bold; }
+    .sub { fill: #7a6647; font-size: 11px; font-style: italic; }
+    .small { fill: #7a6647; font-size: 11px; }
+    .cap { fill: #4a3517; font-size: 14px; font-weight: bold; }
+    .bad { fill: #9a3c33; font-size: 11px; }
+    .good { fill: #3f6b34; font-size: 11px; }
+  </style>
+  <rect class="bg" x="0" y="0" width="960" height="560"/>
+
+  <!-- TODAY -->
+  <text class="cap" x="24" y="30">Today</text>
+  <text class="small" x="24" y="48">every row carries a number</text>
+  <rect class="panel" x="24" y="60" width="280" height="420"/>
+  <text class="h" x="40" y="86">🏘️ Hiše</text>
+  <text class="sub" x="40" y="104">houses and land</text>
+  <rect class="card" x="40" y="116" width="248" height="60"/>
+  <rect x="40" y="116" width="4" height="60" fill="#b5651d"/>
+  <text class="ink" x="56" y="138">🗝️ Hiša A</text>
+  <text class="small" x="230" y="138">3 parcels</text>
+  <text class="small" x="56" y="160">1132/4, 1132/5, 1140</text>
+  <rect class="card" x="40" y="188" width="248" height="60"/>
+  <rect x="40" y="188" width="4" height="60" fill="#6b8f3a"/>
+  <text class="ink" x="56" y="210">🌲 Hiša B</text>
+  <text class="small" x="230" y="210">1 parcel</text>
+  <text class="small" x="56" y="232">1147/2</text>
+  <rect class="card" x="40" y="260" width="248" height="46"/>
+  <rect x="40" y="260" width="4" height="46" fill="#8a8a8a"/>
+  <text class="ink" x="56" y="284">🌿 Hiša Vrba</text>
+  <text class="bad" x="222" y="284">0 parcels</text>
+  <text class="bad" x="40" y="330">a count beside a name, and the count is zero</text>
+  <text class="bad" x="40" y="348">— the app says "less" without meaning to</text>
+  <text class="bad" x="40" y="380">on the map: not drawn at all</text>
+
+  <!-- OPTION F -->
+  <text class="cap" x="344" y="30">Option F — recommended</text>
+  <text class="small" x="344" y="48">a house whose land list is empty</text>
+  <rect class="panel" x="344" y="60" width="280" height="420"/>
+  <text class="h" x="360" y="86">🏘️ Hiše</text>
+  <text class="sub" x="360" y="104">houses, with land and without</text>
+  <rect class="card" x="360" y="116" width="248" height="60"/>
+  <rect x="360" y="116" width="4" height="60" fill="#b5651d"/>
+  <text class="ink" x="376" y="138">🗝️ Hiša A</text>
+  <text class="small" x="376" y="160">1132/4, 1132/5, 1140</text>
+  <rect class="card" x="360" y="188" width="248" height="60"/>
+  <rect x="360" y="188" width="4" height="60" fill="#6b8f3a"/>
+  <text class="ink" x="376" y="210">🌲 Hiša B</text>
+  <text class="small" x="376" y="232">1147/2</text>
+  <rect class="card" x="360" y="260" width="248" height="60"/>
+  <rect x="360" y="260" width="4" height="60" fill="#4a7fa5"/>
+  <text class="ink" x="376" y="282">🌿 Hiša Vrba</text>
+  <text class="small" x="376" y="304">pri potoku, v sosedovi koči</text>
+  <text class="good" x="360" y="346">same list, same order, no badge</text>
+  <text class="good" x="360" y="364">the line under the name is theirs,</text>
+  <text class="good" x="360" y="382">typed by them, not written by the app</text>
+  <text class="small" x="360" y="414">no number anywhere in the room</text>
+
+  <!-- OPTION A -->
+  <text class="cap" x="664" y="30">Option A — a third kind</text>
+  <text class="small" x="664" y="48">the difference becomes visible</text>
+  <rect class="panel" x="664" y="60" width="272" height="420"/>
+  <text class="h" x="680" y="86">🏘️ Hiše</text>
+  <text class="sub" x="680" y="104">houses and land</text>
+  <rect class="card" x="680" y="116" width="240" height="60"/>
+  <rect x="680" y="116" width="4" height="60" fill="#b5651d"/>
+  <text class="ink" x="696" y="138">🗝️ Hiša A</text>
+  <text class="small" x="696" y="160">1132/4, 1132/5, 1140</text>
+  <rect class="card" x="680" y="188" width="240" height="60"/>
+  <rect x="680" y="188" width="4" height="60" fill="#6b8f3a"/>
+  <text class="ink" x="696" y="210">🌲 Hiša B</text>
+  <text class="small" x="696" y="232">1147/2</text>
+  <line x1="680" y1="266" x2="920" y2="266" stroke="#b99a63" stroke-width="1" stroke-dasharray="4 3"/>
+  <text class="sub" x="680" y="284">brez zemlje</text>
+  <rect class="card" x="680" y="294" width="240" height="46"/>
+  <rect x="680" y="294" width="4" height="46" fill="#4a7fa5"/>
+  <text class="ink" x="696" y="318">🌿 Hiša Vrba</text>
+  <text class="small" x="664" y="368">a steward can group and count them;</text>
+  <text class="small" x="664" y="386">so can everybody else</text>
+  <text class="bad" x="664" y="418">the line under the heading is a rank</text>
+  <text class="bad" x="664" y="436">the village did not ask for</text>
+
+  <text class="small" x="24" y="516">Drawing of docs/design-membership.md. Names and parcel numbers here are invented for the sketch.</text>
+  <text class="small" x="24" y="536">Nothing on this page is built — the room today is the left panel.</text>
+</svg>

@@ -89,9 +89,10 @@ func TestGuessingCostsSomething(t *testing.T) {
 	}
 }
 
-// TestQuietHours: between 21:00 and 07:00 the village is left alone. Nothing
-// is exempt since the alarm kind was removed on 2026-09-06 — a real emergency
-// is a phone call, not a notification.
+// TestQuietHours: between 21:00 and 07:00 the village is left alone. No kind
+// is exempt since the alarm was removed on 2026-09-06 — a real emergency is a
+// phone call, not a notification. The one way through is a phone that asked
+// for it (TestQuietHoursOptOut).
 func TestQuietHours(t *testing.T) {
 	srv, fake, steward, zagar := newVillage(t)
 	srv.now = func() time.Time { return time.Date(2026, 9, 4, 23, 10, 0, 0, time.Local) }
@@ -162,7 +163,7 @@ func TestWorkBeeSignup(t *testing.T) {
 	fake.mu.Lock()
 	fake.sent, fake.payloads = nil, nil
 	fake.mu.Unlock()
-	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"note": "pridem s koso"})
+	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "yes"})
 	steward.must(204, code, "signup")
 	waitFor(t, 1, fake) // the house that called it hears
 
@@ -304,18 +305,65 @@ func TestShedPhotosWishes(t *testing.T) {
 	}
 }
 
-// TestSignupNote: a sign-up may carry a note, and the event list returns each
-// signer with it.
-func TestSignupNote(t *testing.T) {
+// TestSignupIsAnAnswerOnly: a sign-up is one of three words and carries no
+// note (2026-09-06 — the comment thread does that job). A body without a state
+// is refused rather than read as a yes.
+func TestSignupIsAnAnswerOnly(t *testing.T) {
 	_, _, steward, zagar := newVillage(t)
 	_, obj, _ := zagar.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-06T08:00"})
 	id := itoa(obj["id"].(float64))
-	steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"note": "pridem s koso"})
+	code, _, _ := steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"note": "pridem s koso"})
+	steward.must(400, code, "a note is not an answer")
+	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "yes", "note": "pridem s koso"})
+	steward.must(204, code, "signup")
 	_, _, evs := zagar.do("GET", "/api/events", nil)
 	var list []map[string]any
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
-	if len(list) != 1 || list[0]["note"] != "pridem s koso" || list[0]["name"] != "S" {
+	if len(list) != 1 || list[0]["name"] != "S" {
 		t.Fatalf("signup_list: %v", evs[0]["signup_list"])
+	}
+	if _, ok := list[0]["note"]; ok {
+		t.Fatalf("sign-up still carries a note: %v", list[0])
+	}
+}
+
+// TestQuietHoursOptOut: a phone that ticked "ring at night" hears the same
+// event that the rest of the village sleeps through, and its house-mates keep
+// sleeping — the flag is on the device, not on the house.
+func TestQuietHoursOptOut(t *testing.T) {
+	srv, fake, steward, zagar := newVillage(t)
+	// Two phones of the steward's house: the second one asks for night rings.
+	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{
+		"endpoint": "https://push/s1", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	steward.must(204, code, "subscribe phone 1")
+	_, pair, _ := steward.do("POST", "/api/pair", nil)
+	phone2 := &client{t: t, h: srv.Handler()}
+	_, j, _ := phone2.do("POST", "/api/join", map[string]any{"code": pair["code"].(string), "device": "night phone"})
+	phone2.token = j["token"].(string)
+	code, _, _ = phone2.do("POST", "/api/push/subscribe", map[string]any{
+		"endpoint": "https://push/s2", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	phone2.must(204, code, "subscribe phone 2")
+	code, _, _ = phone2.do("PUT", "/api/me/device", map[string]any{"quiet_ok": true})
+	phone2.must(204, code, "opt out of quiet hours")
+
+	srv.now = func() time.Time { return time.Date(2026, 9, 4, 23, 10, 0, 0, time.Local) }
+	zagar.do("POST", "/api/events", map[string]any{"title": "Nekaj", "kind": "work", "starts_at": "2026-09-05T09:00"})
+	waitFor(t, 1, fake)
+	fake.mu.Lock()
+	got := []string{}
+	for _, sub := range fake.sent {
+		got = append(got, sub.Endpoint)
+	}
+	fake.mu.Unlock()
+	if len(got) != 1 || got[0] != "https://push/s2" {
+		t.Fatalf("night push went to %v, want only the phone that asked", got)
+	}
+
+	// The house's own page reports the flag for THIS phone only.
+	_, p2, _ := phone2.do("GET", "/api/me/prefs", nil)
+	_, p1, _ := steward.do("GET", "/api/me/prefs", nil)
+	if p2["quiet_ok"] != true || p1["quiet_ok"] != false {
+		t.Fatalf("quiet_ok leaked across phones: %v %v", p1["quiet_ok"], p2["quiet_ok"])
 	}
 }
 
@@ -518,11 +566,11 @@ func TestRsvpAndComments(t *testing.T) {
 	if evs[0]["signups"].(float64) != 0 || list[0]["state"] != "no" {
 		t.Fatalf("no-answer counted as coming: %v", evs[0])
 	}
-	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "maybe", "note": "če ne dežuje"})
+	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "maybe"})
 	steward.must(204, code, "rsvp maybe")
 	_, _, evs = zagar.do("GET", "/api/events", nil)
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
-	if evs[0]["signups"].(float64) != 0 || list[0]["state"] != "maybe" || list[0]["note"] != "če ne dežuje" || list[0]["stale"].(float64) != 0 {
+	if evs[0]["signups"].(float64) != 0 || list[0]["state"] != "maybe" || list[0]["stale"].(float64) != 0 {
 		t.Fatalf("maybe folded into coming: %v %v", evs[0], list[0])
 	}
 
@@ -670,15 +718,15 @@ func TestMovedTimeIsLoud(t *testing.T) {
 		t.Fatalf("stale answer still counted: %v", evs[0])
 	}
 
-	// A note-only update keeps "no" as "no" instead of promoting it to a yes.
+	// A body that carries no answer is refused — it is never read as a yes.
 	steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "no"})
 	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"note": "morda pozneje"})
-	steward.must(204, code, "note only")
+	steward.must(400, code, "no answer in the body")
 	_, _, evs = zagar.do("GET", "/api/events", nil)
 	var list []map[string]any
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
 	if list[0]["state"] != "no" || evs[0]["signups"].(float64) != 0 {
-		t.Fatalf("note-only update changed the answer: %v", list[0])
+		t.Fatalf("refused body changed the answer: %v", list[0])
 	}
 	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "perhaps"})
 	steward.must(400, code, "unknown answer")

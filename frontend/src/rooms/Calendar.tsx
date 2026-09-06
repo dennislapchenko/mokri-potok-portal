@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api, type House, type Me } from "../api";
 import { useT } from "../i18n";
-import { useList } from "./shared";
+import { isOver, useList, When } from "./shared";
 import { EventCard, ICON } from "./EventCard";
 import { DatePicker } from "../DatePicker";
 
@@ -94,7 +94,25 @@ export function Calendar({ me, houses }: { me: Me; houses: House[] }) {
   }, [cursor]);
 
   const today = iso(new Date());
-  const shown = day ? byDay[day] || [] : items.filter((ev) => (ev.ends_at || ev.starts_at).slice(0, 10) >= today);
+  // Without a picked day the list holds THIS MONTH's events that are still to
+  // come — not everything ahead forever. The grid above already says which
+  // month you are looking at, so the list can never grow past a month's worth,
+  // and paging with ‹ › pages the list with it. What has passed leaves the
+  // list and stays in its day cell.
+  const monthKey = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+  const inMonth = (ev: any) => ev.starts_at.slice(0, 7) <= monthKey && (ev.ends_at || ev.starts_at).slice(0, 7) >= monthKey;
+  const shown = day ? byDay[day] || [] : items.filter((ev) => inMonth(ev) && !isOver(ev));
+  // Leaving the month drops the picked day with it — the list below belongs to
+  // the month on screen, so a day from the month you just left must not hold it.
+  const page = (by: number, to?: Date) => { setDay(null); setCursor(to || new Date(cursor.getFullYear(), cursor.getMonth() + by, 1)); };
+  // Month-scoping must not hide that anything exists outside the month — Home
+  // counts every event ahead, so the room has to account for the difference.
+  // Whenever something ahead sits outside the shown month, a tail line says how
+  // many and jumps to the closest one.
+  const ahead = items.filter((ev) => !isOver(ev)).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  const outside = ahead.filter((ev) => !inMonth(ev));
+  const pointer = day ? null : outside[0] || null;
+  const backwards = pointer ? pointer.starts_at.slice(0, 7) < monthKey : false;
   const weekdays = useMemo(() => {
     const base = new Date(2026, 0, 5); // a Monday
     return Array.from({ length: 7 }, (_, i) => {
@@ -140,9 +158,9 @@ export function Calendar({ me, houses }: { me: Me; houses: House[] }) {
 
       <div className="cal">
         <div className="cal-head">
-          <button className="ghost" aria-label="‹" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}>‹</button>
+          <button className="ghost" aria-label="‹" onClick={() => page(-1)}>‹</button>
           <strong>{cursor.toLocaleDateString(locale, { month: "long", year: "numeric" })}</strong>
-          <button className="ghost" aria-label="›" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}>›</button>
+          <button className="ghost" aria-label="›" onClick={() => page(1)}>›</button>
         </div>
         <div className="cal-grid">
           {weekdays.map((w, i) => <div key={"w" + i} className="cal-wd">{w}</div>)}
@@ -162,7 +180,16 @@ export function Calendar({ me, houses }: { me: Me; houses: House[] }) {
       </div>
 
       {day && <p className="small">{new Date(day + "T00:00").toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })} · <button className="ghost" onClick={() => setDay(null)}>{t("Show the whole month")}</button></p>}
-      {shown.length === 0 && <p className="muted" style={{ fontStyle: "italic" }}>{day ? t("Nothing on this day.") : t("Nothing planned. Ring the bell — add an event or call a work party, and houses sign up here.")}</p>}
+      {shown.length === 0 && !pointer && <p className="muted" style={{ fontStyle: "italic" }}>{day ? t("Nothing on this day.") : t("Nothing planned. Ring the bell — add an event or call a work party, and houses sign up here.")}</p>}
+      {pointer && (
+        <p className="small">
+          {shown.length === 0 ? t("Nothing left this month.") + " " : ""}
+          {outside.length > 1 ? `${outside.length} ${t("outside this month")} · ` : ""}
+          <button className="lesser" onClick={() => page(0, new Date(pointer.starts_at.slice(0, 10) + "T00:00"))}>
+            {backwards ? t("Nearest") : t("Next")}: {ICON[pointer.kind]} {pointer.title} · <When iso={pointer.starts_at} /> {backwards ? "‹" : "›"}
+          </button>
+        </p>
+      )}
       {shown.map((ev) => <EventCard key={ev.id + "-" + (day || "")} ev={ev} me={me} reload={reload} />)}
     </div>
   );

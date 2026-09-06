@@ -15,9 +15,36 @@ does not ship.
 
 ## Invariants
 
-- **A house is the account.** Everyone in a house shares one identity; a device
-  row per phone tells them apart. Never add per-person accounts without a
-  decision recorded in the plan. A **common place** (`houses.kind = common`:
+- **A house is the account, with or without land.** Everyone in a house shares
+  one identity; a device row per phone tells them apart. Never add per-person
+  accounts without a decision recorded in the plan. **A member who lives here
+  without land — renting a hut, using a vacant house part of the year — is an
+  ordinary house whose parcel list is empty** (owner's decision 2026-09-06,
+  option F in `docs/design-membership.md`). **No third kind of row**: a
+  `kind='household'` would also make `ORDER BY kind, name` put them last in
+  every list with nobody deciding it. What replaces the land on such a row is
+  `houses.about`, a line of at most 120 characters the house writes about
+  itself and may blank — **every** house may write one, so it is never a badge.
+  The Watchtower shows it beside that house's absence, so the neighbour whose
+  building stands empty is not surprised by the notice. **The Houses room shows
+  no parcel count**, in either block: a parcel list is a list, a count beside a
+  name is a tally.
+- **A stay ends by deleting the house** (owner's decision 2026-09-06), and only
+  a steward can. **This is the one deletion the app allows, and the deliberate
+  exception to "done is a state, never a deletion" below.** Deleting cascades
+  through everything that house wrote — posts, its replies inside other houses'
+  threads, events, sign-ups, needs, give-aways, away-notices, its tools, wishes,
+  projects, tasks, camp rows — so **the confirm dialog names them, and says the
+  honest thing about undo**: last night's `VACUUM INTO` backup can bring the
+  house back, at the price of rolling the whole village back to it, so the
+  dialog tells the steward to export first. Never make that button quieter, and
+  never let it claim the loss is absolute — it is a day, not forever. Going home
+  for the season is not leaving: that is an away-notice, same as any house that
+  winters elsewhere. The softer variant (`houses.left_at`) is designed and not
+  built — `docs/design-membership.md` § Off-season, and ending a stay.
+  The line a house writes about itself is **its own**: `PUT /api/houses/{id}`
+  accepts `about` only from that house, never from a steward, and `/api/me`
+  returns it so the form round-trips it instead of blanking it. A **common place** (`houses.kind = common`:
   event grounds, parking) shares the table because the map colours it, but it
   is land, not an account: no invite, no login, never offered where a house is
   meant (hand a task to, notifications, invite links). The UI keeps it in its
@@ -56,6 +83,15 @@ does not ship.
   under, and stays optional.
 - **Wish options are findings, not votes.** Anyone may add "this model, this
   price, this link" to a wish. Never count, rank or mark a winner.
+- **A past event leaves the list, never the calendar.** The list under the month
+  grid holds **that month's** events that are not over — not everything ahead
+  forever — so it cannot grow past a month's worth, and ‹ › pages it with the
+  grid. What has passed stays in its day cell, one click away. `isOver` in
+  `rooms/shared.tsx` decides: an event is over when its **end** has passed, and
+  an event with no end lasts until the end of its day, because dropping a work
+  party a minute after it starts hides it from whoever is running late. The Home
+  badge and the tavern peek use the same function — never re-derive it with a
+  date comparison, which counts this morning's finished event as ahead.
 - **An answer is not a headcount.** A sign-up is `yes`, `no` or `maybe`, and
   silence is a fourth thing. Only `yes` is counted; never fold `maybe` into it.
   It carries **no note** — the sign-up note was removed on 2026-09-06 and the

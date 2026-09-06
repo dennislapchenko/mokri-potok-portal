@@ -13,7 +13,7 @@ import { Projects, Project } from "./rooms/Projects";
 import { Camp } from "./rooms/Camp";
 import { InstallBanner } from "./Install";
 import { Weather } from "./Weather";
-import { When } from "./rooms/shared";
+import { isOver, When } from "./rooms/shared";
 
 export type Session = { me: Me; houses: House[]; refresh: () => Promise<void>; logout: () => void };
 
@@ -27,7 +27,7 @@ export const ROOMS = [
   { path: "/shed", icon: "🛠", name: "Tool shed", short: "Shed", sub: "what the village has", nav: true },
   { path: "/watch", icon: "🕯️", name: "Watchtower", short: "Watch", sub: "who is away", nav: false },
   { path: "/camp", icon: "🏕️", name: "Campground", short: "Camp", sub: "who noticed, who has the money", nav: false },
-  { path: "/houses", icon: "🏘️", name: "Houses", short: "Houses", sub: "houses and land", nav: false },
+  { path: "/houses", icon: "🏘️", name: "Houses", short: "Houses", sub: "who lives here", nav: false },
 ];
 
 export default function App() {
@@ -127,7 +127,7 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
         setBadges({
           "/market": num(n.filter((x) => x.state === "open").length, "open needs"),
           "/watch": num(a.filter((x) => x.from_date <= today && x.to_date >= today).length, "away now"),
-          "/tavern": [num(e.filter((x) => (x.ends_at || x.starts_at) >= today).length, "events ahead"), num(p.filter((x) => x.pinned).length, "pinned")].filter(Boolean).join(" · "),
+          "/tavern": [num(e.filter((x) => !isOver(x)).length, "events ahead"), num(p.filter((x) => x.pinned).length, "pinned")].filter(Boolean).join(" · "),
           "/shed": [num(tools.length - out, "in the shed"), num(out, "out")].filter(Boolean).join(" · "),
           "/projects": [num(projects.filter((x) => x.state === "open").length, "open"), num(projects.reduce((acc, x) => acc + (x.state === "open" ? x.tasks_free : 0), 0), "tasks free to take")].filter(Boolean).join(" · "),
           "/camp": [num(camp.filter((x) => x.state === "arrived").length, "arrived"), num(camp.filter((x) => x.state === "held").length, "held")].filter(Boolean).join(" · "),
@@ -214,10 +214,7 @@ function HallPeek() {
   const [events, setEvents] = useState<any[]>([]);
   useEffect(() => {
     api<any[]>("/posts").then((p) => setPosts(p.filter((x) => x.pinned && !x.parent_id).slice(0, 3))).catch(() => {});
-    const n2 = (v: number) => String(v).padStart(2, "0");
-    const d = new Date();
-    const today = `${d.getFullYear()}-${n2(d.getMonth() + 1)}-${n2(d.getDate())}`;
-    api<any[]>("/events").then((e) => setEvents(e.filter((x) => (x.ends_at || x.starts_at) >= today).slice(0, 4))).catch(() => {});
+    api<any[]>("/events").then((e) => setEvents(e.filter((x) => !isOver(x)).slice(0, 4))).catch(() => {});
   }, []);
   const ICON: Record<string, string> = { event: "🔔", work: "🤝", alarm: "🚨" };
   return (

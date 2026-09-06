@@ -11,7 +11,7 @@
     .good { fill: #3f6b34; font-size: 11px; }
   </style>
   <rect class="bg" x="0" y="0" width="640" height="420"/>
-  <text class="cap" x="24" y="30">Home screen under option F</text>
+  <text class="cap" x="24" y="30">The strip proposed — and not built</text>
   <rect class="panel" x="24" y="46" width="592" height="300"/>
 
   <!-- crude parcels -->
@@ -30,5 +30,5 @@
   <!-- the strip -->
   <rect class="panel" x="24" y="356" width="592" height="40"/>
   <text class="ink" x="40" y="381">🏡 Hiše v vasi: 🗝️ A · 🌲 B · 🏠 C · 🌿 Vrba · 🕯️ Bukev</text>
-  <text class="good" x="24" y="414">every house, landed or not — so the strip says nothing about who owns what</text>
+  <text class="small" x="24" y="414">not built: the legend already under the map lists every house, landed or not</text>
 </svg>

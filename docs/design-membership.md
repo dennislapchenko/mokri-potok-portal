@@ -1,8 +1,20 @@
 # An account for people who live here without land
 
-Written 2026-09-06, **not built**. The owner asked for options first. Nothing
-in this file is decided; `CLAUDE.md` still says a house is the account, and it
-keeps saying that until the decision table at the bottom is answered.
+Written 2026-09-06 as options. **Decided and built the same evening**, all
+three answers from the owner:
+
+1. **Option F** — a member without land is an ordinary house with an empty
+   parcel list. No new kind of row.
+2. **The Watchtower works for them exactly the same way** — W1, full symmetry,
+   both directions.
+3. **The steward ends such an account by deleting the house**, the button that
+   already exists. `left_at` was designed below and **not built**; what that
+   costs is written into § Ending a stay, and the button now says it out loud.
+
+What shipped: `014_house_about.sql` (one line a house writes about itself),
+the parcel count gone from both blocks of the Houses room, that line shown
+beside a house's away-notices, and a delete confirm that names what it takes.
+The sections below stay as the argument that got there.
 
 ## Answer first
 
@@ -141,27 +153,48 @@ else's parcel is lived in by a non-owner.**
 
 ## Off-season, and ending a stay
 
-Two different states. One control for both would evict the seasonal case every
-autumn, because a household that goes home for the winter produces exactly the
-silence that looks like leaving.
+Two different states, and the app must not answer them with one control. A
+household that goes home for the winter produces exactly the silence that looks
+like leaving.
 
-| State | What it is | What the app uses |
+| State | What it is | What the app does — **decided** |
 | --- | --- | --- |
-| **Away for the season** | Not here, coming back | An away-notice in the Watchtower, the same one any house uses when it winters elsewhere. Login, crest and rooms all stay. Nothing expires |
-| **The arrangement ended** | Not coming back | `left_at` |
+| **Away for the season** | Not here, coming back | An away-notice in the Watchtower, the same one any house uses when it winters elsewhere. Login, crest and rooms all stay. Nothing expires, nothing is revoked |
+| **The arrangement ended** | Not coming back | **A steward deletes the house** (owner's decision 2026-09-06) — the 🗑 that already exists in the Houses room |
 
-`left_at`, when it is the right state:
+**Deleting is not free, and the button now says so.** Every table that hangs off
+a house cascades: its devices and push subscriptions, its posts and comments —
+including its replies inside other houses' threads — its events, its sign-ups,
+its needs, give-aways, away-notices, the tools it owns, its wishes, its projects
+and their tasks, and its campground rows. The confirm dialog lists them. Nobody
+should press it expecting the row to go quiet.
 
-| Step | What happens |
-| --- | --- |
-| Who may set it | The household itself. Otherwise a steward — see the open question; the hosting house may **not**, by design |
-| The row | `houses.left_at` plus who set it, the shape `notify_off_global` already uses |
-| Devices and invite | Revoked. No login, no push. **Not retroactive** — everything that account already read, it has read |
-| The row stays readable | `GET /api/houses` keeps returning left rows **with the flag**; each consumer filters. If the endpoint hid them, a give-away claimed by a departed household would lose its name (`Market.tsx:15` resolves names from that list). Crests on old content come from SQL joins and survive either way |
-| Its history | Posts, comments, sign-ups and answers on other houses' events all stay. Deleting the row would cascade them away |
-| The rooms | Gone from "hand a task to", from notification targets, from the strip |
-| The Houses list | A faded block at the bottom, the way a finished project sits |
-| Coming back | A steward clears `left_at` and hands a fresh invite. Same house, same crest, same history |
+**It is not, however, irreversible, and the dialog must not claim it is.** The
+nightly `VACUUM INTO` backup holds the house — restoring it rolls the whole
+village back to last night, which is a real cost but not a permanent loss. So
+the dialog says: export first if any of it matters. On the homestead repo's
+reversibility rubric this is amber, not red.
+
+**A deletion the leaving household did not consent to.** The cascade reaches
+comments that house wrote inside *other* houses' threads. Those threads lose
+lines their own participants wrote around. That is an argument for exporting
+first, not for keeping the account.
+
+**One coupling to keep in view.** Deletion is the only exit and only a steward
+can press it. There is one steward today, and he is away part of the week, so a
+stay that ends badly waits for him. The second steward (`NOW.md`) is what closes
+that, not a change here.
+
+**The softer variant, designed and not built.** `houses.left_at` plus who set
+it, the shape `notify_off_global` already uses: devices and invite revoked, the
+row still returned by `GET /api/houses` **with the flag** so every consumer
+filters and no old give-away loses its claimer's name (`Market.tsx:15` resolves
+names from that list), the house faded to the bottom of the room, and coming
+back is a steward clearing the flag. It is one column and a handful of filters.
+It exists here so the choice can be changed without re-deriving it.
+
+Either way, **revocation is not retroactive**: whatever that account has already
+read, it has read.
 
 ## What must not be built
 
@@ -184,14 +217,22 @@ today, under F, and under A) and `membership-map-strip.svg` (the home screen).
 They restate the tables above and add no claim of their own. Names and parcel
 numbers in them are invented.
 
-Under **F**, the changes are small enough to list:
+**What F actually cost, once built:**
 
-- Houses room: subtitle becomes "houses, with land and without". Rows lose the
-  `N parcels` count, in both blocks. A row with no parcels shows the line the
-  house wrote about itself instead.
-- Home screen: a strip under the map — `🏡 Hiše v vasi:` and every crest —
-  which is not about land at all.
-- Everywhere else: nothing. A household is a house.
+- Houses room: subtitle is now "houses, with land and without". The `N parcels`
+  count is gone from both blocks — a parcel list is a list. A row shows the line
+  its house wrote about itself.
+- `houses.about`, 120 characters, written by the house, blankable. Any house may
+  write one, so it is not a badge. It is also what the Watchtower shows beside
+  that house's absence — the W3 line, without a second field.
+- Home screen: **nothing**. The legend under the map already lists every house,
+  landed or not, so the strip this doc proposed was never needed — with one
+  qualifier: the legend renders only in map mode, and the home widget opens on
+  **weather** by default, so a villager who never taps 🗺️ never sees it. That is
+  accepted: the map view is where "who lives here" belongs.
+  `docs/diagrams/membership-map-strip.svg` draws the strip that was proposed and
+  not built.
+- Everywhere else: nothing at all. A household is a house.
 
 Under **A** the same screens gain one visible difference: the strip and the
 steward's list can be generated from `kind`. That is the whole gain, and the
@@ -199,28 +240,17 @@ steward's list can be generated from `kind`. That is the whole gain, and the
 
 ## Decision table
 
-| Decision | Recommendation | Who to ask | By when |
+| Decision | Outcome | Who to ask | By when |
 | --- | --- | --- | --- |
-| F or A | **F** — a house with zero parcels, and the four fixes | The owner alone; it is reversible either way | Before the first part-time household is invited |
-| Away-notices | **W1 + the W3 line** | The village, out loud, in the group | Same |
-| The off-season | **An away-notice, not an ended account** | The village — see the question below | Same |
-| The room's name | Keep **Houses / Hiše**, subtitle changed | The owner; a Slovenian-speaking house checks the subtitle | Same |
+| F or A | ✅ **F**, decided 2026-09-06. Built | — | Done |
+| Away-notices | ✅ **W1**, full symmetry, decided 2026-09-06. The W3 line rides on `about` | — | Done |
+| The off-season | ✅ An away-notice, not an ended account | — | Done |
+| Ending a stay | ✅ **The steward deletes the house.** `left_at` designed, not built | — | Done |
+| The room's name | ✅ Keep **Houses / Hiše**, subtitle changed | A Slovenian-speaking house checks "hiše, z zemljo in brez" | With the first household |
 | Naming convention for a household | `TBD` — "Hiša <something>" was the owner's own suggestion | The households themselves | When the first one joins |
 | Steward eligibility | Not by default. No rule against it | The village | Not urgent |
-| `left_at` | Build it with the first household, not after | — | With F |
 | The term of the arrangement | Written down with the collective's other agreements, not in the app | The two parties, and the village | Before the account exists |
 
-> QUESTION FOR DENIS: does a part-time household read and post away-notices on
-> the same terms as a landholding house (W1)? An away-notice says a building
-> stands empty, and a household's building stands on somebody else's land. This
-> is the one question in this doc that the app cannot answer for the village.
-
-> QUESTION FOR DENIS: a household that goes home for the winter — does it keep
-> its login and its crest through the off-season, reading the village's
-> away-notices while it is away, or does the account end each autumn and get
-> re-invited each spring? The app can build either; only the village can say
-> which one it means by "part of the community".
-
-> QUESTION FOR DENIS: when a stay ends badly, who may end the account that day —
-> only a steward (one house today, and you are remote part of the week), or two
-> houses agreeing? The hosting house cannot, by design (§ What must not be built).
+> QUESTION FOR DENIS: what does the village call such a household? "Hiša
+> <something>" was your own suggestion and it is the only thing here still
+> `TBD` — the households pick their own name when the first one joins.

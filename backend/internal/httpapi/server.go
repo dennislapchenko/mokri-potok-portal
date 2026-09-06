@@ -384,7 +384,7 @@ func (s *Server) join(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 	h := houseFrom(r)
-	row, err := s.st.One(r.Context(), `SELECT id, name, crest, color, kind, is_steward FROM houses WHERE id=?`, h.ID)
+	row, err := s.st.One(r.Context(), `SELECT id, name, crest, color, kind, is_steward, about FROM houses WHERE id=?`, h.ID)
 	if err != nil {
 		fail(w, err)
 		return
@@ -419,7 +419,7 @@ func (s *Server) deleteDevice(w http.ResponseWriter, r *http.Request) {
 // ---- houses --------------------------------------------------------------
 
 func (s *Server) listHouses(w http.ResponseWriter, r *http.Request) {
-	houses, err := s.st.Rows(r.Context(), `SELECT id, name, crest, color, kind, is_steward FROM houses ORDER BY kind, name`)
+	houses, err := s.st.Rows(r.Context(), `SELECT id, name, crest, color, kind, is_steward, about FROM houses ORDER BY kind, name`)
 	if err != nil {
 		fail(w, err)
 		return
@@ -507,6 +507,15 @@ func (s *Server) updateHouse(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	// `about` is the one field a house may also blank out, so presence decides,
+	// not emptiness — and the one field a steward may NOT write for somebody
+	// else. The whole point of the design is that no house speaks for another.
+	if v, ok := m["about"].(string); ok && id == h.ID {
+		if _, err := s.st.Exec(r.Context(), `UPDATE houses SET about=? WHERE id=?`, clip(v, 120), id); err != nil {
+			fail(w, err)
+			return
+		}
+	}
 	if h.IsSteward {
 		if v := str(m, "kind"); v == "house" || v == "common" {
 			s.st.Exec(r.Context(), `UPDATE houses SET kind=? WHERE id=?`, v, id)
@@ -571,6 +580,10 @@ func (s *Server) rotateInvite(w http.ResponseWriter, r *http.Request) {
 // ---- tavern --------------------------------------------------------------
 
 const houseJoin = ` h.name AS house_name, h.crest AS house_crest, h.color AS house_color `
+
+// Only the Watchtower needs the house's own line: an absence is read by the
+// neighbour whose land the empty building may stand on.
+const houseJoinAbout = houseJoin + `, h.about AS house_about `
 
 func (s *Server) listPosts(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.st.Rows(r.Context(), `SELECT p.*,`+houseJoin+`FROM posts p JOIN houses h ON h.id=p.house_id ORDER BY p.pinned DESC, p.created_at DESC LIMIT 500`)
@@ -922,7 +935,7 @@ func (s *Server) updateClaimable(w http.ResponseWriter, r *http.Request, table, 
 // ---- watchtower ----------------------------------------------------------
 
 func (s *Server) listAway(w http.ResponseWriter, r *http.Request) {
-	rows, err := s.st.Rows(r.Context(), `SELECT x.*,`+houseJoin+`, t.name AS watcher_name FROM away x JOIN houses h ON h.id=x.house_id
+	rows, err := s.st.Rows(r.Context(), `SELECT x.*,`+houseJoinAbout+`, t.name AS watcher_name FROM away x JOIN houses h ON h.id=x.house_id
 		LEFT JOIN houses t ON t.id=x.watcher WHERE x.to_date >= date('now','-3 days') ORDER BY x.from_date`)
 	if err != nil {
 		fail(w, err)
@@ -1193,6 +1206,16 @@ func (s *Server) createPairing(w http.ResponseWriter, r *http.Request) {
 }
 
 func itoa64(n int64) string { return strconv.FormatInt(n, 10) }
+
+// clip caps a free-text field by runes, without an ellipsis — it is a limit,
+// not a summary.
+func clip(v string, n int) string {
+	r := []rune(strings.TrimSpace(v))
+	if len(r) > n {
+		return string(r[:n])
+	}
+	return string(r)
+}
 
 func nullIfEmpty(s string) any {
 	if s == "" {

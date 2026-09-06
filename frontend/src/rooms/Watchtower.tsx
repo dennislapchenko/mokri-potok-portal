@@ -32,6 +32,7 @@ export function Watchtower({ me }: { me: Me }) {
         return (
           <div key={a.id} className="card" style={{ borderLeftColor: now ? "var(--red)" : "var(--brass)" }}>
             <div className="head"><Crest crest={a.house_crest} color={a.house_color} /><span className="who">{a.house_name}</span>{now && <span className="tag alarm">{t("away now")}</span>}<span className="when"><When iso={a.from_date} /> → <When iso={a.to_date} /></span></div>
+            {a.house_about && <div className="small muted">{a.house_about}</div>}
             {a.notes && <div className="body">{a.notes}</div>}
             <div className="small">{a.watcher ? <>👁 {t("Watched by")}: <strong>{a.watcher_name}</strong></> : <span className="muted">—</span>}</div>
             <div className="actions">

@@ -32,5 +32,5 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
   return data as T;
 }
 
-export type House = { id: number; name: string; crest: string; color: string; kind: "house" | "common"; is_steward: number; parcels: string[] };
-export type Me = { id: number; name: string; crest: string; color: string; kind: string; is_steward: number; device_id: number };
+export type House = { id: number; name: string; crest: string; color: string; kind: "house" | "common"; is_steward: number; parcels: string[]; about: string };
+export type Me = { id: number; name: string; crest: string; color: string; kind: string; is_steward: number; device_id: number; about?: string };

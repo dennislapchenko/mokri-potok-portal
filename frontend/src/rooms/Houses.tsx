@@ -23,6 +23,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   const [myName, setMyName] = useState(me.name);
   const [myCrest, setMyCrest] = useState(me.crest);
   const [myColor, setMyColor] = useState(me.color);
+  const [myAbout, setMyAbout] = useState(me.about || "");
   const [copied, setCopied] = useState<number | null>(null);
   const [newOpen, setNewOpen] = useState(false);
 
@@ -63,11 +64,12 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
         </div>
       )}
       <div className="parchment">
-        <h2>🏘️ {t("Houses")} <span className="sub">{t("houses and land")}</span></h2>
+        <h2>🏘️ {t("Houses")} <span className="sub">{t("houses, with land and without")}</span></h2>
         {realHouses.map((h) => (
           <div key={h.id} className="card" style={{ borderLeftColor: h.color }}>
-            <div className="head"><Crest crest={h.crest} color={h.color} /><span className="who">{h.name}</span>{h.kind === "common" && <span className="tag">{t("common land")}</span>}{h.is_steward === 1 && <span className="tag">🗝️ {t("Steward")}</span>}<span className="when">{(h.parcels || []).length} {t("parcels")}</span></div>
+            <div className="head"><Crest crest={h.crest} color={h.color} /><span className="who">{h.name}</span>{h.kind === "common" && <span className="tag">{t("common land")}</span>}{h.is_steward === 1 && <span className="tag">🗝️ {t("Steward")}</span>}</div>
             {h.parcels?.length ? <div className="small">{h.parcels.join(", ")}</div> : null}
+            {h.about ? <div className="small">{h.about}</div> : null}
             {steward && (
               <div className="actions">
                 <button onClick={() => startAssign(h)}>🗺️ {t("Assign land")}</button>
@@ -78,7 +80,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
                 </>) : null}
                 <button className="ghost" onClick={() => rotate(h.id)}>♻ {t("New link")}</button>
                 {h.id !== me.id && <button className="ghost" onClick={() => toggleSteward(h)}>{h.is_steward === 1 ? t("Remove steward") : t("Make steward")}</button>}
-                {h.id !== me.id && <button className="ghost" onClick={() => confirm(h.name + "?") && api(`/houses/${h.id}`, { method: "DELETE" }).then(refresh)}>🗑</button>}
+                {h.id !== me.id && <button className="ghost" onClick={() => confirm(h.name + " — " + t("everything this house wrote goes with it: posts, events, comments, projects, tools and away-notices. Only last night’s backup can bring it back, and restoring it rolls the whole village back with it. Export first if any of this matters.")) && api(`/houses/${h.id}`, { method: "DELETE" }).then(refresh)}>🗑</button>}
               </div>
             )}
             {steward && invites[h.id]?.code && <div className="small" style={{ wordBreak: "break-all" }}>{inviteLink(invites[h.id].code!)}</div>}
@@ -115,20 +117,22 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
         {commons.map((h) => (
           <div key={h.id} className="common-row">
             <Crest crest={h.crest} color={h.color} /> <strong>{h.name}</strong>
-            <span className="small">{(h.parcels || []).length} {t("parcels")}</span>
+            {h.parcels?.length ? <span className="small">{h.parcels.join(", ")}</span> : null}
             {steward && <button className="lesser" onClick={() => startAssign(h)}>🗺️ {t("Assign land")}</button>}
-            {steward && <button className="ghost" onClick={() => confirm(h.name + "?") && api(`/houses/${h.id}`, { method: "DELETE" }).then(refresh)}>🗑</button>}
+            {steward && <button className="ghost" onClick={() => confirm(h.name + " — " + t("everything this house wrote goes with it: posts, events, comments, projects, tools and away-notices. Only last night’s backup can bring it back, and restoring it rolls the whole village back with it. Export first if any of this matters.")) && api(`/houses/${h.id}`, { method: "DELETE" }).then(refresh)}>🗑</button>}
           </div>
         ))}
       </div>
       <div className="parchment">
         <h2>{me.crest} {t("Your house")}</h2>
-        <form className="inline" onSubmit={(e) => { e.preventDefault(); api(`/houses/${me.id}`, { method: "PUT", body: { name: myName, crest: myCrest, color: myColor } }).then(refresh); }}>
+        <form className="inline" onSubmit={(e) => { e.preventDefault(); api(`/houses/${me.id}`, { method: "PUT", body: { name: myName, crest: myCrest, color: myColor, about: myAbout } }).then(refresh); }}>
           <div className="row">
             <label>{t("Rename house")}<input value={myName} onChange={(e) => setMyName(e.target.value)} maxLength={60} /></label>
             <label>{t("Crest")}<input value={myCrest} onChange={(e) => setMyCrest(e.target.value)} maxLength={4} /></label>
             <label>{t("Colour")}<input type="color" value={myColor} onChange={(e) => setMyColor(e.target.value)} /></label>
           </div>
+          <label>{t("Where you live (optional)")}<input value={myAbout} onChange={(e) => setMyAbout(e.target.value)} maxLength={120} placeholder={t("e.g. in the hut by the stream")} /></label>
+          <p className="small muted">{t("Where to find you — the hut by the stream, the top of the lane. Every house writes one; it shows beside your away-notices.")}</p>
           <div className="submit"><button type="submit">{t("Save")}</button></div>
         </form>
         <Notifications steward={steward} />

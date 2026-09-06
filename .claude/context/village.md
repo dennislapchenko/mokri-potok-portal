@@ -24,7 +24,7 @@ the shop, when the work party is — with a game-like village map as the door.
 
 | Room | Job it does better than the chat |
 | --- | --- |
-| Village map (home) | Who lives where. Parcels coloured by house crest; the event ground is a house of kind `common`. |
+| Village map (home) | Who lives where. Parcels coloured by house crest; the event ground is a house of kind `common`. The legend under it names **every** house, including one with no land at all — a member who rents a hut or uses a vacant house is a normal house with an empty parcel list, and writes a line about where it lives instead. |
 | Watchtower | "We are away from … to …, please watch the land." Dates, care notes, one watcher. The room that justifies the app. |
 | Market | "Going to the shop, anyone need anything?" Needs with states, give-aways, shop runs with a cut-off. |
 | Tavern (the hall) | One room, three parts stacked: pinned notices on top, then the month calendar (kinds: event and work party, with sign-ups), then the message board. Merged 2026-09-04 — two doors to one gathering place crowded the bottom bar, and the board alone was never worth a door. `/bell` stays a route alias because notifications already sent point at it. |
@@ -35,10 +35,12 @@ the shop, when the work party is — with a game-like village map as the door.
 
 | Notifications | Installed as a home-screen app (PWA), each phone can allow push. Every new post, need, give-away, run, event or away notice rings the other houses; a house switches kinds off in the Houses room. Away pushes name nothing. Nothing rings between 21:00 and 07:00 unless that one phone ticked "ring at night too" — the choice is the phone's, not the house's. All kinds on by default is sized for a handful of houses — revisit the defaults when more join. |
 
-An open design, not built: **an account for people who live here without land**
-— someone renting a hut from a house, or using a vacant one part of the year.
-Options and the drawings: `docs/design-membership.md`. The village has to answer
-the away-notice question before any of it is written.
+Decided 2026-09-06 and built: **an account for people who live here without
+land** — someone renting a hut from a house, or using a vacant one part of the
+year. They are a house with no parcels, the Watchtower treats them exactly like
+any house in both directions, and a steward ends such an account by deleting the
+house. The argument, the options not taken and the drawings:
+`docs/design-membership.md`.
 
 Later, only if the houses ask: growing plans (Fields), per-house frost log
 (Almanac — this site's binding constraint is frost pooling), village knowledge

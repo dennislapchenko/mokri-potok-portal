@@ -30,6 +30,10 @@ tasks:
   vm:logs:
     desc: tail the backend on the VM (bootstrap code shows here on first boot)
     cmds: ["ssh -p 13337 -i ~/.ssh/gaia root@gaias-choice.gardenofatlantis.com 'docker logs --tail 100 -f mokri-potok-potok-api-1'"]
+  vm:code:
+    desc: 'fresh invite link for a house on the VM (no name lists the houses): task vm:code -- "Solnce"'
+    cmds:
+      - ssh -p 13337 -i ~/.ssh/gaia root@gaias-choice.gardenofatlantis.com 'docker exec mokri-potok-potok-api-1 /server code "{{.CLI_ARGS}}"'
   vm:backup:
     desc: copy the latest SQLite backup from the VM to ./backups/
     cmds: ["mkdir -p backups && scp -P 13337 -i ~/.ssh/gaia 'root@gaias-choice.gardenofatlantis.com:/srv/mokri-potok/data/backups/*.db' backups/"]

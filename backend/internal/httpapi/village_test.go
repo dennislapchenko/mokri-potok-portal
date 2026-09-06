@@ -160,12 +160,13 @@ func TestWorkBeeSignup(t *testing.T) {
 	waitFor(t, 1, fake) // the house that called it hears
 
 	_, _, evs := zagar.do("GET", "/api/events", nil)
-	if evs[0]["signups"].(float64) != 1 || evs[0]["mine"].(float64) != 0 {
+	// `mine` is this house's own answer, or null when it has not answered.
+	if evs[0]["signups"].(float64) != 1 || evs[0]["mine"] != nil {
 		t.Fatalf("signups: %v", evs[0])
 	}
 	_, _, evs = steward.do("GET", "/api/events", nil)
-	if evs[0]["mine"].(float64) != 1 {
-		t.Fatalf("mine flag: %v", evs[0])
+	if evs[0]["mine"] != "yes" {
+		t.Fatalf("mine answer: %v", evs[0])
 	}
 	code, _, _ = steward.do("DELETE", "/api/events/"+id+"/signup", nil)
 	steward.must(204, code, "sign off")
@@ -490,4 +491,91 @@ func TestCamp(t *testing.T) {
 	if _, ok := rows[0]["amount_cents"]; ok {
 		t.Fatal("camp stores an amount")
 	}
+}
+
+// TestRsvpAndComments: three answers not one, a moved date marks answers stale,
+// any house edits an event, comments thread one level and ring the caller.
+func TestRsvpAndComments(t *testing.T) {
+	_, fake, steward, zagar := newVillage(t)
+	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	zagar.must(204, code, "subscribe")
+	code, obj, _ := zagar.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-20T08:00"})
+	zagar.must(201, code, "event")
+	id := itoa(obj["id"].(float64))
+
+	// "not coming" is an answer, not silence: it is stored and it is not a yes.
+	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "no"})
+	steward.must(204, code, "rsvp no")
+	_, _, evs := zagar.do("GET", "/api/events", nil)
+	var list []map[string]any
+	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
+	if evs[0]["signups"].(float64) != 0 || list[0]["state"] != "no" {
+		t.Fatalf("no-answer counted as coming: %v", evs[0])
+	}
+	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "maybe", "note": "če ne dežuje"})
+	steward.must(204, code, "rsvp maybe")
+	_, _, evs = zagar.do("GET", "/api/events", nil)
+	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
+	if evs[0]["signups"].(float64) != 0 || list[0]["state"] != "maybe" || list[0]["note"] != "če ne dežuje" || list[0]["stale"].(float64) != 0 {
+		t.Fatalf("maybe folded into coming: %v %v", evs[0], list[0])
+	}
+
+	// Any house edits; moving the time marks earlier answers stale.
+	code, _, _ = steward.do("PUT", "/api/events/"+id, map[string]any{"notes": "prinesite grablje"})
+	steward.must(204, code, "any house edits")
+	_, _, evs = zagar.do("GET", "/api/events", nil)
+	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
+	if evs[0]["edited_by_name"] != "S" || list[0]["stale"].(float64) != 0 {
+		t.Fatalf("note edit made answers stale: %v", evs[0])
+	}
+	code, _, _ = steward.do("PUT", "/api/events/"+id, map[string]any{"starts_at": "2026-09-21T08:00"})
+	steward.must(204, code, "move the date")
+	_, _, evs = zagar.do("GET", "/api/events", nil)
+	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
+	if list[0]["stale"].(float64) != 1 {
+		t.Fatalf("answer survived a moved date as current: %v", list[0])
+	}
+
+	// Comments: one reply level, a reply to a reply hangs off the root.
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+	code, c1, _ := steward.do("POST", "/api/events/"+id+"/comments", map[string]any{"body": "Kdaj točno?", "author": "Ana"})
+	steward.must(201, code, "comment")
+	waitFor(t, 1, fake) // the house that called it hears
+	rootID := itoa(c1["id"].(float64))
+	_, c2, _ := zagar.do("POST", "/api/events/"+id+"/comments", map[string]any{"body": "Ob osmih", "parent_id": c1["id"]})
+	_, c3, _ := steward.do("POST", "/api/events/"+id+"/comments", map[string]any{"body": "Prav", "parent_id": c2["id"]})
+	_, _, cs := zagar.do("GET", "/api/events/"+id+"/comments", nil)
+	if len(cs) != 3 {
+		t.Fatalf("want 3 comments got %d", len(cs))
+	}
+	for _, c := range cs {
+		if c["id"].(float64) == c3["id"].(float64) && itoa(c["parent_id"].(float64)) != rootID {
+			t.Fatalf("reply to a reply did not flatten: %v", c)
+		}
+	}
+	_, _, evs = zagar.do("GET", "/api/events", nil)
+	if evs[0]["comments"].(float64) != 3 {
+		t.Fatalf("comment count: %v", evs[0]["comments"])
+	}
+	// Only the author or a steward deletes a comment.
+	code, _, _ = zagar.do("DELETE", "/api/comments/"+rootID, nil)
+	zagar.must(403, code, "stranger deletes a comment")
+	code, _, _ = steward.do("DELETE", "/api/comments/"+rootID, nil)
+	steward.must(204, code, "author deletes")
+	_, _, cs = zagar.do("GET", "/api/events/"+id+"/comments", nil)
+	if len(cs) != 0 {
+		t.Fatalf("cascade left %d comments", len(cs))
+	}
+}
+
+// TestPairingCodeWithSpace: the code is shown as "883 559" and pasted with it.
+func TestPairingCodeWithSpace(t *testing.T) {
+	srv, _, _, zagar := newVillage(t)
+	_, obj, _ := zagar.do("POST", "/api/pair", nil)
+	pin := obj["code"].(string)
+	phone := &client{t: t, h: srv.Handler()}
+	code, _, _ := phone.do("POST", "/api/join", map[string]any{"code": " " + pin[:3] + " " + pin[3:] + " "})
+	phone.must(201, code, "join with a spaced code")
 }

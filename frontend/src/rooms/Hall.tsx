@@ -9,7 +9,7 @@ import { Crest, When, useList } from "./shared";
 // The tavern is one room: pinned notices on the door, the calendar on the wall,
 // the board under it. It was two rooms until 2026-09-04 — a village opens one
 // door, and the bottom bar only fits so many.
-export function Hall({ me }: { me: Me }) {
+export function Hall({ me, houses }: { me: Me; houses: any[] }) {
   const { t } = useT();
   const posts = useList("/posts");
   const [params] = useSearchParams();
@@ -33,7 +33,7 @@ export function Hall({ me }: { me: Me }) {
           ))}
         </div>
       )}
-      <Calendar me={me} />
+      <Calendar me={me} houses={houses} />
       <div id="board">
         <Board me={me} items={posts.items} reload={posts.reload} />
       </div>

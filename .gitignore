@@ -5,3 +5,7 @@ backups/
 .DS_Store
 *.local
 *.log
+
+# The Docker build writes Vite output here; only the placeholder is tracked.
+backend/internal/httpapi/web/*
+!backend/internal/httpapi/web/index.html

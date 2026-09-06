@@ -9,6 +9,8 @@ on:
     branches: [main]
     paths:
       - "backend/**"
+      # The image now carries the frontend too (backend/Dockerfile builds it).
+      - "frontend/**"
       - ".github/workflows/build-backend.yml"
   workflow_dispatch:
 
@@ -44,7 +46,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: backend
+          # Repo root: the Dockerfile builds frontend/ and backend/ together.
+          context: .
           file: backend/Dockerfile
           push: true
           # GHCR rejected the first push with 'unknown blob' on the provenance

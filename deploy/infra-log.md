@@ -41,7 +41,20 @@
 - Container healthy. The owner founded the village from the Pages URL; three
   houses exist as of 2026-09-04.
 
-### 4. Phone sessions and push
+### 4. Own domain, own frontend — 2026-09-06
+- The village created an A record **vas.mokri-potok.si → this VM**.
+- `backend/Dockerfile` now builds the frontend and embeds it in the Go binary,
+  so one container answers the API and the page. Build context moved to the
+  repo root; the CI workflow rebuilds on `frontend/**` too.
+- Caddy routing for the new hostname lives in the **gaias-choice** repo
+  (`deploy/app/Caddyfile`, `POTOK_DOMAIN`), which owns the edge. The old
+  `/potok/*` path stays for the Pages frontend until it retires.
+- **Push subscriptions are bound to an origin.** Everyone who allowed
+  notifications on the Pages origin must allow them again on the new domain;
+  the install banner asks. Nothing warns them automatically.
+- `PUSH_SUBJECT` and `WEATHER_LOCATION` are the two new env knobs.
+
+### 5. Phone sessions and push
 - Likely cause of lost sessions (unconfirmed on a phone): an invite link opened
   from WhatsApp lands in WhatsApp's in-app browser and the token stays there.
 - Shipped: web manifest + install banner (Android prompt, iOS Share → Add to

@@ -12,8 +12,10 @@ further phones with a six-digit pairing code. Installs to the home screen and
 sends notifications.
 
 - **Frontend:** Vite + React 18 + TypeScript, hash-routed SPA, Slovenian + English,
-  installable (web manifest + service worker for push). Deployed to GitHub Pages on
-  push to `main` (`.github/workflows/deploy-pages.yml`).
+  installable (web manifest + service worker for push). Built **into the backend
+  image** (`backend/Dockerfile`, build context is the repo root) and served by the
+  Go binary, so the portal is one origin on its own domain. The GitHub Pages copy
+  (`.github/workflows/deploy-pages.yml`) is the retiring fallback.
 - **Backend:** Go, stdlib HTTP, SQLite (pure Go), VAPID web push, one binary, nightly backups in-process.
   Image built by CI to GHCR; deployed by the doco-cd controller on the gaias-choice
   VM (`.doco-cd.yml`, `deploy/`).

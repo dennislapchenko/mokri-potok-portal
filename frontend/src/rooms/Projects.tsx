@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
-import { EventCard } from "./Calendar";
+import { EventCard } from "./EventCard";
 import { Crest, Empty, When, canEdit, useList } from "./shared";
 import { DatePicker } from "../DatePicker";
 

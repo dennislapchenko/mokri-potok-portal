@@ -1,59 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { api, type Me } from "../api";
+import { useSearchParams } from "react-router-dom";
+import { api, type House, type Me } from "../api";
 import { useT } from "../i18n";
-import { Crest, When, canEdit, useList } from "./shared";
+import { useList } from "./shared";
+import { EventCard, ICON } from "./EventCard";
 import { DatePicker } from "../DatePicker";
 
-export const ICON: Record<string, string> = { event: "🔔", work: "🤝", alarm: "🚨" };
-
-// EventCard is shared with the project page: same card, same sign-ups.
-export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; reload: () => void; linkToTavern?: boolean }) {
-  const { t } = useT();
-  const [noteOpen, setNoteOpen] = useState(false);
-  const [noteText, setNoteText] = useState("");
-  const [openNote, setOpenNote] = useState<string | null>(null);
-  const signup = () => api(`/events/${ev.id}/signup`, { method: ev.mine ? "DELETE" : "POST" }).then(reload);
-  const saveNote = async () => { await api(`/events/${ev.id}/signup`, { method: "POST", body: { note: noteText } }); setNoteOpen(false); setNoteText(""); reload(); };
-  const list = JSON.parse(ev.signup_list || "[]") as any[];
-  return (
-    <div className="card" style={{ borderLeftColor: ev.kind === "alarm" ? "var(--red)" : ev.kind === "work" ? "var(--green)" : "var(--brass)" }}>
-      <div className="head">
-        <Crest crest={ev.house_crest} color={ev.house_color} />
-        <strong>{ICON[ev.kind]} {linkToTavern ? <Link to={`/tavern?day=${ev.starts_at.slice(0, 10)}`} className="plain">{ev.title}</Link> : ev.title}</strong>
-        {ev.kind !== "event" && <span className={"tag " + ev.kind}>{t(ev.kind)}</span>}
-        {ev.project_id && <Link to={`/projects/${ev.project_id}`} className="tag project-chip">📋 {ev.project_title}{ev.task_title ? ` · ${ev.task_title}` : ""}</Link>}
-        <span className="when"><When iso={ev.starts_at} />{ev.ends_at ? <> → <When iso={ev.ends_at} /></> : null}</span>
-      </div>
-      {(ev.place || ev.notes) && <div className="body small">{ev.place && <span className="tag place">📍 {ev.place}</span>}{ev.place && ev.notes ? " " : ""}{ev.notes}</div>}
-      <div className="small signers">🙋 {ev.signups > 0 ? list.map((sgn, i) => {
-        const key = `${ev.id}-${sgn.house_id}`;
-        return (
-          <span key={key}>{i > 0 ? ", " : ""}{sgn.crest} {sgn.name}
-            {sgn.note && <button className="ghost balloon" title={sgn.note} onClick={() => setOpenNote(openNote === key ? null : key)}>💬</button>}
-            {openNote === key && <span className="note-bubble">{sgn.note}</span>}
-          </span>
-        );
-      }) : <span className="muted">{t("nobody has signed up yet")}</span>}</div>
-      {noteOpen && (
-        <div style={{ display: "flex", gap: ".4rem", margin: ".3rem 0" }}>
-          <input value={noteText} onChange={(e) => setNoteText(e.target.value)} maxLength={200} placeholder={t("e.g. I bring the scythe")} autoFocus />
-          <button className="primary" onClick={saveNote}>{t("Save")}</button>
-        </div>
-      )}
-      <div className="actions">
-        <button className={ev.mine ? "" : "primary"} onClick={signup}>{ev.mine ? t("I cannot come after all") : "🙋 " + t("I am coming")}{ev.signups > 0 ? ` (${ev.signups})` : ""}</button>
-        {ev.mine === 1 && !noteOpen && <button className="lesser" onClick={() => { setNoteOpen(true); setNoteText(list.find((x) => x.house_id === me.id)?.note || ""); }}>💬 {t("Add a note")}</button>}
-        {canEdit(me, ev) && <button className="ghost" onClick={() => confirm("?") && api(`/events/${ev.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button>}
-      </div>
-    </div>
-  );
-}
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 // The village calendar: a month grid with the events sitting in their day, then
 // the chosen day (or everything ahead) as cards you can sign up to.
-export function Calendar({ me }: { me: Me }) {
+export function Calendar({ me, houses }: { me: Me; houses: House[] }) {
   const { t, lang } = useT();
   const { items, reload } = useList("/events");
   const [f, setF] = useState({ title: "", kind: "event", starts_at: "", ends_at: "", place: "", notes: "", project_id: "", task_id: "" });
@@ -162,7 +119,13 @@ export function Calendar({ me }: { me: Me }) {
           <div className="row">
             <label>{t("Starts")}<DatePicker time required value={f.starts_at} onChange={(v) => set("starts_at")({ target: { value: v } } as any)} /></label>
             <label>{t("Ends")}<DatePicker time value={f.ends_at} onChange={(v) => set("ends_at")({ target: { value: v } } as any)} defaultTime="17:00" /></label>
-            <label>{t("Place")}<input value={f.place} onChange={set("place")} maxLength={120} /></label>
+            <label>{t("Place")}<span className="place-pick">
+              <input value={f.place} onChange={set("place")} maxLength={120} placeholder={t("anywhere, or pick below")} />
+              <select value="" onChange={(e) => e.target.value && setF({ ...f, place: e.target.value })}>
+                <option value="">📍…</option>
+                {houses.map((h) => <option key={h.id} value={h.name}>{h.crest} {h.name}</option>)}
+              </select>
+            </span></label>
           </div>
           {projects.items.filter((p) => p.state === "open").length > 0 && (
             <div className="row">

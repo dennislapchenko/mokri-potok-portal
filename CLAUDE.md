@@ -22,8 +22,18 @@ does not ship.
   is land, not an account: no invite, no login, never offered where a house is
   meant (hand a task to, notifications, invite links). The UI keeps it in its
   own small block.
+- **One origin.** The Go container serves the API *and* the built frontend
+  (`static.go`, embedded at image build). The portal lives at its own domain,
+  in `SITE.md` of the homestead repo. No CORS, no second host. GitHub Pages is
+  the retiring copy, not the home.
+- **No third party in the page.** Weather is fetched by the backend from ARSO
+  and trimmed (`weather.go`, cached 30 min), never framed. An iframe would hand
+  the agency every villager's address on a logged-in page. Any future embed
+  gets the same treatment or an argument written down here.
 - **Nothing is public.** Every API route except `/api/healthz`, `/api/status`,
-  `/api/bootstrap`, `/api/join` requires a bearer token. The one public image
+  `/api/bootstrap`, `/api/join` requires a bearer token. **No unauthenticated
+  write surface, ever** — a camper self-check-in link from park4night was asked
+  for on 2026-09-06 and refused for that reason. The one public image
   is `backdrop.jpg` behind the gate — the owner chose it knowing the repo is
   public; provenance `TBD`. Away-notices are
   burglary information: they never leave the logged-in app (no digests, no feeds).
@@ -34,6 +44,14 @@ does not ship.
   mode). The map carries its snapshot date and "boundaries, not fences" line.
   House ↔ parcel assignment lives in the DB only. Licence attribution for the
   GURS data: `TBD`, required before the portal moves to the collective's domain.
+- **An answer is not a headcount.** A sign-up is `yes`, `no` or `maybe`, and
+  silence is a fourth thing. Only `yes` is counted; never fold `maybe` into it.
+  Moving an event's time bumps `events.time_version`, which marks every earlier
+  answer stale — a headcount for a day that no longer exists is worse than none.
+- **Any house may edit an event — provisional.** Owner's decision 2026-09-06:
+  every account today is a villager. `events.edited_by` records who, and the
+  room shows it. When a reduced "viewer" role arrives for volunteers, this
+  narrows to the creator and stewards.
 - **No tally of favours.** Work-bee sign-ups are a headcount for one day and
   die with the event. Tool loans record who holds a tool now, never how many
   times a house borrowed. Do not add a total anywhere. The **return reminder**
@@ -131,6 +149,7 @@ frontend/           Vite + React; src/rooms/* one file per room (Projects.tsx ho
 frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons, backdrop.jpg (aerial photo behind the gate)
                     src/push.ts, src/Install.tsx, src/AddPhone.tsx, src/photo.ts (auth'd photo fetch + browser-side shrink)
 backend/internal/httpapi/shed.go   tool photos as BLOBs (≤2 MB, served with auth), wishlist; remind.go = return nudges
+                    events.go = RSVP + comments; weather.go = ARSO, server-side; static.go = the embedded frontend
 docs/               design docs the owner and the assistant decide on together (navigation growth, Projects, Campground)
                     icon.svg is hand-drawn paths, full-bleed, content inside the central 80 % safe circle
                     (an emoji glyph renders off-centre and monochrome — do not go back to one)

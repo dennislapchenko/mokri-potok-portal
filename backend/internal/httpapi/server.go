@@ -43,6 +43,7 @@ func (s *Server) routes() {
 	m := s.mux
 	m.HandleFunc("GET /api/healthz", s.healthz)
 	m.HandleFunc("GET /api/status", s.status)
+	m.HandleFunc("GET /api/weather", s.requireHouse(s.weather))
 	m.HandleFunc("POST /api/bootstrap", s.bootstrap)
 	m.HandleFunc("POST /api/join", s.join)
 	m.HandleFunc("POST /api/pair", s.requireHouse(s.createPairing))
@@ -70,6 +71,9 @@ func (s *Server) routes() {
 	m.HandleFunc("DELETE /api/events/{id}", s.requireHouse(s.deleteRow("events")))
 	m.HandleFunc("POST /api/events/{id}/signup", s.requireHouse(s.signUp))
 	m.HandleFunc("DELETE /api/events/{id}/signup", s.requireHouse(s.signOff))
+	m.HandleFunc("GET /api/events/{id}/comments", s.requireHouse(s.listComments))
+	m.HandleFunc("POST /api/events/{id}/comments", s.requireHouse(s.createComment))
+	m.HandleFunc("DELETE /api/comments/{id}", s.requireHouse(s.deleteComment))
 	// Tool shed
 	m.HandleFunc("GET /api/tools", s.requireHouse(s.listTools))
 	m.HandleFunc("POST /api/tools", s.requireHouse(s.createTool))
@@ -122,6 +126,8 @@ func (s *Server) routes() {
 	m.HandleFunc("DELETE /api/camp/{id}", s.requireHouse(s.deleteRow("camp_takings")))
 	// Exit path: everything as one JSON document (steward only).
 	m.HandleFunc("GET /api/export", s.requireSteward(s.export))
+	// Everything that is not /api/ is the frontend (static.go).
+	m.Handle("/", s.staticHandler())
 }
 
 // ---- plumbing ------------------------------------------------------------
@@ -329,7 +335,8 @@ func (s *Server) join(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "bad json")
 		return
 	}
-	code := strings.ToLower(strings.TrimSpace(str(m, "code")))
+	// The pairing code is displayed as "883 559", so a paste carries a space.
+	code := strings.ToLower(strings.Join(strings.Fields(str(m, "code")), ""))
 	// A code is either a steward's invite (a house joins) or a house's own
 	// pairing code (one more phone of a house already inside).
 	inv, err := s.st.One(r.Context(), `SELECT house_id, expires_at, 'invite' AS src FROM invites WHERE code=?
@@ -619,10 +626,12 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) listEvents(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.st.Rows(r.Context(), `SELECT e.*,`+houseJoin+`, pr.title AS project_title, tk.title AS task_title,
-		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id) AS signups,
-		(SELECT json_group_array(json_object('house_id', h2.id, 'name', h2.name, 'crest', h2.crest, 'note', s.note)) FROM event_signups s JOIN houses h2 ON h2.id=s.house_id WHERE s.event_id=e.id) AS signup_list,
-		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id AND s.house_id=?) AS mine
-		FROM events e JOIN houses h ON h.id=e.house_id LEFT JOIN projects pr ON pr.id=e.project_id LEFT JOIN project_tasks tk ON tk.id=e.task_id
+		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id AND s.state='yes') AS signups,
+		(SELECT json_group_array(json_object('house_id', h2.id, 'name', h2.name, 'crest', h2.crest, 'note', s.note, 'state', s.state, 'stale', CASE WHEN s.answered_version < e.time_version THEN 1 ELSE 0 END)) FROM event_signups s JOIN houses h2 ON h2.id=s.house_id WHERE s.event_id=e.id) AS signup_list,
+		(SELECT s.state FROM event_signups s WHERE s.event_id=e.id AND s.house_id=?) AS mine,
+		(SELECT count(*) FROM event_comments c WHERE c.event_id=e.id) AS comments,
+		ed.name AS edited_by_name
+		FROM events e JOIN houses h ON h.id=e.house_id LEFT JOIN projects pr ON pr.id=e.project_id LEFT JOIN project_tasks tk ON tk.id=e.task_id LEFT JOIN houses ed ON ed.id=e.edited_by
 		WHERE e.starts_at >= date('now','-60 days') ORDER BY e.starts_at LIMIT 500`, houseFrom(r).ID)
 	if err != nil {
 		fail(w, err)
@@ -677,9 +686,14 @@ func (s *Server) createEvent(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
+// updateEvent: **any house may edit an event** — provisional, owner's decision
+// 2026-09-06. Every account today is a villager; when a reduced "viewer" role
+// arrives for volunteers, this narrows to the creator and stewards. Deleting
+// stays with the creator or a steward.
 func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
 	id, _ := pathID(r)
-	if !s.ownerOrSteward(w, r, "events", id) {
+	if row, _ := s.st.One(r.Context(), `SELECT id FROM events WHERE id=?`, id); row == nil {
+		writeErr(w, 404, "not found")
 		return
 	}
 	m, err := readJSON(r)
@@ -687,11 +701,32 @@ func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "bad json")
 		return
 	}
+	before, err := s.st.One(r.Context(), `SELECT starts_at, ends_at FROM events WHERE id=?`, id)
+	if err != nil {
+		fail(w, err)
+		return
+	}
 	for _, k := range []string{"title", "kind", "starts_at", "ends_at", "place", "notes"} {
 		if _, ok := m[k]; ok {
 			s.st.Exec(r.Context(), `UPDATE events SET `+k+`=? WHERE id=?`, str(m, k), id)
 		}
 	}
+	// Moving the date invalidates the answers: a headcount for a day that no
+	// longer exists is worse than no headcount. Answers are not deleted, they
+	// are marked older than the change and the room says so.
+	moved := false
+	for _, k := range []string{"starts_at", "ends_at"} {
+		if v, ok := m[k]; ok {
+			old, _ := before[k].(string)
+			if str(map[string]any{k: v}, k) != old {
+				moved = true
+			}
+		}
+	}
+	if moved {
+		s.st.Exec(r.Context(), `UPDATE events SET time_version=time_version+1, time_changed_at=datetime('now') WHERE id=?`, id)
+	}
+	s.st.Exec(r.Context(), `UPDATE events SET edited_by=?, edited_at=datetime('now') WHERE id=?`, houseFrom(r).ID, id)
 	w.WriteHeader(204)
 }
 
@@ -933,7 +968,7 @@ func (s *Server) updateAway(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 	out := map[string]any{"exported_at": time.Now().UTC().Format(time.RFC3339)}
-	for _, t := range []string{"houses", "house_parcels", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "projects", "project_tasks", "camp_takings"} {
+	for _, t := range []string{"houses", "house_parcels", "posts", "events", "event_signups", "event_comments", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "projects", "project_tasks", "camp_takings"} {
 		cols := "*"
 		if t == "tools" { // photos are bytes, not text — they stay in the SQLite backup
 			cols = "id, house_id, name, notes, category, held_by, held_since, reminded_at, created_at"
@@ -971,15 +1006,27 @@ func (s *Server) signUp(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "no such event")
 		return
 	}
-	if _, err := s.st.Exec(r.Context(), `INSERT INTO event_signups(event_id, house_id, note) VALUES (?,?,?)
-		ON CONFLICT(event_id, house_id) DO UPDATE SET note=excluded.note`, id, h.ID, str(m, "note")); err != nil {
+	state := str(m, "state")
+	if !contains(signupStates, state) {
+		state = "yes"
+	}
+	if _, err := s.st.Exec(r.Context(), `INSERT INTO event_signups(event_id, house_id, note, state, answered_at, answered_version)
+		VALUES (?,?,?,?,datetime('now'), COALESCE((SELECT time_version FROM events WHERE id=?),0))
+		ON CONFLICT(event_id, house_id) DO UPDATE SET note=excluded.note, state=excluded.state, answered_at=excluded.answered_at, answered_version=excluded.answered_version`,
+		id, h.ID, str(m, "note"), state, id); err != nil {
 		fail(w, err)
 		return
 	}
 	if owner := ev["house_id"].(int64); owner != h.ID {
 		title := ev["title"].(string)
+		word := map[string]struct{ sl, en string }{
+			"yes":   {" prihaja", " is coming"},
+			"no":    {" ne pride", " cannot come"},
+			"maybe": {" mogoče pride", " might come"},
+		}[state]
+		icon := map[string]string{"yes": "🙋", "no": "🚫", "maybe": "🤔"}[state]
 		s.notifyHouse("events", owner, func(lang string) Payload {
-			return Payload{Title: "🙋 " + h.Name + tr(lang, " prihaja", " is coming"), Body: title, URL: "#/bell"}
+			return Payload{Title: icon + " " + h.Name + tr(lang, word.sl, word.en), Body: title, URL: "#/tavern"}
 		})
 	}
 	w.WriteHeader(204)

@@ -31,7 +31,7 @@ the shop, when the work party is — with a game-like village map as the door.
 | Tool shed | Who lends what, and who holds it now, with a photo, a category (power, garden, other) and a filter by owner house. A tool comes back; a give-away does not. The holder gets a nudge after a day, then at doubling gaps — a reminder, not a ledger. A folded **wishlist** underneath: tools the village lacks, with the names of houses that would love one — names, never a count. |
 | Projects | A long job split into tasks a house takes, or is handed by the task's creator after agreeing in person. Events belong to a project and show a 📋 chip in the calendar. Finished stays visible. On the phone's bottom bar. |
 | Campground | The village parking spot on park4night. A house notes a camper arrived; a house says it has the money; it is handed over. No amounts, no plates. Everyone hears an arrival and a claim, so nobody collects twice. |
-| Work bees | Any event takes sign-ups. The house that called it hears who is coming. A headcount for the day, never a score. |
+| Work bees | Any event takes three answers — coming, not coming, maybe — plus its own comment thread. The house that called it hears who is coming. A headcount for the day, never a score. |
 
 | Notifications | Installed as a home-screen app (PWA), each phone can allow push. Every new post, need, give-away, run, event or away notice rings the other houses; a house switches kinds off in the Houses room. Away pushes name nothing. All six on by default is sized for a handful of houses — revisit the defaults and quiet hours when more join. |
 

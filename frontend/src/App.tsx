@@ -12,6 +12,7 @@ import { ToolShed } from "./rooms/ToolShed";
 import { Projects, Project } from "./rooms/Projects";
 import { Camp } from "./rooms/Camp";
 import { InstallBanner } from "./Install";
+import { Weather } from "./Weather";
 
 export type Session = { me: Me; houses: House[]; refresh: () => Promise<void>; logout: () => void };
 
@@ -72,9 +73,9 @@ export default function App() {
         {state === "in" && me && (
           <Routes>
             <Route path="/" element={<Home me={me} houses={houses} />} />
-            <Route path="/tavern" element={<Hall me={me} />} />
+            <Route path="/tavern" element={<Hall me={me} houses={houses} />} />
             {/* Notifications sent before the merge point at #/bell — keep it alive. */}
-            <Route path="/bell" element={<Hall me={me} />} />
+            <Route path="/bell" element={<Hall me={me} houses={houses} />} />
             <Route path="/market" element={<Market me={me} houses={houses} />} />
             <Route path="/watch" element={<Watchtower me={me} />} />
             <Route path="/shed" element={<ToolShed me={me} houses={houses} />} />
@@ -97,8 +98,18 @@ export default function App() {
   );
 }
 
+// What sits at the top of Home is a per-device choice, not a per-house one:
+// the map impresses on a first open and is not needed daily, and two phones of
+// one house disagree about that. localStorage is already how a device differs.
+type Topper = "map" | "weather" | "none";
+
 function Home({ me, houses }: { me: Me; houses: House[] }) {
   const { t } = useT();
+  const [top, setTop] = useState<Topper>(() => {
+    try { const v = localStorage.getItem("potok.top"); if (v === "map" || v === "weather" || v === "none") return v; } catch { /* ignore */ }
+    return "map";
+  });
+  const pick = (v: Topper) => { setTop(v); try { localStorage.setItem("potok.top", v); } catch { /* ignore */ } };
   // One badge per building, built as a finished sentence so a room can say two
   // things at once (the shed: how many are in it, how many are out).
   const [badges, setBadges] = useState<Record<string, string>>({});
@@ -125,9 +136,17 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
   return (
     <>
       <InstallBanner />
-      <VillageMap houses={houses} highlight={me.id} />
-      <div className="legend">
-        {houses.map((h) => <span key={h.id} className="legend-item"><span className="crest" style={{ background: h.color }}>{h.crest}</span> {h.name}{h.id === me.id ? ` (${t("Your house")})` : ""}</span>)}
+      {top === "map" && (<>
+        <VillageMap houses={houses} highlight={me.id} />
+        <div className="legend">
+          {houses.map((h) => <span key={h.id} className="legend-item"><span className="crest" style={{ background: h.color }}>{h.crest}</span> {h.name}{h.id === me.id ? ` (${t("Your house")})` : ""}</span>)}
+        </div>
+      </>)}
+      {top === "weather" && <Weather />}
+      <div className="topper-pick">
+        {([["map", "🗺️", "Map"], ["weather", "🌤️", "Weather"], ["none", "✕", "Neither"]] as [Topper, string, string][]).map(([v, icon, label]) => (
+          <button key={v} className={"chip" + (top === v ? " on" : "")} onClick={() => pick(v)} title={t("this phone only")}>{icon} {t(label)}</button>
+        ))}
       </div>
       <div className="buildings">
         {ROOMS.map((r) => (
@@ -159,7 +178,8 @@ function Gate({ onJoined }: { onJoined: () => Promise<void> }) {
     e.preventDefault(); setErr("");
     try {
       const path = bootstrap ? "/bootstrap" : "/join";
-      const r = await api<{ token: string }>(path, { method: "POST", body: { code: code.trim(), device, name } });
+      // The pairing code is shown as "883 559", so a paste brings spaces.
+      const r = await api<{ token: string }>(path, { method: "POST", body: { code: code.replace(/\s+/g, ""), device, name } });
       setToken(r.token);
       await onJoined();
       nav("/");

@@ -8,7 +8,10 @@ import { AddPhone } from "./AddPhone";
 //   in-app browser  -> open in your real browser
 //   browser         -> install (Android: one tap; iOS: Share -> Add to Home Screen)
 //   installed, off  -> enable notifications
-export function InstallBanner() {
+// `gate` renders the install half alone, in front of the code form: a villager
+// who is not signed in on this origin never reaches the home screen, and the
+// in-app-browser warning is worth more before they type a code than after.
+export function InstallBanner({ gate }: { gate?: boolean }) {
   const { t } = useT();
   const [dismissed, setDismissed] = useState(() => { try { return sessionStorage.getItem("potok.banner") === "1"; } catch { return false; } });
   const [prompt, setPrompt] = useState<any>(null);
@@ -40,21 +43,26 @@ export function InstallBanner() {
   }, []);
 
   if (dismissed) return null;
+  // At the gate there is no token, so neither notifications nor a pairing code
+  // can be asked for: an installed app has nothing left to say here.
+  if (gate && standalone) return null;
   // Nothing left to ask for: installed and subscribed. Also covers the case
   // where the display-mode check fails but push clearly works.
-  if (push === "on") return null;
-  if (standalone && push !== "off") return null;
+  if (!gate && push === "on") return null;
+  if (!gate && standalone && push !== "off") return null;
   const dismiss = () => { setDismissed(true); try { sessionStorage.setItem("potok.banner", "1"); } catch { /* ignore */ } };
 
+  // "Take a code with you" needs a session to make one.
+  const signin = gate ? null : <Signin />;
   let body: React.ReactNode;
   if (!standalone && isInApp()) {
     body = <><strong>{t("You are inside WhatsApp's browser.")}</strong> {t("Open this page in Chrome or Safari (menu ⋮ → open in browser), then add it to your home screen. Otherwise the device forgets you.")}</>;
   } else if (!standalone && prompt) {
-    body = <><strong>{t("Install the village on this device")}</strong> — {t("one tap, then it opens like an app.")} <button className="primary" onClick={() => prompt.prompt()}>📲 {t("Install")}</button><Signin /></>;
+    body = <><strong>{t("Install the village on this device")}</strong> — {t("one tap, then it opens like an app.")} <button className="primary" onClick={() => prompt.prompt()}>📲 {t("Install")}</button>{signin}</>;
   } else if (!standalone && isIOS()) {
-    body = <><strong>{t("Install the village on this device")}</strong>: {t("tap Share")} {t("below, then")} <em>{t("Add to Home Screen")}</em>.<Signin /></>;
+    body = <><strong>{t("Install the village on this device")}</strong>: {t("tap Share")} {t("below, then")} <em>{t("Add to Home Screen")}</em>.{signin}</>;
   } else if (!standalone) {
-    body = <><strong>{t("Install the village on this device")}</strong>: {t("browser menu → Install app / Add to Home Screen.")}<Signin /></>;
+    body = <><strong>{t("Install the village on this device")}</strong>: {t("browser menu → Install app / Add to Home Screen.")}{signin}</>;
   } else {
     body = <><strong>{t("Ring the bell for you too?")}</strong> {t("Get a notification when a house posts, needs something, drives to town, adds an event or goes away.")} <button className="primary" onClick={() => enablePush().catch(() => undefined).then(() => pushState()).then((s) => { setPush(s); if (s !== "off") setDismissed(true); })}>🔔 {t("Enable notifications")}</button></>;
   }

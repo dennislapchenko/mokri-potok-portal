@@ -65,10 +65,13 @@ export default function App() {
         {state === "loading" && <div className="parchment">{t("Loading…")}</div>}
         {state === "gate" && (
           <div className="gate-bg" style={{ "--bg": `url(${import.meta.env.BASE_URL}backdrop.jpg)` } as React.CSSProperties}>
-            <Routes>
-              <Route path="/join/:code" element={<Gate onJoined={refresh} />} />
-              <Route path="*" element={<Gate onJoined={refresh} />} />
-            </Routes>
+            <div className="gate-col">
+              <InstallBanner gate />
+              <Routes>
+                <Route path="/join/:code" element={<Gate onJoined={refresh} />} />
+                <Route path="*" element={<Gate onJoined={refresh} />} />
+              </Routes>
+            </div>
           </div>
         )}
         {state === "in" && me && (

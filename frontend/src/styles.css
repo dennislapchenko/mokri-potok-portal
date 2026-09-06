@@ -205,6 +205,9 @@ a.card:hover { background: #fff8e4; }
 .legend .swatch { display: inline-block; width: .9rem; height: .9rem; border: 1px solid #5a4a34; vertical-align: -2px; margin-right: .3rem; }
 
 .gate { max-width: 460px; margin: 3rem auto; }
+/* The gate's install hint shares the gate card's column, one gap above it. */
+.gate-col { max-width: 460px; margin: 3rem auto; }
+.gate-col .gate { margin: 0; }
 .pin { font-family: "IM Fell English SC", monospace; font-size: 2.1rem; letter-spacing: .3em; color: var(--wood2); background: #fff6e0; border: 2px dashed var(--brass); border-radius: 8px; padding: .3rem 0 .3rem .3em; text-align: center; margin: .4rem 0; }
 .banner { position: relative; border-left-color: var(--brass); background: #fff6e0; margin-bottom: .8rem; padding-right: 2.2rem; }
 .banner .body { margin: 0; font-size: .95rem; }

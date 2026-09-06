@@ -30,13 +30,14 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
   const clear = () => api(`/events/${ev.id}/signup`, { method: "DELETE" }).then(reload);
   const save = async () => { await api(`/events/${ev.id}`, { method: "PUT", body: f }); setEditing(false); reload(); };
 
+  const anyStale = list.some((x) => x.stale);
   const Group = ({ state, icon }: { state: string; icon: string }) => {
     const g = by(state);
     if (!g.length) return null;
     return (
       <div className="small signers">{icon} {g.map((sgn, i) => (
-        <span key={sgn.house_id} className={sgn.stale ? "stale" : ""} title={sgn.stale ? t("answered before the time changed") : sgn.note || ""}>
-          {i > 0 ? ", " : ""}{sgn.crest} {sgn.name}{sgn.note ? ` — ${sgn.note}` : ""}{sgn.stale ? " ⧗" : ""}
+        <span key={sgn.house_id} className={sgn.stale ? "stale" : ""}>
+          {i > 0 ? ", " : ""}{sgn.crest} {sgn.name}{sgn.note ? ` — ${sgn.note}` : ""}
         </span>
       ))}</div>
     );
@@ -68,7 +69,8 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
             <span className="when"><When iso={ev.starts_at} />{ev.ends_at ? <> → <When iso={ev.ends_at} /></> : null}</span>
           </div>
           {(ev.place || ev.notes) && <div className="body small">{ev.place && <span className="tag place">📍 {ev.place}</span>}{ev.place && ev.notes ? " " : ""}{ev.notes}</div>}
-          {ev.edited_by_name && <div className="small muted">✎ {t("last edited by")} {ev.edited_by_name}{ev.time_changed_at ? ` · ${t("the time was moved")}` : ""}</div>}
+          {ev.edited_by_name && <div className="small muted">✎ {t("last edited by")} {ev.edited_by_name}</div>}
+          {anyStale && <div className="small stale-note">⧗ {t("The time moved. Struck answers were given for the old one.")}</div>}
         </>
       )}
 

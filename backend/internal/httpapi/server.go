@@ -126,7 +126,9 @@ func (s *Server) routes() {
 	m.HandleFunc("DELETE /api/camp/{id}", s.requireHouse(s.deleteRow("camp_takings")))
 	// Exit path: everything as one JSON document (steward only).
 	m.HandleFunc("GET /api/export", s.requireSteward(s.export))
-	// Everything that is not /api/ is the frontend (static.go).
+	// Everything that is not /api/ is the frontend (static.go). An unknown /api
+	// path must stay a 404 — the SPA shell answering 200 hides a typo forever.
+	m.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { writeErr(w, 404, "no such endpoint") })
 	m.Handle("/", s.staticHandler())
 }
 
@@ -626,7 +628,7 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) listEvents(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.st.Rows(r.Context(), `SELECT e.*,`+houseJoin+`, pr.title AS project_title, tk.title AS task_title,
-		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id AND s.state='yes') AS signups,
+		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id AND s.state='yes' AND s.answered_version >= e.time_version) AS signups,
 		(SELECT json_group_array(json_object('house_id', h2.id, 'name', h2.name, 'crest', h2.crest, 'note', s.note, 'state', s.state, 'stale', CASE WHEN s.answered_version < e.time_version THEN 1 ELSE 0 END)) FROM event_signups s JOIN houses h2 ON h2.id=s.house_id WHERE s.event_id=e.id) AS signup_list,
 		(SELECT s.state FROM event_signups s WHERE s.event_id=e.id AND s.house_id=?) AS mine,
 		(SELECT count(*) FROM event_comments c WHERE c.event_id=e.id) AS comments,
@@ -725,6 +727,20 @@ func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	if moved {
 		s.st.Exec(r.Context(), `UPDATE events SET time_version=time_version+1, time_changed_at=datetime('now') WHERE id=?`, id)
+		// A house that answered must hear that the day changed. Reading it in
+		// the app on the next open is not good enough for a work party.
+		ev, _ := s.st.One(r.Context(), `SELECT title, starts_at FROM events WHERE id=?`, id)
+		rows, _ := s.st.Rows(r.Context(), `SELECT DISTINCT house_id FROM event_signups WHERE event_id=? AND state IN ('yes','maybe') AND house_id != ?`, id, houseFrom(r).ID)
+		for _, row := range rows {
+			title, when := ev["title"].(string), ev["starts_at"].(string)
+			s.notifyHouse("events", row["house_id"].(int64), func(lang string) Payload {
+				return Payload{
+					Title: tr(lang, "📅 Termin premaknjen: ", "📅 Time moved: ") + title,
+					Body:  tr(lang, "zdaj ", "now ") + humanWhen(when, lang, s.now()) + tr(lang, " — potrdi znova", " — answer again"),
+					URL:   "#/tavern",
+				}
+			})
+		}
 	}
 	s.st.Exec(r.Context(), `UPDATE events SET edited_by=?, edited_at=datetime('now') WHERE id=?`, houseFrom(r).ID, id)
 	w.WriteHeader(204)
@@ -1006,9 +1022,17 @@ func (s *Server) signUp(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "no such event")
 		return
 	}
+	// A body without `state` is a note edit: keep the answer the house gave.
+	// A body with an unknown state is a bug, not a yes.
 	state := str(m, "state")
-	if !contains(signupStates, state) {
+	if _, sent := m["state"]; !sent || state == "" {
 		state = "yes"
+		if prev, _ := s.st.One(r.Context(), `SELECT state FROM event_signups WHERE event_id=? AND house_id=?`, id, h.ID); prev != nil {
+			state = prev["state"].(string)
+		}
+	} else if !contains(signupStates, state) {
+		writeErr(w, 400, "unknown answer")
+		return
 	}
 	if _, err := s.st.Exec(r.Context(), `INSERT INTO event_signups(event_id, house_id, note, state, answered_at, answered_version)
 		VALUES (?,?,?,?,datetime('now'), COALESCE((SELECT time_version FROM events WHERE id=?),0))

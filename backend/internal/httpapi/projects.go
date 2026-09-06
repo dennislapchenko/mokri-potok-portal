@@ -39,7 +39,7 @@ func (s *Server) getProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	events, err := s.st.Rows(r.Context(), `SELECT e.*,`+houseJoin+`, pr.title AS project_title, tk.title AS task_title,
-		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id AND s.state='yes') AS signups,
+		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id AND s.state='yes' AND s.answered_version >= e.time_version) AS signups,
 		(SELECT json_group_array(json_object('house_id', h2.id, 'name', h2.name, 'crest', h2.crest, 'note', s.note, 'state', s.state, 'stale', CASE WHEN s.answered_version < e.time_version THEN 1 ELSE 0 END)) FROM event_signups s JOIN houses h2 ON h2.id=s.house_id WHERE s.event_id=e.id) AS signup_list,
 		(SELECT s.state FROM event_signups s WHERE s.event_id=e.id AND s.house_id=?) AS mine,
 		(SELECT count(*) FROM event_comments c WHERE c.event_id=e.id) AS comments,

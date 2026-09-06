@@ -53,6 +53,11 @@
   notifications on the Pages origin must allow them again on the new domain;
   the install banner asks. Nothing warns them automatically.
 - `PUSH_SUBJECT` and `WEATHER_LOCATION` are the two new env knobs.
+- The GitHub Pages copy was replaced by a signpost page on the same day, so
+  there is no second half-broken app answering the same database.
+- **What one container costs:** a bad migration now takes the page down with
+  the API, and rolling the frontend back rolls the backend with it. The trade
+  bought one origin, no CORS and no version skew between page and API.
 
 ### 5. Phone sessions and push
 - Likely cause of lost sessions (unconfirmed on a phone): an invite link opened

@@ -1,16 +1,14 @@
 name: Deploy to Pages
 
+# The portal now serves itself from its own domain (see deploy/infra-log.md § 4).
+# This workflow no longer publishes the app: it publishes a signpost, so the old
+# address stops being a second, half-broken copy of the village. Push
+# notifications allowed on this origin are dead — the new address asks again.
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "backend/**"
-      - "deploy/**"
-      - ".claude/**"
-      - "CLAUDE.md"
-      - "README.md"
-      - "Taskfile.yml"
-      - ".doco-cd.yml"
+    paths:
+      - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
 
 permissions:
@@ -28,26 +26,37 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
-      - run: npm run build
-        env:
-          # Project page lives under /mokri-potok-portal/.
-          BASE_PATH: /mokri-potok-portal/
-          # Backend on the gaias-choice VM, behind its Caddy at /potok/api.
-          VITE_API_URL: https://gaias-choice.gardenofatlantis.com/potok/api
+      - name: Build the signpost
+        run: |
+          mkdir -p out
+          cat > out/index.html <<'HTML'
+          <!doctype html>
+          <html lang="sl"><head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Mokri Potok — vaški portal se je preselil</title>
+          <meta http-equiv="refresh" content="3; url=https://vas.mokri-potok.si/">
+          <style>
+            body{margin:0;min-height:100vh;display:grid;place-items:center;background:#2b1d12;color:#f1e4c6;
+                 font:17px/1.6 Georgia,serif;text-align:center;padding:1.5rem}
+            .card{background:#f1e4c6;color:#2c2416;border:3px solid #7a5a3a;border-radius:10px;padding:1.4rem 1.6rem;max-width:34rem}
+            a{color:#8a5a3c;font-weight:bold}
+          </style></head>
+          <body><div class="card">
+            <h1>🏰 Portal se je preselil</h1>
+            <p>Vas ima zdaj svoj naslov: <a href="https://vas.mokri-potok.si/">vas.mokri-potok.si</a></p>
+            <p>Odprite ga tam in <strong>znova dovolite obvestila</strong> — dovoljenja se ne preselijo s starega naslova.
+               Če ste portal dodali na začetni zaslon, staro ikono odstranite in dodajte novo.</p>
+            <hr>
+            <p><small>The portal moved. Open <a href="https://vas.mokri-potok.si/">vas.mokri-potok.si</a>,
+               allow notifications again, and replace the old home-screen icon.</small></p>
+          </div></body></html>
+          HTML
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/dist
+          path: out
       - id: deployment
         uses: actions/deploy-pages@v4

@@ -72,10 +72,18 @@ func (s *Server) createComment(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	// The house that called the event hears; everyone else reads it in the room.
-	if owner := ev["house_id"].(int64); owner != h.ID {
-		title, body := ev["title"].(string), snippet(str(m, "body"), 100)
-		s.notifyHouse("events", owner, func(lang string) Payload {
+	// The audience is the house that called it plus everyone who answered yes or
+	// maybe — they are the ones the comment is about.
+	title, body := ev["title"].(string), snippet(str(m, "body"), 100)
+	told := map[int64]bool{h.ID: true}
+	rows, _ := s.st.Rows(r.Context(), `SELECT DISTINCT house_id FROM event_signups WHERE event_id=? AND state IN ('yes','maybe')`, id)
+	for _, row := range append(rows, map[string]any{"house_id": ev["house_id"]}) {
+		to := row["house_id"].(int64)
+		if told[to] {
+			continue
+		}
+		told[to] = true
+		s.notifyHouse("events", to, func(lang string) Payload {
 			return Payload{Title: "💬 " + h.Name + tr(lang, " o dogodku: ", " on: ") + title, Body: body, URL: "#/tavern"}
 		})
 	}

@@ -14,8 +14,9 @@ sends notifications.
 - **Frontend:** Vite + React 18 + TypeScript, hash-routed SPA, Slovenian + English,
   installable (web manifest + service worker for push). Built **into the backend
   image** (`backend/Dockerfile`, build context is the repo root) and served by the
-  Go binary, so the portal is one origin on its own domain. The GitHub Pages copy
-  (`.github/workflows/deploy-pages.yml`) is the retiring fallback.
+  Go binary, so the portal is one origin on its own domain. GitHub Pages now
+  publishes only a signpost to the new address
+  (`.github/workflows/deploy-pages.yml`).
 - **Backend:** Go, stdlib HTTP, SQLite (pure Go), VAPID web push, one binary, nightly backups in-process.
   Image built by CI to GHCR; deployed by the doco-cd controller on the gaias-choice
   VM (`.doco-cd.yml`, `deploy/`).

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -578,4 +579,54 @@ func TestPairingCodeWithSpace(t *testing.T) {
 	phone := &client{t: t, h: srv.Handler()}
 	code, _, _ := phone.do("POST", "/api/join", map[string]any{"code": " " + pin[:3] + " " + pin[3:] + " "})
 	phone.must(201, code, "join with a spaced code")
+}
+
+// TestMovedTimeIsLoud: a moved date drops the answer out of the headcount,
+// tells the houses that answered, and a note-only update keeps their answer.
+func TestMovedTimeIsLoud(t *testing.T) {
+	_, fake, steward, zagar := newVillage(t)
+	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	steward.must(204, code, "subscribe")
+	_, obj, _ := zagar.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-20T08:00"})
+	id := itoa(obj["id"].(float64))
+	steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "yes"})
+	_, _, evs := zagar.do("GET", "/api/events", nil)
+	if evs[0]["signups"].(float64) != 1 {
+		t.Fatalf("fresh yes not counted: %v", evs[0])
+	}
+
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+	code, _, _ = zagar.do("PUT", "/api/events/"+id, map[string]any{"starts_at": "2026-09-27T08:00"})
+	zagar.must(204, code, "move")
+	waitFor(t, 1, fake) // the house that said yes hears
+	fake.mu.Lock()
+	var p Payload
+	json.Unmarshal(fake.payloads[0], &p)
+	fake.mu.Unlock()
+	if !strings.Contains(p.Title, "Termin premaknjen") {
+		t.Fatalf("move push: %+v", p)
+	}
+	_, _, evs = zagar.do("GET", "/api/events", nil)
+	if evs[0]["signups"].(float64) != 0 {
+		t.Fatalf("stale answer still counted: %v", evs[0])
+	}
+
+	// A note-only update keeps "no" as "no" instead of promoting it to a yes.
+	steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "no"})
+	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"note": "morda pozneje"})
+	steward.must(204, code, "note only")
+	_, _, evs = zagar.do("GET", "/api/events", nil)
+	var list []map[string]any
+	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
+	if list[0]["state"] != "no" || evs[0]["signups"].(float64) != 0 {
+		t.Fatalf("note-only update changed the answer: %v", list[0])
+	}
+	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "perhaps"})
+	steward.must(400, code, "unknown answer")
+
+	// An unknown /api path is a 404, not the page.
+	code, _, _ = steward.do("GET", "/api/nope", nil)
+	steward.must(404, code, "unknown api path")
 }

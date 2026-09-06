@@ -4,6 +4,7 @@ import { api, type House, type Me } from "../api";
 import { useT } from "../i18n";
 import { photoURL, uploadPhoto } from "../photo";
 import { Crest, Empty, When, canEdit, useList } from "./shared";
+import { Thread } from "./Thread";
 
 // Tool shed: what the village lends. A tool has an owner house and, while it is
 // out, a holder. No counting of who borrows most — the reciprocity stays social.
@@ -33,6 +34,9 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
   const [big, setBig] = useState<string>("");
   const [ver, setVer] = useState<Record<number, number>>({});
   const [wish, setWish] = useState("");
+  const [optFor, setOptFor] = useState<number | null>(null);
+  const [opt, setOpt] = useState({ text: "", url: "" });
+  const [threadFor, setThreadFor] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [adding, setAdding] = useState(false);
@@ -136,10 +140,29 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
             <div key={w.id} className="card">
               <div className="head"><Crest crest={w.house_crest} color={w.house_color} /><strong>{w.text}</strong><When iso={w.created_at} /></div>
               <div className="small">🙋 {wants.map((h) => `${h.crest} ${h.name}`).join(", ")}</div>
+              {(JSON.parse(w.options || "[]") as any[]).map((o) => (
+                <div key={o.id} className="wish-option">
+                  <Crest crest={o.crest} color={o.color} />
+                  {o.url ? <a href={o.url} target="_blank" rel="noreferrer noopener">{o.text}</a> : <span>{o.text}</span>}
+                  {(o.house_id === me.id || me.is_steward === 1) && <button className="ghost" onClick={() => confirm("?") && api(`/options/${o.id}`, { method: "DELETE" }).then(wishes.reload)}>🗑</button>}
+                </div>
+              ))}
+              {optFor === w.id && (
+                <form className="inline" onSubmit={async (e) => { e.preventDefault(); if (!opt.text.trim()) return; await api(`/wishes/${w.id}/options`, { method: "POST", body: opt }); setOpt({ text: "", url: "" }); setOptFor(null); wishes.reload(); }}>
+                  <div className="row">
+                    <label>{t("What you found")}<input value={opt.text} onChange={(e) => setOpt({ ...opt, text: e.target.value })} maxLength={200} placeholder={t("model, price, where")} autoFocus /></label>
+                    <label>{t("Link (optional)")}<input value={opt.url} onChange={(e) => setOpt({ ...opt, url: e.target.value })} maxLength={500} /></label>
+                  </div>
+                  <div className="submit"><button type="button" className="ghost" onClick={() => setOptFor(null)}>✕</button><button className="lesser" type="submit">{t("Add")}</button></div>
+                </form>
+              )}
               <div className="actions">
                 <button className={w.mine ? "" : "primary"} onClick={() => api(`/wishes/${w.id}`, { method: "PUT", body: { want: !w.mine } }).then(wishes.reload)}>{w.mine ? t("Not any more") : "🙋 " + t("I would love that too")}</button>
+                {optFor !== w.id && <button className="lesser" onClick={() => setOptFor(w.id)}>🔎 {t("I found one")}</button>}
+                <button className="ghost" onClick={() => setThreadFor(threadFor === w.id ? null : w.id)}>💬 {t("Comments")} ({w.comments || 0})</button>
                 {canEdit(me, w) && <button className="ghost" onClick={() => confirm(w.text + "?") && api(`/wishes/${w.id}`, { method: "DELETE" }).then(wishes.reload)}>✓ {t("It arrived")}</button>}
               </div>
+              {threadFor === w.id && <Thread subject="wish" id={w.id} me={me} onChanged={wishes.reload} />}
             </div>
           );
         })}

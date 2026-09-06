@@ -48,6 +48,14 @@ does not ship.
   mode). The map carries its snapshot date and "boundaries, not fences" line.
   House ↔ parcel assignment lives in the DB only. Licence attribution for the
   GURS data: `TBD`, required before the portal moves to the collective's domain.
+- **One thread implementation.** Comments live in `comments`, keyed by
+  `(subject, subject_id)`, and are rendered by `Thread.tsx` everywhere: an
+  event, a wish. One reply level. A new room that wants comments adds a subject,
+  never a table. The push kind stays the room's own so no opt-out changes
+  meaning. The name field starts filled from the device label this phone joined
+  under, and stays optional.
+- **Wish options are findings, not votes.** Anyone may add "this model, this
+  price, this link" to a wish. Never count, rank or mark a winner.
 - **An answer is not a headcount.** A sign-up is `yes`, `no` or `maybe`, and
   silence is a fourth thing. Only `yes` is counted; never fold `maybe` into it.
   Moving an event's time bumps `events.time_version`, which marks every earlier
@@ -100,8 +108,9 @@ does not ship.
   subscribed in; the house switches kinds off in `notify_off` (empty = all
   nine kinds on); a steward mutes a kind for everyone in `notify_off_global`,
   which records who and when, shown to every house. Both lists are checked on
-  every send — **except an alarm, which rings through both mutes and quiet
-  hours.** The fire bell is not a preference. The author's
+  every send. **Nothing is exempt**: the alarm kind was removed on 2026-09-06
+  because a real emergency is a phone call, and a notification nobody is holding
+  is worse than none. An event is `event` or `work`, and that is all. The author's
   house never receives its own event. Push carries a title, a one-line snippet
   and a route, in human words — `banner_test.go` pins every string, so read it
   before changing copy.
@@ -113,8 +122,8 @@ does not ship.
   is to answer it. Classify a new kind against that line; do not guess.
   The one other exception is the optional author name on a tavern post, which
   the poster typed themselves.
-- **Quiet hours: 21:00–07:00 only an alarm rings.** Everything else waits in
-  the app rather than buzzing a neighbour at night. `s.now()` decides, so tests
+- **Quiet hours: 21:00–07:00 nothing rings.** Everything waits in the app
+  rather than buzzing a neighbour at night. `s.now()` decides, so tests
   can move the clock.
 - **The way back in.** When nobody holds a session — a steward's phone wiped,
   the origin changed — `docker exec <container> /server code "<house>"` on the

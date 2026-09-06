@@ -40,6 +40,9 @@ export function InstallBanner() {
   }, []);
 
   if (dismissed) return null;
+  // Nothing left to ask for: installed and subscribed. Also covers the case
+  // where the display-mode check fails but push clearly works.
+  if (push === "on") return null;
   if (standalone && push !== "off") return null;
   const dismiss = () => { setDismissed(true); try { sessionStorage.setItem("potok.banner", "1"); } catch { /* ignore */ } };
 

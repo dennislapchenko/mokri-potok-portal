@@ -146,13 +146,6 @@ func (s *Server) notify(kind string, fromHouse int64, build func(lang string) Pa
 	s.fanout(kind, build, subsFor+`AND p.house_id != ?`, kind, kind, fromHouse)
 }
 
-// notifyUrgent is for alarms only: it ignores quiet hours AND both mute lists.
-// A steward who mutes "events" because they are noisy must not mute the fire
-// bell; a house that switched events off still hears a bear on the road.
-func (s *Server) notifyUrgent(kind string, fromHouse int64, build func(lang string) Payload) {
-	s.fanout(kind, build, `SELECT p.id, p.endpoint, p.p256dh, p.auth, p.lang FROM push_subscriptions p WHERE p.house_id != ?`, fromHouse)
-}
-
 // notifyHouse sends to one house only — used when the message is that house's
 // business alone: someone signed up to its work bee, or borrowed its tool.
 func (s *Server) notifyHouse(kind string, toHouse int64, build func(lang string) Payload) {

@@ -114,7 +114,7 @@ export function Calendar({ me, houses }: { me: Me; houses: House[] }) {
         <form className="inline" onSubmit={save}>
           <div className="row">
             <label>{t("Title")}<input value={f.title} onChange={set("title")} required maxLength={120} /></label>
-            <label>{t("Kind")}<select value={f.kind} onChange={set("kind")}><option value="event">🔔 {t("event")}</option><option value="work">🤝 {t("work")}</option><option value="alarm">🚨 {t("alarm")}</option></select></label>
+            <label>{t("Kind")}<select value={f.kind} onChange={set("kind")}><option value="event">🔔 {t("event")}</option><option value="work">🤝 {t("work")}</option></select></label>
           </div>
           <div className="row">
             <label>{t("Starts")}<DatePicker time required value={f.starts_at} onChange={(v) => set("starts_at")({ target: { value: v } } as any)} /></label>

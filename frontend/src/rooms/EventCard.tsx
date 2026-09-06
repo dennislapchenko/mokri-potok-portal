@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
 import { Crest, When, canEdit } from "./shared";
+import { Thread } from "./Thread";
 import { DatePicker } from "../DatePicker";
 
+// `alarm` is gone (2026-09-06) but old rows still render.
 export const ICON: Record<string, string> = { event: "🔔", work: "🤝", alarm: "🚨" };
 const RSVP: { state: string; icon: string; label: string }[] = [
   { state: "yes", icon: "🙋", label: "I am coming" },
@@ -49,7 +51,7 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
         <form className="inline" onSubmit={(e) => { e.preventDefault(); save(); }}>
           <div className="row">
             <label>{t("Title")}<input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} required maxLength={120} /></label>
-            <label>{t("Kind")}<select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}>{["event", "work", "alarm"].map((k) => <option key={k} value={k}>{ICON[k]} {t(k)}</option>)}</select></label>
+            <label>{t("Kind")}<select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}>{["event", "work"].map((k) => <option key={k} value={k}>{ICON[k]} {t(k)}</option>)}</select></label>
           </div>
           <div className="row">
             <label>{t("Starts")}<DatePicker time required value={f.starts_at} onChange={(v) => setF({ ...f, starts_at: v })} /></label>
@@ -92,52 +94,7 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
         {!editing && <button className="ghost" onClick={() => setEditing(true)}>✎ {t("Edit")}</button>}
         {canEdit(me, ev) && <button className="ghost" onClick={() => confirm(ev.title + "?") && api(`/events/${ev.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button>}
       </div>
-      {showComments && <Comments eventId={ev.id} me={me} onChanged={reload} />}
-    </div>
-  );
-}
-
-// Comments: the tavern board, shrunk to one event.
-function Comments({ eventId, me, onChanged }: { eventId: number; me: Me; onChanged: () => void }) {
-  const { t } = useT();
-  const [items, setItems] = useState<any[]>([]);
-  const [body, setBody] = useState("");
-  const [replyTo, setReplyTo] = useState<number | null>(null);
-  const [author, setAuthor] = useState(() => { try { return localStorage.getItem("potok.author") || ""; } catch { return ""; } });
-  const load = () => api<any[]>(`/events/${eventId}/comments`).then(setItems).catch(() => setItems([]));
-  useEffect(() => { load(); }, [eventId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const post = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!body.trim()) return;
-    try { localStorage.setItem("potok.author", author); } catch { /* ignore */ }
-    await api(`/events/${eventId}/comments`, { method: "POST", body: { body, author, parent_id: replyTo ?? undefined } });
-    setBody(""); setReplyTo(null); load(); onChanged();
-  };
-  const del = (id: number) => confirm("?") && api(`/comments/${id}`, { method: "DELETE" }).then(() => { load(); onChanged(); });
-  const roots = items.filter((c) => !c.parent_id);
-  const replies = (id: number) => items.filter((c) => c.parent_id === id);
-
-  const One = ({ c, reply }: { c: any; reply?: boolean }) => (
-    <div className="card comment" style={reply ? { marginLeft: "1.4rem" } : undefined}>
-      <div className="head"><Crest crest={c.house_crest} color={c.house_color} /><span className="who">{c.house_name}{c.author ? ` · ${c.author}` : ""}</span><When iso={c.created_at} /></div>
-      <div className="body">{c.body}</div>
-      <div className="actions">
-        {!reply && <button className="ghost" onClick={() => setReplyTo(c.id)}>↩ {t("Reply")}</button>}
-        {(c.house_id === me.id || me.is_steward === 1) && <button className="ghost" onClick={() => del(c.id)}>🗑</button>}
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="comments">
-      <form className="inline" onSubmit={post}>
-        <div className="row"><label>{t("Your name (optional)")}<input value={author} onChange={(e) => setAuthor(e.target.value)} maxLength={40} /></label></div>
-        <label>{replyTo ? t("Reply") : t("Comment")}<textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} /></label>
-        <div className="submit">{replyTo && <button type="button" className="ghost" onClick={() => setReplyTo(null)}>✕</button>}<button className="lesser" type="submit">{replyTo ? t("Reply") : t("Post")}</button></div>
-      </form>
-      {roots.length === 0 && <p className="small muted" style={{ fontStyle: "italic" }}>{t("No comments yet.")}</p>}
-      {roots.map((c) => (<div key={c.id}><One c={c} />{replies(c.id).map((r) => <One key={r.id} c={r} reply />)}</div>))}
+      {showComments && <Thread subject="event" id={ev.id} me={me} onChanged={reload} />}
     </div>
   );
 }

@@ -71,8 +71,9 @@ func (s *Server) routes() {
 	m.HandleFunc("DELETE /api/events/{id}", s.requireHouse(s.deleteRow("events")))
 	m.HandleFunc("POST /api/events/{id}/signup", s.requireHouse(s.signUp))
 	m.HandleFunc("DELETE /api/events/{id}/signup", s.requireHouse(s.signOff))
-	m.HandleFunc("GET /api/events/{id}/comments", s.requireHouse(s.listComments))
-	m.HandleFunc("POST /api/events/{id}/comments", s.requireHouse(s.createComment))
+	// Comment threads: one shape for every room that has them (threads.go).
+	m.HandleFunc("GET /api/threads/{subject}/{id}", s.requireHouse(s.listThread))
+	m.HandleFunc("POST /api/threads/{subject}/{id}", s.requireHouse(s.createThreadComment))
 	m.HandleFunc("DELETE /api/comments/{id}", s.requireHouse(s.deleteComment))
 	// Tool shed
 	m.HandleFunc("GET /api/tools", s.requireHouse(s.listTools))
@@ -86,6 +87,8 @@ func (s *Server) routes() {
 	m.HandleFunc("POST /api/wishes", s.requireHouse(s.createWish))
 	m.HandleFunc("PUT /api/wishes/{id}", s.requireHouse(s.updateWish))
 	m.HandleFunc("DELETE /api/wishes/{id}", s.requireHouse(s.deleteRow("wishes")))
+	m.HandleFunc("POST /api/wishes/{id}/options", s.requireHouse(s.createWishOption))
+	m.HandleFunc("DELETE /api/options/{id}", s.requireHouse(s.deleteWishOption))
 	// Market
 	m.HandleFunc("GET /api/runs", s.requireHouse(s.listRuns))
 	m.HandleFunc("POST /api/runs", s.requireHouse(s.createRun))
@@ -386,6 +389,11 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	row["device_id"] = h.DeviceID
+	// The label typed when this phone joined ("Ana's phone") is the best guess
+	// at who is holding it, so the board can pre-fill the name.
+	if d, _ := s.st.One(r.Context(), `SELECT label FROM devices WHERE id=?`, h.DeviceID); d != nil {
+		row["device_label"] = d["label"]
+	}
 	writeJSON(w, 200, row)
 }
 
@@ -631,7 +639,7 @@ func (s *Server) listEvents(w http.ResponseWriter, r *http.Request) {
 		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id AND s.state='yes' AND s.answered_version >= e.time_version) AS signups,
 		(SELECT json_group_array(json_object('house_id', h2.id, 'name', h2.name, 'crest', h2.crest, 'note', s.note, 'state', s.state, 'stale', CASE WHEN s.answered_version < e.time_version THEN 1 ELSE 0 END)) FROM event_signups s JOIN houses h2 ON h2.id=s.house_id WHERE s.event_id=e.id) AS signup_list,
 		(SELECT s.state FROM event_signups s WHERE s.event_id=e.id AND s.house_id=?) AS mine,
-		(SELECT count(*) FROM event_comments c WHERE c.event_id=e.id) AS comments,
+		(SELECT count(*) FROM comments c WHERE c.subject='event' AND c.subject_id=e.id) AS comments,
 		ed.name AS edited_by_name
 		FROM events e JOIN houses h ON h.id=e.house_id LEFT JOIN projects pr ON pr.id=e.project_id LEFT JOIN project_tasks tk ON tk.id=e.task_id LEFT JOIN houses ed ON ed.id=e.edited_by
 		WHERE e.starts_at >= date('now','-60 days') ORDER BY e.starts_at LIMIT 500`, houseFrom(r).ID)
@@ -648,8 +656,10 @@ func (s *Server) createEvent(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "title and starts_at required")
 		return
 	}
+	// Two kinds only. The alarm was removed on 2026-09-06: a real emergency
+	// gets a phone call, and a notification nobody is holding is worse than one.
 	kind := str(m, "kind")
-	if kind != "work" && kind != "alarm" {
+	if kind != "work" {
 		kind = "event"
 	}
 	// An event may belong to a project, and to one of that project's tasks.
@@ -672,13 +682,8 @@ func (s *Server) createEvent(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	icon := map[string]string{"event": "🔔", "work": "🤝", "alarm": "🚨"}[kind]
-	// An alarm is the one thing that may wake the village at night.
-	ring := s.notify
-	if kind == "alarm" {
-		ring = s.notifyUrgent
-	}
-	ring("events", houseFrom(r).ID, func(lang string) Payload {
+	icon := map[string]string{"event": "🔔", "work": "🤝"}[kind]
+	s.notify("events", houseFrom(r).ID, func(lang string) Payload {
 		body := join(" · ", humanWhen(str(m, "starts_at"), lang, s.now()), str(m, "place"))
 		if n := str(m, "notes"); n != "" {
 			body = join(" — ", body, snippet(n, 70))
@@ -984,7 +989,7 @@ func (s *Server) updateAway(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 	out := map[string]any{"exported_at": time.Now().UTC().Format(time.RFC3339)}
-	for _, t := range []string{"houses", "house_parcels", "posts", "events", "event_signups", "event_comments", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "projects", "project_tasks", "camp_takings"} {
+	for _, t := range []string{"houses", "house_parcels", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "wish_options", "comments", "projects", "project_tasks", "camp_takings"} {
 		cols := "*"
 		if t == "tools" { // photos are bytes, not text — they stay in the SQLite backup
 			cols = "id, house_id, name, notes, category, held_by, held_since, reminded_at, created_at"
@@ -1005,6 +1010,8 @@ func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 // signUp puts this house on an event's list and tells the house that called
 // the work bee. No count is ever shown as a score — it is a headcount for the
 // day, deleted with the event.
+var signupStates = []string{"yes", "no", "maybe"}
+
 func (s *Server) signUp(w http.ResponseWriter, r *http.Request) {
 	h := houseFrom(r)
 	id, err := pathID(r)

@@ -76,7 +76,10 @@ func (s *Server) getToolPhoto(w http.ResponseWriter, r *http.Request) {
 func (s *Server) listWishes(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.st.Rows(r.Context(), `SELECT x.*,`+houseJoin+`,
 		(SELECT json_group_array(json_object('house_id', h2.id, 'name', h2.name, 'crest', h2.crest)) FROM wish_wants ww JOIN houses h2 ON h2.id=ww.house_id WHERE ww.wish_id=x.id) AS wants,
-		(SELECT count(*) FROM wish_wants ww WHERE ww.wish_id=x.id AND ww.house_id=?) AS mine
+		(SELECT count(*) FROM wish_wants ww WHERE ww.wish_id=x.id AND ww.house_id=?) AS mine,
+		(SELECT json_group_array(json_object('id', o.id, 'text', o.text, 'url', o.url, 'house_id', o.house_id, 'crest', oh.crest, 'color', oh.color, 'name', oh.name))
+		 FROM wish_options o JOIN houses oh ON oh.id=o.house_id WHERE o.wish_id=x.id) AS options,
+		(SELECT count(*) FROM comments c WHERE c.subject='wish' AND c.subject_id=x.id) AS comments
 		FROM wishes x JOIN houses h ON h.id=x.house_id ORDER BY x.created_at DESC`, houseFrom(r).ID)
 	if err != nil {
 		fail(w, err)

@@ -2,13 +2,14 @@ import { useState } from "react";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
 import { Crest, Empty, When, canEdit } from "./shared";
+import { defaultAuthor } from "./Thread";
 
 // The message board half of the tavern. The calendar is the other half —
 // Hall.tsx stacks them, because a village opens one room, not two.
 export function Board({ me, items, reload }: { me: Me; items: any[]; reload: () => void }) {
   const { t } = useT();
   const [body, setBody] = useState("");
-  const [author, setAuthor] = useState(() => { try { return localStorage.getItem("potok.author") || ""; } catch { return ""; } });
+  const [author, setAuthor] = useState(() => defaultAuthor(me));
   const [replyTo, setReplyTo] = useState<number | null>(null);
 
   const post = async (e: React.FormEvent) => {

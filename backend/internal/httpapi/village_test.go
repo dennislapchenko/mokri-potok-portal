@@ -89,7 +89,9 @@ func TestGuessingCostsSomething(t *testing.T) {
 	}
 }
 
-// TestQuietHours: nothing but an alarm rings at 23:00.
+// TestQuietHours: between 21:00 and 07:00 the village is left alone. Nothing
+// is exempt since the alarm kind was removed on 2026-09-06 — a real emergency
+// is a phone call, not a notification.
 func TestQuietHours(t *testing.T) {
 	srv, fake, steward, zagar := newVillage(t)
 	srv.now = func() time.Time { return time.Date(2026, 9, 4, 23, 10, 0, 0, time.Local) }
@@ -98,8 +100,12 @@ func TestQuietHours(t *testing.T) {
 	steward.must(204, code, "subscribe")
 
 	zagar.do("POST", "/api/needs", map[string]any{"text": "mleko"})
+	zagar.do("POST", "/api/events", map[string]any{"title": "Nekaj", "kind": "work", "starts_at": "2026-09-05T09:00"})
 	waitFor(t, 0, fake)
-	zagar.do("POST", "/api/events", map[string]any{"title": "Medved", "kind": "alarm", "starts_at": "2026-09-04T23:10"})
+
+	// Daylight: the same event rings.
+	srv.now = func() time.Time { return time.Date(2026, 9, 4, 10, 0, 0, 0, time.Local) }
+	zagar.do("POST", "/api/events", map[string]any{"title": "Drugo", "kind": "work", "starts_at": "2026-09-05T09:00"})
 	waitFor(t, 1, fake)
 }
 
@@ -333,17 +339,16 @@ func TestGlobalMute(t *testing.T) {
 	waitFor(t, 1, fake)
 }
 
-// TestAlarmBeatsMute: an alarm rings through a house mute, a village mute and
-// quiet hours; the mute records who set it.
-func TestAlarmBeatsMute(t *testing.T) {
-	srv, fake, steward, zagar := newVillage(t)
-	srv.now = func() time.Time { return time.Date(2026, 9, 4, 23, 30, 0, 0, time.Local) }
-	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+// TestMuteReachesNobody: a village-wide mute silences a kind for every house,
+// and it records which steward set it and when.
+func TestMuteReachesNobody(t *testing.T) {
+	_, fake, steward, zagar := newVillage(t)
+	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{
+		"endpoint": "https://push/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe")
-	steward.do("PUT", "/api/me/prefs", map[string]any{"off": []string{"events"}})
 	steward.do("PUT", "/api/prefs/global", map[string]any{"off": []string{"events"}})
-	zagar.do("POST", "/api/events", map[string]any{"title": "Ogenj", "kind": "alarm", "starts_at": "2026-09-04T23:30"})
-	waitFor(t, 1, fake)
+	zagar.do("POST", "/api/events", map[string]any{"title": "Nekaj", "kind": "work", "starts_at": "2026-09-05T09:00"})
+	waitFor(t, 0, fake)
 	_, prefs, _ := zagar.do("GET", "/api/me/prefs", nil)
 	d := prefs["global_detail"].([]any)[0].(map[string]any)
 	if d["kind"] != "events" || d["set_by"] != "S" || d["set_at"] == nil {
@@ -541,13 +546,13 @@ func TestRsvpAndComments(t *testing.T) {
 	fake.mu.Lock()
 	fake.sent, fake.payloads = nil, nil
 	fake.mu.Unlock()
-	code, c1, _ := steward.do("POST", "/api/events/"+id+"/comments", map[string]any{"body": "Kdaj točno?", "author": "Ana"})
+	code, c1, _ := steward.do("POST", "/api/threads/event/"+id, map[string]any{"body": "Kdaj točno?", "author": "Ana"})
 	steward.must(201, code, "comment")
 	waitFor(t, 1, fake) // the house that called it hears
 	rootID := itoa(c1["id"].(float64))
-	_, c2, _ := zagar.do("POST", "/api/events/"+id+"/comments", map[string]any{"body": "Ob osmih", "parent_id": c1["id"]})
-	_, c3, _ := steward.do("POST", "/api/events/"+id+"/comments", map[string]any{"body": "Prav", "parent_id": c2["id"]})
-	_, _, cs := zagar.do("GET", "/api/events/"+id+"/comments", nil)
+	_, c2, _ := zagar.do("POST", "/api/threads/event/"+id, map[string]any{"body": "Ob osmih", "parent_id": c1["id"]})
+	_, c3, _ := steward.do("POST", "/api/threads/event/"+id, map[string]any{"body": "Prav", "parent_id": c2["id"]})
+	_, _, cs := zagar.do("GET", "/api/threads/event/"+id, nil)
 	if len(cs) != 3 {
 		t.Fatalf("want 3 comments got %d", len(cs))
 	}
@@ -565,10 +570,62 @@ func TestRsvpAndComments(t *testing.T) {
 	zagar.must(403, code, "stranger deletes a comment")
 	code, _, _ = steward.do("DELETE", "/api/comments/"+rootID, nil)
 	steward.must(204, code, "author deletes")
-	_, _, cs = zagar.do("GET", "/api/events/"+id+"/comments", nil)
+	_, _, cs = zagar.do("GET", "/api/threads/event/"+id, nil)
 	if len(cs) != 0 {
 		t.Fatalf("cascade left %d comments", len(cs))
 	}
+}
+
+// TestWishOptionsAndThread: the same thread on a wish, plus options anyone can
+// add. An option is a finding, never a vote — nothing counts or ranks them.
+func TestWishOptionsAndThread(t *testing.T) {
+	_, fake, steward, zagar := newVillage(t)
+	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	zagar.must(204, code, "subscribe")
+	code, obj, _ := zagar.do("POST", "/api/wishes", map[string]any{"text": "Cepilec drv"})
+	zagar.must(201, code, "wish")
+	wid := itoa(obj["id"].(float64))
+
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+	code, _, _ = steward.do("POST", "/api/wishes/"+wid+"/options", map[string]any{"text": "Vevor 7t, 180 EUR", "url": "example.com/vevor"})
+	steward.must(201, code, "option")
+	waitFor(t, 1, fake)
+	code, _, _ = steward.do("POST", "/api/wishes/"+wid+"/options", map[string]any{"text": ""})
+	steward.must(400, code, "empty option")
+
+	_, _, wishes := zagar.do("GET", "/api/wishes", nil)
+	var opts []map[string]any
+	json.Unmarshal([]byte(wishes[0]["options"].(string)), &opts)
+	if len(opts) != 1 || opts[0]["url"] != "https://example.com/vevor" || opts[0]["name"] != "S" {
+		t.Fatalf("options: %v", wishes[0]["options"])
+	}
+	code, c1, _ := steward.do("POST", "/api/threads/wish/"+wid, map[string]any{"body": "Videl sem cenejšega"})
+	steward.must(201, code, "wish comment")
+	_, c2, _ := zagar.do("POST", "/api/threads/wish/"+wid, map[string]any{"body": "Kje?", "parent_id": c1["id"]})
+	_, c3, _ := steward.do("POST", "/api/threads/wish/"+wid, map[string]any{"body": "V Kočevju", "parent_id": c2["id"]})
+	_, _, cs := zagar.do("GET", "/api/threads/wish/"+wid, nil)
+	if len(cs) != 3 {
+		t.Fatalf("want 3 got %d", len(cs))
+	}
+	for _, c := range cs {
+		if c["id"].(float64) == c3["id"].(float64) && c["parent_id"].(float64) != c1["id"].(float64) {
+			t.Fatalf("reply to a reply did not flatten: %v", c)
+		}
+	}
+	_, _, wishes = zagar.do("GET", "/api/wishes", nil)
+	if wishes[0]["comments"].(float64) != 3 {
+		t.Fatalf("comment count: %v", wishes[0]["comments"])
+	}
+	code, _, _ = steward.do("POST", "/api/threads/event/"+wid, map[string]any{"body": "x"})
+	steward.must(404, code, "comment on a missing event")
+	code, _, _ = steward.do("POST", "/api/threads/nonsense/1", map[string]any{"body": "x"})
+	steward.must(400, code, "unknown subject")
+	code, _, _ = zagar.do("DELETE", "/api/options/"+itoa(opts[0]["id"].(float64)), nil)
+	zagar.must(403, code, "stranger removes an option")
+	code, _, _ = steward.do("DELETE", "/api/options/"+itoa(opts[0]["id"].(float64)), nil)
+	steward.must(204, code, "author removes")
 }
 
 // TestPairingCodeWithSpace: the code is shown as "883 559" and pasted with it.

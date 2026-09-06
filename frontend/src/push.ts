@@ -3,8 +3,11 @@ import { api } from "./api";
 
 const lang = () => { try { return localStorage.getItem("potok.lang") === "en" ? "en" : "sl"; } catch { return "sl"; } };
 
+// A desktop PWA window does not always report `standalone` — Chrome may report
+// `minimal-ui` or `window-controls-overlay`. Any of them means installed.
+const INSTALLED_MODES = ["standalone", "minimal-ui", "window-controls-overlay", "fullscreen"];
 export const isStandalone = () =>
-  window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone === true;
+  INSTALLED_MODES.some((m) => window.matchMedia(`(display-mode: ${m})`).matches) || (navigator as any).standalone === true;
 export const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 // WhatsApp's Android in-app browser identifies itself; iOS's does not.
 export const isInApp = () => /\bwv\b|WhatsApp|FBAN|FBAV|Instagram/i.test(navigator.userAgent);
@@ -32,9 +35,18 @@ export type PushState = "unsupported" | "denied" | "off" | "on";
 export async function pushState(): Promise<PushState> {
   if (!pushSupported()) return "unsupported";
   if (Notification.permission === "denied") return "denied";
-  const reg = await navigator.serviceWorker.getRegistration(import.meta.env.BASE_URL);
-  const sub = await reg?.pushManager.getSubscription();
-  return sub ? "on" : "off";
+  // `getRegistration` can answer before the worker is ready and report no
+  // subscription on a phone that has one — which put the banner back after the
+  // villager had already said yes. Wait for the worker, then ask.
+  const reg = await Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<undefined>((r) => setTimeout(() => r(undefined), 4000)),
+  ]).catch(() => undefined) || (await navigator.serviceWorker.getRegistration(import.meta.env.BASE_URL));
+  const sub = await reg?.pushManager.getSubscription().catch(() => null);
+  if (sub) return "on";
+  // Permission granted but no subscription: the origin changed, or the
+  // subscription expired. Offer to enable, do not claim it is on.
+  return "off";
 }
 
 // enablePush asks permission, subscribes this phone, and tells the backend.

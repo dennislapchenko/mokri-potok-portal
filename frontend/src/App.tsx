@@ -13,6 +13,7 @@ import { Projects, Project } from "./rooms/Projects";
 import { Camp } from "./rooms/Camp";
 import { InstallBanner } from "./Install";
 import { Weather } from "./Weather";
+import { When } from "./rooms/shared";
 
 export type Session = { me: Me; houses: House[]; refresh: () => Promise<void>; logout: () => void };
 
@@ -101,13 +102,13 @@ export default function App() {
 // What sits at the top of Home is a per-device choice, not a per-house one:
 // the map impresses on a first open and is not needed daily, and two phones of
 // one house disagree about that. localStorage is already how a device differs.
-type Topper = "map" | "weather" | "none";
+type Topper = "map" | "weather" | "tavern";
 
 function Home({ me, houses }: { me: Me; houses: House[] }) {
   const { t } = useT();
   const [top, setTop] = useState<Topper>(() => {
-    try { const v = localStorage.getItem("potok.top"); if (v === "map" || v === "weather" || v === "none") return v; } catch { /* ignore */ }
-    return "map";
+    try { const v = localStorage.getItem("potok.top"); if (v === "map" || v === "weather" || v === "tavern") return v; } catch { /* ignore */ }
+    return "weather";
   });
   const pick = (v: Topper) => { setTop(v); try { localStorage.setItem("potok.top", v); } catch { /* ignore */ } };
   // One badge per building, built as a finished sentence so a room can say two
@@ -136,6 +137,11 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
   return (
     <>
       <InstallBanner />
+      <div className="topper-pick">
+        {([["map", "🗺️", "Map"], ["weather", "🌤️", "Weather"], ["tavern", "🍺", "Tavern"]] as [Topper, string, string][]).map(([v, icon, label]) => (
+          <button key={v} className={"chip" + (top === v ? " on" : "")} onClick={() => pick(v)} title={t("this phone only")}>{icon} {t(label)}</button>
+        ))}
+      </div>
       {top === "map" && (<>
         <VillageMap houses={houses} highlight={me.id} />
         <div className="legend">
@@ -143,11 +149,7 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
         </div>
       </>)}
       {top === "weather" && <Weather />}
-      <div className="topper-pick">
-        {([["map", "🗺️", "Map"], ["weather", "🌤️", "Weather"], ["none", "✕", "Neither"]] as [Topper, string, string][]).map(([v, icon, label]) => (
-          <button key={v} className={"chip" + (top === v ? " on" : "")} onClick={() => pick(v)} title={t("this phone only")}>{icon} {t(label)}</button>
-        ))}
-      </div>
+      {top === "tavern" && <HallPeek />}
       <div className="buildings">
         {ROOMS.map((r) => (
           <Link key={r.path} to={r.path} className="building">
@@ -200,6 +202,38 @@ function Gate({ onJoined }: { onJoined: () => Promise<void> }) {
         {err && <div className="err">{err}</div>}
         <div className="submit"><button className="primary" type="submit">{bootstrap ? t("Found the village") : t("Join")}</button></div>
       </form>
+    </div>
+  );
+}
+
+// The tavern at a glance: what is pinned and what is coming. A door, not a room
+// — every line opens the hall.
+function HallPeek() {
+  const { t } = useT();
+  const [posts, setPosts] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  useEffect(() => {
+    api<any[]>("/posts").then((p) => setPosts(p.filter((x) => x.pinned && !x.parent_id).slice(0, 3))).catch(() => {});
+    const n2 = (v: number) => String(v).padStart(2, "0");
+    const d = new Date();
+    const today = `${d.getFullYear()}-${n2(d.getMonth() + 1)}-${n2(d.getDate())}`;
+    api<any[]>("/events").then((e) => setEvents(e.filter((x) => (x.ends_at || x.starts_at) >= today).slice(0, 4))).catch(() => {});
+  }, []);
+  const ICON: Record<string, string> = { event: "🔔", work: "🤝", alarm: "🚨" };
+  return (
+    <div className="parchment peek">
+      <h2>🍺 <Link to="/tavern" className="plain">{t("Tavern")}</Link></h2>
+      {posts.map((p) => (
+        <Link key={p.id} to="/tavern" className="peek-row"><span className="crest" style={{ background: p.house_color }}>{p.house_crest}</span>
+          <span className="tag alarm">📌</span> <span className="peek-text">{p.body}</span></Link>
+      ))}
+      {events.map((e) => (
+        <Link key={e.id} to={`/tavern?day=${e.starts_at.slice(0, 10)}`} className="peek-row"><span className="crest" style={{ background: e.house_color }}>{e.house_crest}</span>
+          <span className="peek-text">{ICON[e.kind]} {e.title}</span>
+          <span className="when"><When iso={e.starts_at} /></span>
+          {e.signups > 0 && <span className="small">🙋 {e.signups}</span>}</Link>
+      ))}
+      {posts.length === 0 && events.length === 0 && <p className="small muted" style={{ fontStyle: "italic" }}>{t("Nothing pinned, nothing planned.")}</p>}
     </div>
   );
 }

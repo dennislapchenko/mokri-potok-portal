@@ -116,6 +116,11 @@ does not ship.
 - **Quiet hours: 21:00–07:00 only an alarm rings.** Everything else waits in
   the app rather than buzzing a neighbour at night. `s.now()` decides, so tests
   can move the clock.
+- **The way back in.** When nobody holds a session — a steward's phone wiped,
+  the origin changed — `docker exec <container> /server code "<house>"` on the
+  VM rotates that house's invite and prints the link (`cli.go`, `task vm:code`).
+  SSH to the machine is the credential; there is no in-app password to reset
+  and no email to send. Keep it that way.
 - **Codes.** A steward's invite is 10 characters and multi-use for 14 days — it
   travels through WhatsApp and lets a whole house in. A pairing code is 6
   digits, single use, 15 minutes, and only ever adds one more phone to a house

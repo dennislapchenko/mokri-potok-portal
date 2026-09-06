@@ -28,6 +28,7 @@ task check      # vet + test backend, typecheck + build frontend
 task be:run     # backend on :8788 (bootstrap code printed in the log)
 task fe:dev     # frontend on :5173 against the local backend
 task vm:logs    # backend logs on the VM
+task vm:code -- "Solnce"   # fresh invite link for a house, when nobody is logged in
 ```
 
 Design plan and decisions live in the owner's homestead repo

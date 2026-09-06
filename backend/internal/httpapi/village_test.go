@@ -630,3 +630,35 @@ func TestMovedTimeIsLoud(t *testing.T) {
 	code, _, _ = steward.do("GET", "/api/nope", nil)
 	steward.must(404, code, "unknown api path")
 }
+
+// TestCodeCommand: the way back in when nobody is logged in — it names a house,
+// rotates its invite, and refuses land and ambiguity.
+func TestCodeCommand(t *testing.T) {
+	srv, _, steward, _ := newVillage(t)
+	steward.do("POST", "/api/houses", map[string]any{"name": "Event grounds", "kind": "common"})
+	if err := srv.Code("event grounds"); err == nil {
+		t.Fatal("a common place was offered an invite")
+	}
+	if err := srv.Code("nothing like this"); err == nil {
+		t.Fatal("unknown house accepted")
+	}
+	before, _ := srv.st.One(context.Background(), `SELECT code FROM invites WHERE house_id=(SELECT id FROM houses WHERE name='Žagar')`)
+	if err := srv.Code("žagar"); err != nil {
+		t.Fatalf("code: %v", err)
+	}
+	after, _ := srv.st.One(context.Background(), `SELECT code FROM invites WHERE house_id=(SELECT id FROM houses WHERE name='Žagar')`)
+	if after == nil || (before != nil && before["code"] == after["code"]) {
+		t.Fatal("invite was not rotated")
+	}
+	// The printed code is usable, and the old one is not.
+	phone := &client{t: t, h: srv.Handler()}
+	if code, _, _ := phone.do("POST", "/api/join", map[string]any{"code": after["code"]}); code != 201 {
+		t.Fatalf("fresh code unusable: %d", code)
+	}
+	if before != nil {
+		stale := &client{t: t, h: srv.Handler()}
+		if code, _, _ := stale.do("POST", "/api/join", map[string]any{"code": before["code"]}); code == 201 {
+			t.Fatal("the old link still works")
+		}
+	}
+}

@@ -33,6 +33,11 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   }, [houses, steward]);
 
   const inviteLink = (code: string) => `${location.origin}${location.pathname}#/join/${code}`;
+  // The whole message, ready to paste: the link plus the two things a villager
+  // gets wrong — opening it inside WhatsApp, and not installing it.
+  const inviteMessage = (h: House, code: string) =>
+    `${t("Hello")} ${h.name}! ${t("This is the village portal:")}\n${inviteLink(code)}\n\n${t("Open the link in Chrome or Safari, not inside WhatsApp, then add the portal to your home screen and allow notifications. Everyone in the house can open the same link.")}`;
+  const copyMessage = (h: House, code: string) => { navigator.clipboard?.writeText(inviteMessage(h, code)); setCopied(-h.id); setTimeout(() => setCopied(null), 1800); };
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     await api("/houses", { method: "POST", body: nh });
@@ -67,6 +72,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
               <div className="actions">
                 <button onClick={() => startAssign(h)}>🗺️ {t("Assign land")}</button>
                 {invites[h.id]?.code ? (<>
+                  <button className="primary" onClick={() => copyMessage(h, invites[h.id].code!)}>💬 {copied === -h.id ? t("Copied") : t("Copy message")}</button>
                   <button onClick={() => copy(h.id, invites[h.id].code!)}>🔗 {copied === h.id ? t("Copied") : t("Copy")} {t("Invite link")}</button>
                   <span className="small">{t("valid until")} {invites[h.id].expires_at?.slice(0, 10)}</span>
                 </>) : null}
@@ -79,7 +85,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
           </div>
         ))}
         {steward && (<>
-          <p className="small">{t("Send this link to the house in WhatsApp. Everyone in the house opens it once.")}</p>
+          <p className="small">{t("Send the message to the house in WhatsApp. The same link works for every phone in that house, until it expires. A house that lost its session gets a new link with ♻.")}</p>
           <p><button onClick={() => setNewOpen(!newOpen)}>+ {t("New house")}</button></p>
           {newOpen && <form className="inline" onSubmit={create}>
             <div className="row">

@@ -53,6 +53,9 @@
   notifications on the Pages origin must allow them again on the new domain;
   the install banner asks. Nothing warns them automatically.
 - `PUSH_SUBJECT` and `WEATHER_LOCATION` are the two new env knobs.
+- **Recovery:** `docker exec mokri-potok-potok-api-1 /server code "<house>"`
+  prints a fresh invite link for that house. Needed after the move, because a
+  session lives in one browser on one origin and the origin changed.
 - The GitHub Pages copy was replaced by a signpost page on the same day, so
   there is no second half-broken app answering the same database.
 - **What one container costs:** a bad migration now takes the page down with

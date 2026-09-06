@@ -38,6 +38,20 @@ func main() {
 	defer st.Close()
 
 	srv := httpapi.New(st, cfg)
+
+	// `/server code [name]` — the way back in when nobody is logged in. Run it
+	// on the VM: SSH to the machine is the credential.
+	if len(os.Args) > 1 && os.Args[1] == "code" {
+		arg := ""
+		if len(os.Args) > 2 {
+			arg = os.Args[2]
+		}
+		if err := srv.Code(arg); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if row, _ := st.One(context.Background(), `SELECT count(*) AS n FROM houses`); row != nil && row["n"].(int64) == 0 {
 		code, err := srv.BootstrapCode()
 		if err != nil {

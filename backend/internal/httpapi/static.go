@@ -32,6 +32,11 @@ func (s *Server) staticHandler() http.Handler {
 			r.URL.Path = "/"
 			p = "index.html"
 		}
+		if strings.HasSuffix(p, ".webmanifest") {
+			// Go's MIME table has no .webmanifest and distroless carries no
+			// /etc/mime.types, so the manifest would go out sniffed as text/plain.
+			w.Header().Set("Content-Type", "application/manifest+json")
+		}
 		switch {
 		case strings.HasPrefix(p, "assets/"):
 			// Vite puts a content hash in every asset name.

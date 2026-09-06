@@ -61,7 +61,8 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
         <h2>🏘️ {t("Houses")} <span className="sub">{t("houses and land")}</span></h2>
         {realHouses.map((h) => (
           <div key={h.id} className="card" style={{ borderLeftColor: h.color }}>
-            <div className="head"><Crest crest={h.crest} color={h.color} /><span className="who">{h.name}</span>{h.kind === "common" && <span className="tag">{t("common land")}</span>}{h.is_steward === 1 && <span className="tag">🗝️ {t("Steward")}</span>}<span className="when">{(h.parcels || []).length} {t("parcels")}{h.parcels?.length ? ": " + h.parcels.join(", ") : ""}</span></div>
+            <div className="head"><Crest crest={h.crest} color={h.color} /><span className="who">{h.name}</span>{h.kind === "common" && <span className="tag">{t("common land")}</span>}{h.is_steward === 1 && <span className="tag">🗝️ {t("Steward")}</span>}<span className="when">{(h.parcels || []).length} {t("parcels")}</span></div>
+            {h.parcels?.length ? <div className="small">{h.parcels.join(", ")}</div> : null}
             {steward && (
               <div className="actions">
                 <button onClick={() => startAssign(h)}>🗺️ {t("Assign land")}</button>

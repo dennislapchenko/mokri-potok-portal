@@ -10,6 +10,6 @@ environment:
   # needs no CORS entry. The Pages origin stays until that frontend is retired.
   CORS_ORIGINS: https://dennislapchenko.github.io,http://localhost:5173
   PUSH_SUBJECT: https://vas.mokri-potok.si/
-  BE_TAG: sha-78638b9267a643f448eaa80a608ff03eafbbbf75
+  BE_TAG: sha-9d2b0b41e2fffb0469fe0fcfe3f894ae8ca66907
 reconciliation:
   events: [unhealthy]

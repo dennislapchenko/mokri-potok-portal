@@ -52,7 +52,7 @@ export function InstallBanner() {
   } else if (!standalone && prompt) {
     body = <><strong>{t("Install the village on this phone")}</strong> — {t("one tap, then it opens like an app.")} <button className="primary" onClick={() => prompt.prompt()}>📲 {t("Install")}</button><Signin /></>;
   } else if (!standalone && isIOS()) {
-    body = <><strong>{t("Install the village on this phone")}</strong>: {t("tap Share")} <span aria-hidden="true">⎋</span> {t("below, then")} <em>{t("Add to Home Screen")}</em>.<Signin /></>;
+    body = <><strong>{t("Install the village on this phone")}</strong>: {t("tap Share")} {t("below, then")} <em>{t("Add to Home Screen")}</em>.<Signin /></>;
   } else if (!standalone) {
     body = <><strong>{t("Install the village on this phone")}</strong>: {t("browser menu → Install app / Add to Home Screen.")}<Signin /></>;
   } else {

@@ -88,16 +88,30 @@ does not ship.
 - **No tallies of favours.** "Taken by", "claimed by", "watched by" are
   acknowledgments. No counts, points, leaderboards, streaks. Ever.
 - **Water on the map is one file and one component.** `map/Water.tsx` draws
-  `public/data/water.json` — the watercourses chained out of the D8 flow model
-  in the homestead repo (`10-site/terrain-data/channel-segments.json`), only
-  those with a catchment above 0.25 ha, so what is drawn is water and not every
-  wet line, and only the east stream is named *potok* — the west course is the
-  eroded road that water took over, so it is drawn as a *grapa*. It covers **the model's window around the collective's parcels, not
-  the village**: the caption says so, because a stream that stops in the middle
-  of the map otherwise reads as a bug. Village-wide watercourses need a
-  hydrography layer nobody has fetched yet. To take the water off the map,
-  delete those two files, the `<Water/>` line in `VillageMap.tsx` and the clause
-  in the caption — nothing else knows about it.
+  `public/data/water.json` — the watercourses chained out of an epsilon
+  priority-flood + D8 model (the method of the homestead repo's
+  `10-site/terrain-data/water.py`) run on ARSO DMR 1 m over **the whole village,
+  E485000-488000 N44800-47600** — the box the map's own reset view opens on, so
+  a course no longer stops in the middle of the page. Drawn: a catchment of
+  **2 ha** or more and at least **250 m** long. That floor is set from below by
+  the collective's own stream, which peaks at 2.36 ha — raise it and the plot's
+  east boundary loses its water. **Named: 100 ha and above** (`stream_m2`), which
+  is three courses and is the whole readability budget; the other 29 are drawn
+  thin and **left unnamed on purpose**, because 1 m bare earth says how much
+  land drains into a channel and never whether it runs. So there is **no
+  *grapa* on the map any more** — the old rule named the plot's east course
+  *potok* and the west one *grapa*, and at village scale the west course
+  (0.34 ha, an eroded road) is below the floor and is not drawn at all.
+  **The village is a closed karst basin** (outlet 525.8 m, floor 451.5 m, per
+  `rimclose.py` in the homestead repo), so the fill is **capped at 2 m** and a
+  real sink stays an outlet. Do not lift that cap: an uncapped priority-flood
+  fills the basin to its rim, drowns every channel in one flat, and returns a
+  confident hairball. **Do not put names on the lines.** OSM and the 2013
+  survey disagree about this water — OSM calls the valley trunk *Reka* and puts
+  *Mokri potok* 1.6 km west, `10-site/geodetic-survey-2013.md` reads *Mokri
+  potok* on the trunk itself — and the owner has not picked. To take the water
+  off the map, delete those two files, the `<Water/>` line in `VillageMap.tsx`
+  and the clause in the caption — nothing else knows about it.
 - **Cadastre is a view, not a source.** `parcels.geojson` is public GURS data;
   parcel numbers show only for assigned parcels (and to stewards in assign
   mode). The map carries its snapshot date and "boundaries, not fences" line.

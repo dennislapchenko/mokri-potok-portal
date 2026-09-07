@@ -152,7 +152,7 @@ export function VillageMap({ houses, selected, onParcelClick, highlight }: {
         <button aria-label={t("reset")} onClick={() => setView(home)}>⌂</button>
       </div>
       {tip && <div className="map-tip">{tip}</div>}
-      <div className="map-note">{t("Cadastre snapshot 2026-08-15 (GURS). Lines are legal boundaries, not fences. Blue: the stream and the gully a terrain model finds around the collective's parcels — that window only, and a model, not a survey.")}</div>
+      <div className="map-note">{t("Cadastre snapshot 2026-08-15 (GURS). Lines are legal boundaries, not fences. Blue: the watercourses a terrain model finds across the village — a model, not a survey, and a course ends where it sinks or leaves the map.")}</div>
     </div>
   );
 }

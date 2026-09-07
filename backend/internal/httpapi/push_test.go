@@ -70,9 +70,9 @@ func TestPushFanout(t *testing.T) {
 		code, _, _ := c.do("POST", "/api/push/subscribe", map[string]any{"endpoint": ep, "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 		c.must(204, code, "subscribe "+ep)
 	}
-	sub(a, "https://push/a1")
-	sub(a, "https://push/a2")
-	sub(b, "https://push/b1")
+	sub(a, "https://push.example/a1")
+	sub(a, "https://push.example/a2")
+	sub(b, "https://push.example/b1")
 
 	code, _, _ := steward.do("GET", "/api/push/key", nil)
 	steward.must(200, code, "vapid key")
@@ -95,7 +95,7 @@ func TestPushFanout(t *testing.T) {
 	waitFor(t, 0, fake)
 
 	// A need from A still reaches B (only posts are off). B's endpoint is dead -> dropped.
-	fake.status["https://push/b1"] = 410
+	fake.status["https://push.example/b1"] = 410
 	a.do("POST", "/api/needs", map[string]any{"text": "salt"})
 	waitFor(t, 1, fake)
 	time.Sleep(50 * time.Millisecond)

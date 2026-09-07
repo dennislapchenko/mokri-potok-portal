@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -167,6 +168,11 @@ func str(m map[string]any, k string) string {
 	s, _ := m[k].(string)
 	return s
 }
+
+// hexColor: the one shape a house colour may take. The frontend paints it into
+// an inline style on every crest, and CSS `background` also accepts `url(...)`,
+// which would make every villager's browser call a host of the house's choosing.
+var hexColor = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
 
 func pathID(r *http.Request) (int64, error) {
 	return strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -473,6 +479,10 @@ func (s *Server) createHouse(w http.ResponseWriter, r *http.Request) {
 	if color == "" {
 		color = "#b5651d"
 	}
+	if !hexColor.MatchString(color) {
+		writeErr(w, 400, "color must be #rrggbb")
+		return
+	}
 	if kind != "common" {
 		kind = "house"
 	}
@@ -515,6 +525,10 @@ func (s *Server) updateHouse(w http.ResponseWriter, r *http.Request) {
 	m, err := readJSON(r)
 	if err != nil {
 		writeErr(w, 400, "bad json")
+		return
+	}
+	if c := str(m, "color"); c != "" && !hexColor.MatchString(c) {
+		writeErr(w, 400, "color must be #rrggbb")
 		return
 	}
 	for _, k := range []string{"name", "crest", "color"} {
@@ -605,8 +619,32 @@ func (s *Server) deleteHouse(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(204)
 }
 
+// accountRow: the house behind an invite route, or a 4xx written for the
+// caller. A common place (kind='common') is land on the map, not an account —
+// createHouse and the CLI already skip it, and the invite routes must too, or
+// a code could log a phone in as the parking lot.
+func (s *Server) accountRow(w http.ResponseWriter, r *http.Request, id int64) bool {
+	row, err := s.st.One(r.Context(), `SELECT kind FROM houses WHERE id=?`, id)
+	if err != nil {
+		fail(w, err)
+		return false
+	}
+	if row == nil {
+		writeErr(w, 404, "no such house")
+		return false
+	}
+	if row["kind"] == "common" {
+		writeErr(w, 400, "land, not an account")
+		return false
+	}
+	return true
+}
+
 func (s *Server) getInvite(w http.ResponseWriter, r *http.Request) {
 	id, _ := pathID(r)
+	if !s.accountRow(w, r, id) {
+		return
+	}
 	row, err := s.st.One(r.Context(), `SELECT code, expires_at FROM invites WHERE house_id=?`, id)
 	if err != nil {
 		fail(w, err)
@@ -621,6 +659,9 @@ func (s *Server) getInvite(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) rotateInvite(w http.ResponseWriter, r *http.Request) {
 	id, _ := pathID(r)
+	if !s.accountRow(w, r, id) {
+		return
+	}
 	inv, err := s.newInvite(r.Context(), id)
 	if err != nil {
 		fail(w, err)

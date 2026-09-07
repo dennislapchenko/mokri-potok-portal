@@ -34,7 +34,7 @@ func TestNotificationBanners(t *testing.T) {
 	// The steward's phones listen, one in each language.
 	for _, l := range []string{"sl", "en"} {
 		code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{
-			"endpoint": "https://push/" + l, "lang": l, "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+			"endpoint": "https://push.example/" + l, "lang": l, "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 		steward.must(204, code, "subscribe "+l)
 	}
 

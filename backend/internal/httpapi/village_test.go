@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -111,7 +112,7 @@ func TestQuietHours(t *testing.T) {
 	srv, fake, steward, zagar := newVillage(t)
 	srv.now = func() time.Time { return time.Date(2026, 9, 4, 23, 10, 0, 0, time.Local) }
 	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{
-		"endpoint": "https://push/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+		"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe")
 
 	zagar.do("POST", "/api/needs", map[string]any{"text": "mleko"})
@@ -129,7 +130,7 @@ func TestQuietHours(t *testing.T) {
 func TestToolShed(t *testing.T) {
 	_, fake, steward, zagar := newVillage(t)
 	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{
-		"endpoint": "https://push/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+		"endpoint": "https://push.example/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	zagar.must(204, code, "subscribe")
 
 	code, obj, _ := zagar.do("POST", "/api/tools", map[string]any{"name": "Motorna žaga", "notes": "gorivo svoje"})
@@ -168,7 +169,7 @@ func TestToolShed(t *testing.T) {
 func TestWorkBeeSignup(t *testing.T) {
 	_, fake, steward, zagar := newVillage(t)
 	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{
-		"endpoint": "https://push/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+		"endpoint": "https://push.example/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	zagar.must(204, code, "subscribe")
 	code, obj, _ := zagar.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-06T08:00"})
 	zagar.must(201, code, "event")
@@ -218,7 +219,7 @@ func TestToolReminder(t *testing.T) {
 	for _, c := range []struct {
 		c  *client
 		ep string
-	}{{steward, "https://push/s"}, {zagar, "https://push/z"}} {
+	}{{steward, "https://push.example/s"}, {zagar, "https://push.example/z"}} {
 		code, _, _ := c.c.do("POST", "/api/push/subscribe", map[string]any{"endpoint": c.ep, "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 		c.c.must(204, code, "subscribe")
 	}
@@ -242,7 +243,7 @@ func TestToolReminder(t *testing.T) {
 	}
 	waitFor(t, 1, fake)
 	fake.mu.Lock()
-	if fake.sent[0].Endpoint != "https://push/s" {
+	if fake.sent[0].Endpoint != "https://push.example/s" {
 		t.Fatalf("reminder went to %s", fake.sent[0].Endpoint)
 	}
 	fake.mu.Unlock()
@@ -448,14 +449,14 @@ func TestQuietHoursOptOut(t *testing.T) {
 	srv, fake, steward, zagar := newVillage(t)
 	// Two phones of the steward's house: the second one asks for night rings.
 	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{
-		"endpoint": "https://push/s1", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+		"endpoint": "https://push.example/s1", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe phone 1")
 	_, pair, _ := steward.do("POST", "/api/pair", nil)
 	phone2 := &client{t: t, h: srv.Handler()}
 	_, j, _ := phone2.do("POST", "/api/join", map[string]any{"code": pair["code"].(string), "device": "night phone"})
 	phone2.token = j["token"].(string)
 	code, _, _ = phone2.do("POST", "/api/push/subscribe", map[string]any{
-		"endpoint": "https://push/s2", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+		"endpoint": "https://push.example/s2", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	phone2.must(204, code, "subscribe phone 2")
 	code, _, _ = phone2.do("PUT", "/api/me/device", map[string]any{"quiet_ok": true})
 	phone2.must(204, code, "opt out of quiet hours")
@@ -469,7 +470,7 @@ func TestQuietHoursOptOut(t *testing.T) {
 		got = append(got, sub.Endpoint)
 	}
 	fake.mu.Unlock()
-	if len(got) != 1 || got[0] != "https://push/s2" {
+	if len(got) != 1 || got[0] != "https://push.example/s2" {
 		t.Fatalf("night push went to %v, want only the phone that asked", got)
 	}
 
@@ -554,7 +555,7 @@ func TestHouseWithoutLand(t *testing.T) {
 // cannot; the house list still shows it as off.
 func TestGlobalMute(t *testing.T) {
 	_, fake, steward, zagar := newVillage(t)
-	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe")
 	code, _, _ = zagar.do("PUT", "/api/prefs/global", map[string]any{"off": []string{"needs"}})
 	zagar.must(403, code, "villager mutes globally")
@@ -575,7 +576,7 @@ func TestGlobalMute(t *testing.T) {
 func TestMuteReachesNobody(t *testing.T) {
 	_, fake, steward, zagar := newVillage(t)
 	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{
-		"endpoint": "https://push/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+		"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe")
 	steward.do("PUT", "/api/prefs/global", map[string]any{"off": []string{"events"}})
 	zagar.do("POST", "/api/events", map[string]any{"title": "Nekaj", "kind": "work", "starts_at": "2026-09-05T09:00"})
@@ -591,7 +592,7 @@ func TestMuteReachesNobody(t *testing.T) {
 // creator told when a task is taken, done as a state, export complete.
 func TestProjects(t *testing.T) {
 	_, fake, steward, zagar := newVillage(t)
-	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	zagar.must(204, code, "subscribe")
 
 	code, obj, _ := zagar.do("POST", "/api/projects", map[string]any{"title": "Ograja okoli travnika", "due_at": "2026-10-15", "notes": "300 m"})
@@ -629,7 +630,7 @@ func TestProjects(t *testing.T) {
 	fourth.must(403, code, "stranger clears holder")
 	code, _, _ = fourth.do("PUT", "/api/tasks/"+tid, map[string]any{"assigned_to": 1})
 	fourth.must(403, code, "stranger assigns")
-	code, _, _ = fourth.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/4", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	code, _, _ = fourth.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/4", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	fourth.must(204, code, "subscribe 4th")
 	fake.mu.Lock()
 	fake.sent, fake.payloads = nil, nil
@@ -683,7 +684,7 @@ func TestProjects(t *testing.T) {
 // (village hears), hands it over; a tick on arrival lands straight in handed.
 func TestCamp(t *testing.T) {
 	_, fake, steward, zagar := newVillage(t)
-	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe")
 	code, obj, _ := zagar.do("POST", "/api/camp", map[string]any{"notes": "siv kamper"})
 	zagar.must(201, code, "arrived")
@@ -734,7 +735,7 @@ func TestCamp(t *testing.T) {
 // any house edits an event, comments thread one level and ring the caller.
 func TestRsvpAndComments(t *testing.T) {
 	_, fake, steward, zagar := newVillage(t)
-	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	zagar.must(204, code, "subscribe")
 	code, obj, _ := zagar.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-20T08:00"})
 	zagar.must(201, code, "event")
@@ -816,7 +817,7 @@ func TestRsvpAndComments(t *testing.T) {
 // add. An option is a finding, never a vote — nothing counts or ranks them.
 func TestWishOptionsAndThread(t *testing.T) {
 	_, fake, steward, zagar := newVillage(t)
-	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	zagar.must(204, code, "subscribe")
 	code, obj, _ := zagar.do("POST", "/api/wishes", map[string]any{"text": "Cepilec drv"})
 	zagar.must(201, code, "wish")
@@ -878,7 +879,7 @@ func TestPairingCodeWithSpace(t *testing.T) {
 // tells the houses that answered, and a note-only update keeps their answer.
 func TestMovedTimeIsLoud(t *testing.T) {
 	_, fake, steward, zagar := newVillage(t)
-	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe")
 	_, obj, _ := zagar.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-20T08:00"})
 	id := itoa(obj["id"].(float64))
@@ -1007,3 +1008,64 @@ func TestExpiredPairingIsSwept(t *testing.T) {
 		t.Fatalf("expired pairing survived: %v", row)
 	}
 }
+
+// TestHouseColourIsHex: a colour is painted into an inline style on every
+// crest, and CSS `background` would also take `url(...)` — a beacon to a host
+// of the house's choosing, fired from every villager's browser. Only #rrggbb.
+func TestHouseColourIsHex(t *testing.T) {
+	_, _, steward, other := newVillage(t)
+	_, me, _ := other.do("GET", "/api/me", nil)
+	id := int64(me["id"].(float64))
+	code, _, _ := other.do("PUT", fmtID("/api/houses/%d", id), map[string]any{"color": "url(https://x.example/p)"})
+	other.must(400, code, "url colour")
+	code, _, _ = other.do("PUT", fmtID("/api/houses/%d", id), map[string]any{"color": "#ABCDEF"})
+	other.must(204, code, "hex colour")
+	code, _, _ = steward.do("POST", "/api/houses", map[string]any{"name": "X", "color": "red"})
+	steward.must(400, code, "named colour on create")
+}
+
+// TestPushEndpointIsPublicHTTPS: the backend POSTs to whatever a phone
+// registers, so it must look like a push service — https, a named host with a
+// dot — and never a neighbour on the compose network or a bare address.
+func TestPushEndpointIsPublicHTTPS(t *testing.T) {
+	_, _, _, other := newVillage(t)
+	keys := map[string]any{"p256dh": "k", "auth": "a"}
+	for _, bad := range []string{"http://fcm.googleapis.com/x", "https://api:8787/track", "https://caddy/", "https://10.0.0.5/", "https://[::1]/", "https://u@fcm.googleapis.com/x", "file:///etc/passwd"} {
+		code, _, _ := other.do("POST", "/api/push/subscribe", map[string]any{"endpoint": bad, "keys": keys})
+		other.must(400, code, bad)
+	}
+	code, _, _ := other.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://fcm.googleapis.com/fcm/send/abc", "keys": keys})
+	other.must(204, code, "real endpoint")
+}
+
+// TestCommonPlaceGetsNoInvite: land is not an account, on the invite routes
+// too — createHouse already skips the invite, and a steward must not be able
+// to mint one afterwards.
+func TestCommonPlaceGetsNoInvite(t *testing.T) {
+	_, _, steward, _ := newVillage(t)
+	_, o, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Parkirišče", "kind": "common"})
+	id := int64(o["id"].(float64))
+	code, _, _ := steward.do("POST", fmtID("/api/houses/%d/invite", id), nil)
+	steward.must(400, code, "rotate invite for land")
+	code, _, _ = steward.do("GET", fmtID("/api/houses/%d/invite", id), nil)
+	steward.must(400, code, "read invite for land")
+	code, _, _ = steward.do("GET", "/api/houses/9999/invite", nil)
+	steward.must(404, code, "invite for nobody")
+}
+
+// TestPageCarriesCSP: the document says it talks to nobody but itself.
+func TestPageCarriesCSP(t *testing.T) {
+	srv, _, _, _ := newVillage(t)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+	if got := rec.Header().Get("Content-Security-Policy"); !strings.Contains(got, "default-src 'self'") || strings.Contains(got, "http") {
+		t.Fatalf("csp: %q", got)
+	}
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/api/status", nil))
+	if rec.Header().Get("Content-Security-Policy") != "" {
+		t.Fatal("csp on an api answer")
+	}
+}
+
+func fmtID(f string, id int64) string { return fmt.Sprintf(f, id) }

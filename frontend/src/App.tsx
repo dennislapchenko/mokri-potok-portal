@@ -54,7 +54,7 @@ export default function App() {
       <header className="topbar">
         <div className="inner">
           <h1><Link to="/">🏰 Mokri Potok</Link> <span className="small" style={{ color: "var(--parch2)" }}>· {t("Village portal")}</span></h1>
-          {me && <Link className="house" to="/houses"><span className="crest" style={{ background: me.color }}>{me.crest}</span> {me.name}</Link>}
+          {me && <Link className="house" to="/houses"><span className="crest" style={{ backgroundColor: me.color }}>{me.crest}</span> {me.name}</Link>}
           <span className="lang">
             <button className={lang === "sl" ? "primary" : ""} onClick={() => setLang("sl")}>SL</button>{" "}
             <button className={lang === "en" ? "primary" : ""} onClick={() => setLang("en")}>EN</button>
@@ -152,7 +152,7 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
       {top === "map" && (<>
         <VillageMap houses={houses} highlight={me.id} />
         <div className="legend">
-          {houses.map((h) => <span key={h.id} className="legend-item"><span className="crest" style={{ background: h.color }}>{h.crest}</span> {h.name}{h.id === me.id ? ` (${t("Your house")})` : ""}</span>)}
+          {houses.map((h) => <span key={h.id} className="legend-item"><span className="crest" style={{ backgroundColor: h.color }}>{h.crest}</span> {h.name}{h.id === me.id ? ` (${t("Your house")})` : ""}</span>)}
         </div>
       </>)}
       {top === "weather" && <Weather />}
@@ -262,11 +262,11 @@ function HallPeek() {
     <div className="parchment peek">
       <h2>🍺 <Link to="/tavern" className="plain">{t("Tavern")}</Link></h2>
       {posts.map((p) => (
-        <Link key={p.id} to="/tavern" className="peek-row"><span className="crest" style={{ background: p.house_color }}>{p.house_crest}</span>
+        <Link key={p.id} to="/tavern" className="peek-row"><span className="crest" style={{ backgroundColor: p.house_color }}>{p.house_crest}</span>
           <span className="tag alarm">📌</span> <span className="peek-text">{p.body}</span></Link>
       ))}
       {events.map((e, i) => (
-        <Link key={e.id} to={`/tavern?day=${e.starts_at.slice(0, 10)}`} className="peek-row"><span className="crest" style={{ background: e.house_color }}>{e.house_crest}</span>
+        <Link key={e.id} to={`/tavern?day=${e.starts_at.slice(0, 10)}`} className="peek-row"><span className="crest" style={{ backgroundColor: e.house_color }}>{e.house_crest}</span>
           <span className="peek-text" ref={(el) => { rows.current[i] = el; }}>{ICON[e.kind]} {e.title}</span>
           <span className="when"><When iso={e.starts_at} /></span>
           {tally(e) && <span className="small tally">{tally(e)}</span>}</Link>

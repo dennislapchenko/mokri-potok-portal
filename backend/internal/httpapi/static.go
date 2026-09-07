@@ -15,6 +15,8 @@ import (
 //go:embed all:web
 var webFS embed.FS
 
+const csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
 func (s *Server) staticHandler() http.Handler {
 	sub, err := fs.Sub(webFS, "web")
 	if err != nil {
@@ -31,6 +33,15 @@ func (s *Server) staticHandler() http.Handler {
 			r = r.Clone(r.Context())
 			r.URL.Path = "/"
 			p = "index.html"
+		}
+		if p == "index.html" {
+			// The page's own line on who it may talk to: itself. Inline styles
+			// stay because React paints house colours into style attributes;
+			// blob: because tool photos and the export arrive as blobs.
+			// Nothing reaches a third host — the fonts are served from here,
+			// the weather comes through /api. A CSP here rather than at the
+			// edge ships with the frontend it describes and is tested with it.
+			w.Header().Set("Content-Security-Policy", csp)
 		}
 		if strings.HasSuffix(p, ".webmanifest") {
 			// Go's MIME table has no .webmanifest and distroless carries no

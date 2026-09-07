@@ -77,7 +77,20 @@ does not ship.
   kilometres away, not a measurement at the village** — the page says so, and
   it must never become a frost source for the homestead work. An iframe would hand
   the agency every villager's address on a logged-in page. Any future embed
-  gets the same treatment or an argument written down here.
+  gets the same treatment or an argument written down here. **The fonts are
+  served from this origin** (`frontend/public/fonts/`, SIL OFL, licences beside
+  the files) — Google Fonts was dropped on 2026-09-07 for the same reason.
+  **The page carries a CSP** (`static.go`, on `index.html` only): everything
+  `'self'`, inline styles allowed because React paints house colours into
+  style attributes, `blob:` images for photos and the export. It is set by the
+  Go server and not by Caddy so it ships and is tested with the frontend it
+  describes; the gaias-choice Caddyfile deliberately sets none for this host.
+  **A house colour is `#rrggbb` and nothing else** — CSS `background` also
+  takes `url(...)`, so an unchecked colour is a beacon fired from every
+  villager's browser; the backend refuses anything else with a 400. **A push
+  endpoint is `https://` to a dotted hostname** — the backend POSTs to whatever
+  a phone registers, so `subscribe` refuses a bare IP or a compose neighbour
+  (`api`, `caddy`), which speak no TLS anyway.
 - **Nothing is public.** Every API route except `/api/healthz`, `/api/status`,
   `/api/bootstrap`, `/api/join` requires a bearer token. **No unauthenticated
   write surface, ever** — a camper self-check-in link from park4night was asked
@@ -284,7 +297,7 @@ does not ship.
 backend/            Go: main.go, internal/{config,store,httpapi}; migrations embedded
 frontend/           Vite + React; src/rooms/* one file per room (Projects.tsx holds list + page). Hall.tsx = Calendar.tsx + Board.tsx
                     stacked, because the tavern is one door; src/map/VillageMap.tsx
-frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons, backdrop.jpg (aerial photo behind the gate)
+frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons, backdrop.jpg (aerial photo behind the gate), fonts/ (self-hosted, OFL)
                     icon.svg is hand-drawn paths, full-bleed, content inside the central 80 % safe circle
                     (an emoji glyph renders off-centre and monochrome — do not go back to one)
                     src/push.ts, src/Install.tsx, src/AddPhone.tsx, src/photo.ts (auth'd photo fetch + browser-side shrink)
@@ -310,7 +323,9 @@ deploy/app/         compose for the VM stack; deploy/infra-log.md = what was don
   something becomes history, delete it rather than framing it as a change.
 - A new room or a new table gets one line in `village.md` saying which
   villager job it serves. If that line cannot be written, the feature is not needed.
-- `.claude/launch.json` starts the dev frontend; `task be:run` the backend.
+- `.claude/launch.json` starts the dev frontend, or the backend on :8788 (the
+  way to check the CSP against a built frontend copied into `httpapi/web/`);
+  `task be:run` is the same backend from a terminal.
 
 ## Memory
 

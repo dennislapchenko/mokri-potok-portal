@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -187,6 +189,10 @@ func (s *Server) subscribe(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "endpoint and keys required")
 		return
 	}
+	if !pushEndpointOK(endpoint) {
+		writeErr(w, 400, "endpoint must be a public https url")
+		return
+	}
 	lang := str(m, "lang")
 	if lang != "en" {
 		lang = "sl"
@@ -322,4 +328,21 @@ func snippet(s string, n int) string {
 		return string(r[:n-1]) + "…"
 	}
 	return s
+}
+
+// pushEndpointOK: the backend POSTs to whatever a phone registers, so the
+// address must be one a push service would hand out — https, to a named host
+// with a dot in it. That keeps the container from being pointed at a
+// neighbour on the compose network (`api`, `caddy`) or at a bare IP; those
+// speak no TLS, so nothing even connects. Real push endpoints all pass.
+func pushEndpointOK(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "https" || u.User != nil {
+		return false
+	}
+	host := u.Hostname()
+	if host == "" || net.ParseIP(host) != nil || !strings.Contains(host, ".") {
+		return false
+	}
+	return true
 }

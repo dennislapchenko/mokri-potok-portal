@@ -12,7 +12,7 @@ export function useList<T = any>(path: string) {
 }
 
 export function Crest({ crest, color }: { crest: string; color: string }) {
-  return <span className="crest" style={{ background: color }}>{crest}</span>;
+  return <span className="crest" style={{ backgroundColor: color }}>{crest}</span>;
 }
 
 // Two shapes reach When, and only one of them is UTC. A date or a time a

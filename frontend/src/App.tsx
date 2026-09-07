@@ -105,21 +105,23 @@ export default function App() {
 // What sits at the top of Home is a per-device choice, not a per-house one:
 // the map impresses on a first open and is not needed daily, and two phones of
 // one house disagree about that. localStorage is already how a device differs.
+// A device that never chose gets the tavern: what is pinned and what is coming
+// is the reason a villager opens the portal at all.
 type Topper = "map" | "weather" | "tavern";
 
 function Home({ me, houses }: { me: Me; houses: House[] }) {
   const { t } = useT();
   const [top, setTop] = useState<Topper>(() => {
     try { const v = localStorage.getItem("potok.top"); if (v === "map" || v === "weather" || v === "tavern") return v; } catch { /* ignore */ }
-    return "weather";
+    return "tavern";
   });
   const pick = (v: Topper) => { setTop(v); try { localStorage.setItem("potok.top", v); } catch { /* ignore */ } };
   // One badge per building, built as a finished sentence so a room can say two
   // things at once (the shed: how many are in it, how many are out).
   const [badges, setBadges] = useState<Record<string, string>>({});
   useEffect(() => {
-    Promise.all([api<any[]>("/needs"), api<any[]>("/events"), api<any[]>("/away"), api<any[]>("/posts"), api<any[]>("/tools"), api<any[]>("/projects"), api<any[]>("/camp")])
-      .then(([n, e, a, p, tools, projects, camp]) => {
+    Promise.all([api<any[]>("/needs"), api<any[]>("/events"), api<any[]>("/away"), api<any[]>("/posts"), api<any[]>("/tools"), api<any[]>("/projects"), api<any[]>("/camp"), api<any[]>("/wishes")])
+      .then(([n, e, a, p, tools, projects, camp, wishes]) => {
         // Local date, not UTC: between midnight and 02:00 CEST a UTC date
         // counts a finished event as still ahead.
         const n2 = (v: number) => String(v).padStart(2, "0");
@@ -131,7 +133,9 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
           "/market": num(n.filter((x) => x.state === "open").length, "open needs"),
           "/watch": num(a.filter((x) => x.from_date <= today && x.to_date >= today).length, "away now"),
           "/tavern": [num(e.filter((x) => !isOver(x)).length, "events ahead"), num(p.filter((x) => x.pinned).length, "pinned")].filter(Boolean).join(" · "),
-          "/shed": [num(tools.length - out, "in the shed"), num(out, "out")].filter(Boolean).join(" · "),
+          // The shed is two rooms in one door, so its badge says both: the tools
+          // that exist, and the ones the village still lacks.
+          "/shed": [num(tools.length - out, "in the shed"), num(out, "out"), num(wishes.length, "in the wishlist")].filter(Boolean).join(" · "),
           "/projects": [num(projects.filter((x) => x.state === "open").length, "open"), num(projects.reduce((acc, x) => acc + (x.state === "open" ? x.tasks_free : 0), 0), "tasks free to take")].filter(Boolean).join(" · "),
           "/camp": [num(camp.filter((x) => x.state === "arrived").length, "arrived"), num(camp.filter((x) => x.state === "held").length, "held")].filter(Boolean).join(" · "),
         });

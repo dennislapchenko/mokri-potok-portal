@@ -208,6 +208,7 @@ const sl: Record<string, string> = {
   "Ring at night on this device too": "Naj zvoni tudi ponoči na tej napravi",
   "This device only. The other devices of the house keep sleeping.": "Samo ta naprava. Druge naprave hiše spijo naprej.",
   "out": "zunaj",
+  "in the wishlist": "na seznamu želja",
   "nobody has signed up yet": "nihče se še ni prijavil",
   "Nothing planned. Ring the bell — add an event or call a work party, and houses sign up here.": "Nič ni načrtovano. Pozvonite — dodajte dogodek ali skličite delovno akcijo, hiše se prijavijo tukaj.",
   "calendar and work bees": "koledar in delovne akcije",

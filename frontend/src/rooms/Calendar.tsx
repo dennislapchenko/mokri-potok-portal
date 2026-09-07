@@ -59,6 +59,11 @@ export function Calendar({ me, houses }: { me: Me; houses: House[] }) {
       return;
     }
     if (k === "ends_at") setEndTouched(true);
+    // A start dragged past a touched end would leave the end behind it.
+    if (k === "starts_at" && f.ends_at && f.ends_at < v) {
+      setF({ ...f, starts_at: v, ends_at: v });
+      return;
+    }
     setF({ ...f, [k]: v });
   };
 
@@ -136,7 +141,7 @@ export function Calendar({ me, houses }: { me: Me; houses: House[] }) {
           </div>
           <div className="row">
             <label>{t("Starts")}<DatePicker time required value={f.starts_at} onChange={(v) => set("starts_at")({ target: { value: v } } as any)} /></label>
-            <label>{t("Ends")}<DatePicker time value={f.ends_at} onChange={(v) => set("ends_at")({ target: { value: v } } as any)} defaultTime="17:00" /></label>
+            <label>{t("Ends")}<DatePicker time min={f.starts_at} value={f.ends_at} onChange={(v) => set("ends_at")({ target: { value: v } } as any)} defaultTime="17:00" /></label>
             <label>{t("Place")}<span className="place-pick">
               <input value={f.place} onChange={set("place")} maxLength={120} placeholder={t("anywhere, or pick below")} />
               <select value="" onChange={(e) => e.target.value && setF({ ...f, place: e.target.value })}>

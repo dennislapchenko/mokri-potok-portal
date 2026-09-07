@@ -53,8 +53,8 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
             <label>{t("Kind")}<select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}>{["event", "work"].map((k) => <option key={k} value={k}>{ICON[k]} {t(k)}</option>)}</select></label>
           </div>
           <div className="row">
-            <label>{t("Starts")}<DatePicker time required value={f.starts_at} onChange={(v) => setF({ ...f, starts_at: v })} /></label>
-            <label>{t("Ends")}<DatePicker time value={f.ends_at} onChange={(v) => setF({ ...f, ends_at: v })} defaultTime="17:00" /></label>
+            <label>{t("Starts")}<DatePicker time required value={f.starts_at} onChange={(v) => setF({ ...f, starts_at: v, ends_at: f.ends_at && f.ends_at < v ? v : f.ends_at })} /></label>
+            <label>{t("Ends")}<DatePicker time min={f.starts_at} value={f.ends_at} onChange={(v) => setF({ ...f, ends_at: v })} defaultTime="17:00" /></label>
             <label>{t("Place")}<input value={f.place} onChange={(e) => setF({ ...f, place: e.target.value })} maxLength={120} /></label>
           </div>
           <label>{t("Notes")}<textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} maxLength={2000} /></label>

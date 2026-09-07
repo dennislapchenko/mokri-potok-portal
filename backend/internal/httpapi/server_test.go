@@ -152,10 +152,27 @@ func TestVillageFlow(t *testing.T) {
 	// Another house cannot edit the dates.
 	code, _, _ = steward.do("PUT", "/api/away/"+aid, map[string]any{"notes": "edited by steward"})
 	steward.must(204, code, "steward edits")
+	// A range that ends before it starts is refused, on the way in and on edit:
+	// it would never read as "away now" and would leave the list early.
+	code, _, _ = villager.do("POST", "/api/away", map[string]any{"from_date": "2026-09-10", "to_date": "2026-09-08"})
+	villager.must(400, code, "backwards away")
+	code, _, _ = villager.do("PUT", "/api/away/"+aid, map[string]any{"to_date": "2026-09-08"})
+	villager.must(400, code, "backwards away edit")
+	code, _, _ = villager.do("POST", "/api/away", map[string]any{"from_date": "2026-09-10", "to_date": "2026-09-10"})
+	villager.must(201, code, "one-day away")
 
 	// Events and export.
-	code, _, _ = villager.do("POST", "/api/events", map[string]any{"title": "Delovna akcija", "kind": "work", "starts_at": "2026-09-20T09:00"})
+	code, obj, _ = villager.do("POST", "/api/events", map[string]any{"title": "Delovna akcija", "kind": "work", "starts_at": "2026-09-20T09:00"})
 	villager.must(201, code, "event")
+	// An event ending before it starts is over the moment it is saved: refused
+	// here too, and refused when an edit would drag the start past the end.
+	eid := itoa(obj["id"].(float64))
+	code, _, _ = villager.do("POST", "/api/events", map[string]any{"title": "Nazaj", "starts_at": "2026-09-20T14:00", "ends_at": "2026-09-20T09:00"})
+	villager.must(400, code, "backwards event")
+	code, _, _ = villager.do("PUT", "/api/events/"+eid, map[string]any{"ends_at": "2026-09-19T09:00"})
+	villager.must(400, code, "backwards event edit")
+	code, _, _ = villager.do("PUT", "/api/events/"+eid, map[string]any{"ends_at": "2026-09-20T17:00"})
+	villager.must(204, code, "event end")
 	code, _, _ = villager.do("GET", "/api/export", nil)
 	villager.must(403, code, "villager export")
 	code, obj, _ = steward.do("GET", "/api/export", nil)

@@ -187,7 +187,17 @@ does not ship.
   (parchment button + month grid in the calendar's own classes). Never a native
   `type=date` / `datetime-local` again — they look foreign and cannot prefill a
   month without a day. Values stay plain strings: `YYYY-MM-DD` or
-  `YYYY-MM-DDTHH:MM`.
+  `YYYY-MM-DDTHH:MM`. The far end of a range takes `min` (the near end's value,
+  same shape): days and hours before it are **dead cells, never a silent
+  clamp** — a picker that moves the day you pressed is worse than one that shows
+  the door is shut. Moving the near end past the far end drags the far end
+  along, because only the field you touched may change under you. `badRange()`
+  in the backend refuses a backwards pair whatever the client sends. The popup
+  cancels its clicks' default action: every room puts it inside a `<label>`, and
+  a label forwards a click to its first control — here the field button, which
+  reopens the popup you just closed. It also anchors to the field's right edge
+  when the left would hang it off a narrow screen; a popup past the edge makes
+  the page pan sideways and taps get eaten as scrolls.
 - **The button frame is the house style, not only the button.** A weather
   forecast day wears `.lesser`'s border, fill and thin shadow (`.w-day`) and is
   not clickable: no hover, no press. Reuse the frame where a small box needs to

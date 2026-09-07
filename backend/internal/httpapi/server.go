@@ -670,6 +670,10 @@ func (s *Server) createEvent(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "title and starts_at required")
 		return
 	}
+	if badRange(str(m, "starts_at"), str(m, "ends_at")) {
+		writeErr(w, 400, "ends_at is before starts_at")
+		return
+	}
 	// Two kinds only. The alarm was removed on 2026-09-06: a real emergency
 	// gets a phone call, and a notification nobody is holding is worse than one.
 	kind := str(m, "kind")
@@ -725,6 +729,17 @@ func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
 	before, err := s.st.One(r.Context(), `SELECT starts_at, ends_at FROM events WHERE id=?`, id)
 	if err != nil {
 		fail(w, err)
+		return
+	}
+	starts, ends := str(before, "starts_at"), str(before, "ends_at")
+	if _, ok := m["starts_at"]; ok {
+		starts = str(m, "starts_at")
+	}
+	if _, ok := m["ends_at"]; ok {
+		ends = str(m, "ends_at")
+	}
+	if badRange(starts, ends) {
+		writeErr(w, 400, "ends_at is before starts_at")
 		return
 	}
 	for _, k := range []string{"title", "kind", "starts_at", "ends_at", "place", "notes"} {
@@ -950,6 +965,12 @@ func (s *Server) createAway(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "from_date and to_date required")
 		return
 	}
+	// A backwards notice never reads as "away now" and drops out of the list
+	// three days after a date the house has not reached yet.
+	if badRange(str(m, "from_date"), str(m, "to_date")) {
+		writeErr(w, 400, "to_date is before from_date")
+		return
+	}
 	id, err := s.st.Exec(r.Context(), `INSERT INTO away(house_id, from_date, to_date, notes) VALUES (?,?,?,?)`, houseFrom(r).ID, str(m, "from_date"), str(m, "to_date"), str(m, "notes"))
 	if err != nil {
 		fail(w, err)
@@ -988,6 +1009,22 @@ func (s *Server) updateAway(w http.ResponseWriter, r *http.Request) {
 	}
 	if edits {
 		if !s.ownerOrSteward(w, r, "away", id) {
+			return
+		}
+		before, err := s.st.One(r.Context(), `SELECT from_date, to_date FROM away WHERE id=?`, id)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		from, to := str(before, "from_date"), str(before, "to_date")
+		if _, ok := m["from_date"]; ok {
+			from = str(m, "from_date")
+		}
+		if _, ok := m["to_date"]; ok {
+			to = str(m, "to_date")
+		}
+		if badRange(from, to) {
+			writeErr(w, 400, "to_date is before from_date")
 			return
 		}
 		for _, k := range []string{"from_date", "to_date", "notes"} {
@@ -1215,6 +1252,24 @@ func clip(v string, n int) string {
 		return string(r[:n])
 	}
 	return string(r)
+}
+
+// badRange: a range that ends before it starts. The picker greys out the
+// impossible days; this is the floor under it, for any client. A date without
+// a time counts from the start of its day at the near end and to the end of
+// its day at the far end — the same rule isOver uses in the frontend, so an
+// event ending on the day it starts is a range, not an error.
+func badRange(from, to string) bool {
+	if from == "" || to == "" {
+		return false
+	}
+	if len(from) <= 10 {
+		from += "T00:00"
+	}
+	if len(to) <= 10 {
+		to += "T23:59"
+	}
+	return to < from
 }
 
 func nullIfEmpty(s string) any {

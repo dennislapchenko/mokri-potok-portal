@@ -74,8 +74,11 @@ main { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 1rem 1r
 .dp-btn { width: 100%; text-align: left; font-family: Alegreya, serif; background: #fbf3dc; border: 1px solid var(--parch3); box-shadow: none; padding: .4rem .6rem; border-radius: 4px; color: var(--ink); }
 .dp-btn.empty { color: var(--ink3); font-style: italic; }
 .dp-req { position: absolute; opacity: 0; width: 1px; height: 1px; left: .5rem; bottom: 0; pointer-events: none; }
-.dp-pop { position: absolute; z-index: 20; top: calc(100% + .3rem); left: 0; width: min(320px, 92vw); background: var(--parch); border: 3px solid #7a5a3a; border-radius: 10px; padding: .6rem; box-shadow: var(--shadow); }
+.dp-pop { position: absolute; z-index: 20; top: calc(100% + .3rem); left: 0; width: min(320px, calc(100vw - 1.5rem)); background: var(--parch); border: 3px solid #7a5a3a; border-radius: 10px; padding: .6rem; box-shadow: var(--shadow); }
+.dp-pop.flip { left: auto; right: 0; }
 .dp-grid .cal-day { min-height: 2.1rem; align-items: center; justify-content: center; }
+.dp-grid .cal-day:disabled:hover { background: #fbf3dc; }
+.dp-grid .cal-day.other:disabled:hover { background: #efe4c8; }
 .dp-grid .cal-day .n { align-self: center; font-size: .85rem; }
 .dp-time { display: flex; align-items: center; gap: .3rem; margin-top: .5rem; font-size: 1rem; }
 .dp-time select { width: auto; padding: .15rem .3rem; }

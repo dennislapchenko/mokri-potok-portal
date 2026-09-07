@@ -115,6 +115,8 @@ const sl: Record<string, string> = {
   "Assign land": "Dodeli zemljo",
   "Tap parcels on the map to toggle, then save. A parcel another house holds stays theirs — tapping it says this house lives on their land.": "Tapnite parcele na zemljevidu, nato shranite. Parcela, ki jo ima druga hiša, ostane njena — tap pomeni, da ta hiša živi na njeni zemlji.",
   "Own land": "Lastna zemlja",
+  "Where you live": "Kje živite",
+  "Tap the parcel your house stands on. Your crest joins it beside the crest of the house whose land it is — it never gives you the land.": "Tapnite parcelo, na kateri stoji vaša hiša. Vaš grb se pridruži grbu hiše, ki ima to zemljo — zemlje s tem ne dobite.",
   "Lives on the land of": "Živi na zemlji hiše",
   "lives here": "živi tu",
   "Your devices": "Vaše naprave",

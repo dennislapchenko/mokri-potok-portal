@@ -498,8 +498,9 @@ func (s *Server) createHouse(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 201, map[string]any{"id": id, "invite": inv})
 }
 
-// updateHouse: a house edits its own name/crest/color; stewards also edit
-// kind, is_steward and the parcel list (replaced wholesale).
+// updateHouse: a house edits its own name/crest/color, the line it writes
+// about itself, and where it lives; stewards also edit kind, is_steward and
+// the parcel list (replaced wholesale).
 func (s *Server) updateHouse(w http.ResponseWriter, r *http.Request) {
 	h := houseFrom(r)
 	id, err := pathID(r)
@@ -531,6 +532,28 @@ func (s *Server) updateHouse(w http.ResponseWriter, r *http.Request) {
 		if _, err := s.st.Exec(r.Context(), `UPDATE houses SET about=? WHERE id=?`, clip(v, 120), id); err != nil {
 			fail(w, err)
 			return
+		}
+	}
+	// Where a house lives is not land: `homes` never touches `house_parcels`,
+	// so a house marking a parcel cannot give itself the parcel. That is why
+	// **the house itself may write it** without waiting for a steward — a
+	// member who rents a hut puts their own crest on the map. A steward writes
+	// it too, because a steward maintains the map for houses that will not
+	// open the picker; unlike `about`, this is a fact about the land rather
+	// than a sentence in the house's own voice.
+	if v, ok := m["homes"].([]any); ok && (id == h.ID || h.IsSteward) {
+		s.st.Exec(r.Context(), `DELETE FROM house_homes WHERE house_id=?`, id)
+		for _, p := range v {
+			parcel, ok := p.(string)
+			if !ok || parcel == "" {
+				continue
+			}
+			// A parcel this house holds is where it lives by definition; marking
+			// it again would print the house's own name back at it.
+			if own, _ := s.st.One(r.Context(), `SELECT house_id FROM house_parcels WHERE parcel=? AND house_id=?`, parcel, id); own != nil {
+				continue
+			}
+			s.st.Exec(r.Context(), `INSERT OR IGNORE INTO house_homes(house_id, parcel) VALUES (?,?)`, id, parcel)
 		}
 	}
 	if h.IsSteward {

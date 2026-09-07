@@ -38,6 +38,14 @@ does not ship.
   that rents a hut holds no land and no list may say it does. The cost, paid
   knowingly: **a parcel no longer changes hands by assigning it to the new
   house** — clear it from the old one first.
+  **The house itself marks where it lives** — `PUT /api/houses/{id}` takes
+  `homes` from that house (a steward may write it too, because a steward keeps
+  the map for houses that will not open a picker; that is the difference from
+  `about`, which is a sentence in the house's own voice and never a steward's).
+  A mark grants nothing: `homes` is not `house_parcels`, so a house cannot put
+  itself on the map as a landholder, and a parcel it already holds is dropped
+  rather than printed back at it. Marking a parcel nobody holds is allowed —
+  living somewhere is a fact whether or not the app knows the owner yet.
 - **A stay ends by deleting the house** (owner's decision 2026-09-06), and only
   a steward can. **This is the one deletion the app allows, and the deliberate
   exception to "done is a state, never a deletion" below.** Deleting cascades

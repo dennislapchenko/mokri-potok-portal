@@ -124,7 +124,7 @@ const sl: Record<string, string> = {
   "Rename house": "Preimenuj hišo",
   "Export everything": "Izvozi vse",
   "Log out on this device": "Odjava na tej napravi",
-  "Cadastre snapshot 2026-08-15 (GURS). Lines are legal boundaries, not fences. Blue: the watercourses a terrain model finds across the village — a model, not a survey, and a course ends where it sinks or leaves the map.": "Kataster, posnetek 2026-08-15 (GURS). Črte so pravne meje, ne ograje. Modro: vodotoki, kakor jih iz reliefa izračuna model po vsej vasi — model, ne meritev, vodotok pa se konča tam, kjer ponikne ali zapusti zemljevid.",
+  "Cadastre snapshot 2026-08-15 (GURS).": "Kataster, posnetek 2026-08-15 (GURS).",
   "stream": "potok",
   "unassigned": "nedodeljeno",
   "zoom in": "približaj",

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, NavLink, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError, getToken, setToken, type House, type Me } from "./api";
 import { syncPushLang } from "./push";
@@ -224,6 +224,40 @@ function HallPeek() {
     api<any[]>("/events").then((e) => setEvents(e.filter((x) => !isOver(x)).slice(0, 4))).catch(() => {});
   }, []);
   const ICON: Record<string, string> = { event: "🔔", work: "🤝", alarm: "🚨" };
+  // How much of a title fits depends on the time and the answers beside it, so
+  // the cut can only be measured, never counted: the same title fits on a
+  // laptop and does not on a phone. Drop whole words until it fits and add the
+  // dots — half a word with dots after it reads as a fault, not as a shortening.
+  // Runs after layout, again when the fonts land, and again on a rotation.
+  const rows = useRef<(HTMLSpanElement | null)[]>([]);
+  useLayoutEffect(() => {
+    rows.current.length = events.length;
+    const fit = () => {
+      for (const el of rows.current) {
+        if (!el) continue;
+        const full = el.dataset.full ?? el.textContent ?? "";
+        el.dataset.full = full;
+        el.textContent = full;
+        const words = full.split(" ");
+        while (el.scrollWidth > el.clientWidth && words.length > 1) {
+          words.pop();
+          el.textContent = words.join(" ") + "…";
+        }
+      }
+    };
+    fit();
+    document.fonts?.ready.then(fit).catch(() => {});
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, [events]);
+  // Three answers, three counts, and a state with nobody in it says nothing.
+  // Stale answers are left out, the same ones the yes count already ignores:
+  // they were given for a day that no longer exists.
+  const tally = (e: any) => {
+    const list = JSON.parse(e.signup_list || "[]") as any[];
+    const n = (state: string) => list.filter((x) => x.state === state && !x.stale).length;
+    return [e.signups > 0 ? `🙋 ${e.signups}` : "", n("no") ? `🚫 ${n("no")}` : "", n("maybe") ? `🤔 ${n("maybe")}` : ""].filter(Boolean).join(" ");
+  };
   return (
     <div className="parchment peek">
       <h2>🍺 <Link to="/tavern" className="plain">{t("Tavern")}</Link></h2>
@@ -231,11 +265,11 @@ function HallPeek() {
         <Link key={p.id} to="/tavern" className="peek-row"><span className="crest" style={{ background: p.house_color }}>{p.house_crest}</span>
           <span className="tag alarm">📌</span> <span className="peek-text">{p.body}</span></Link>
       ))}
-      {events.map((e) => (
+      {events.map((e, i) => (
         <Link key={e.id} to={`/tavern?day=${e.starts_at.slice(0, 10)}`} className="peek-row"><span className="crest" style={{ background: e.house_color }}>{e.house_crest}</span>
-          <span className="peek-text">{ICON[e.kind]} {e.title}</span>
+          <span className="peek-text" ref={(el) => { rows.current[i] = el; }}>{ICON[e.kind]} {e.title}</span>
           <span className="when"><When iso={e.starts_at} /></span>
-          {e.signups > 0 && <span className="small">🙋 {e.signups}</span>}</Link>
+          {tally(e) && <span className="small tally">{tally(e)}</span>}</Link>
       ))}
       {posts.length === 0 && events.length === 0 && <p className="small muted" style={{ fontStyle: "italic" }}>{t("Nothing pinned, nothing planned.")}</p>}
     </div>

@@ -122,10 +122,14 @@ export function VillageMap({ houses, selected, onParcelClick, highlight }: {
           const sel = selected?.includes(p);
           const fill = sel ? "#e0c072" : h ? h.color : "#e9dcb8";
           const op = h ? (highlight && h.id !== highlight ? 0.45 : 0.85) : 0.6;
+          // A parcel nobody holds and nobody lives on is context, not content:
+          // its outline goes half-strength so the village reads out of the
+          // cadastre mesh at a glance. Selected and lived-on keep full lines.
+          const claimed = !!h || sel || marks.has(p);
           return ringsOf(f).map((ring, i) => (
             <path key={p + i}
               d={ring.map(([e, n], j) => (j ? "L" : "M") + e + " " + -n).join(" ") + "Z"}
-              fill={fill} fillOpacity={op} stroke={sel ? "#8a2f2f" : "#6b5a44"} strokeWidth={sel ? strokeW * 2.5 : strokeW}
+              fill={fill} fillOpacity={op} stroke={sel ? "#8a2f2f" : "#6b5a44"} strokeWidth={sel ? strokeW * 2.5 : strokeW} strokeOpacity={claimed ? 1 : 0.5}
               style={{ cursor: onParcelClick ? "pointer" : "grab" }}
               onClick={() => onParcelClick?.(p)}
               onPointerEnter={() => setTip(tipFor(p))}
@@ -152,7 +156,7 @@ export function VillageMap({ houses, selected, onParcelClick, highlight }: {
         <button aria-label={t("reset")} onClick={() => setView(home)}>⌂</button>
       </div>
       {tip && <div className="map-tip">{tip}</div>}
-      <div className="map-note">{t("Cadastre snapshot 2026-08-15 (GURS). Lines are legal boundaries, not fences. Blue: the watercourses a terrain model finds across the village — a model, not a survey, and a course ends where it sinks or leaves the map.")}</div>
+      <div className="map-note">{t("Cadastre snapshot 2026-08-15 (GURS).")}</div>
     </div>
   );
 }

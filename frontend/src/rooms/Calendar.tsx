@@ -142,13 +142,21 @@ export function Calendar({ me, houses }: { me: Me; houses: House[] }) {
           <div className="row">
             <label>{t("Starts")}<DatePicker time required value={f.starts_at} onChange={(v) => set("starts_at")({ target: { value: v } } as any)} /></label>
             <label>{t("Ends")}<DatePicker time min={f.starts_at} value={f.ends_at} onChange={(v) => set("ends_at")({ target: { value: v } } as any)} defaultTime="17:00" /></label>
-            <label>{t("Place")}<span className="place-pick">
-              <input value={f.place} onChange={set("place")} maxLength={120} placeholder={t("anywhere, or pick below")} />
-              <select value="" onChange={(e) => e.target.value && setF({ ...f, place: e.target.value })}>
+            {/* The picker sits OUTSIDE the label on purpose. A label activates
+                its first control, so a tap meant for the dropdown reached the
+                text input instead, opened the keyboard and moved the page under
+                the finger — the same trap the DatePicker documents. The select
+                also shows the chosen house instead of snapping back to "📍…",
+                so picking the same place twice is not a silent no-op. */}
+            <span className="place-pick">
+              <label>{t("Place")}
+                <input value={f.place} onChange={set("place")} maxLength={120} placeholder={t("anywhere, or pick below")} />
+              </label>
+              <select aria-label={t("Place")} value={houses.some((h) => h.name === f.place) ? f.place : ""} onChange={(e) => setF({ ...f, place: e.target.value })}>
                 <option value="">📍…</option>
                 {houses.map((h) => <option key={h.id} value={h.name}>{h.crest} {h.name}</option>)}
               </select>
-            </span></label>
+            </span>
           </div>
           {projects.items.filter((p) => p.state === "open").length > 0 && (
             <div className="row">

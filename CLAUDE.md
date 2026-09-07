@@ -114,7 +114,11 @@ does not ship.
   and the clause in the caption — nothing else knows about it.
 - **Cadastre is a view, not a source.** `parcels.geojson` is public GURS data;
   parcel numbers show only for assigned parcels (and to stewards in assign
-  mode). The map carries its snapshot date and "boundaries, not fences" line.
+  mode). The caption under the map is **one line**: the snapshot date and GURS.
+  The "boundaries, not fences" sentence and the water-model disclaimer were cut
+  on 2026-09-07 (owner's decision) — a caption nobody finishes reading protects
+  nobody. The attribution itself stays, and an outline nobody holds is drawn at
+  half stroke so the village reads out of the cadastre mesh.
   House ↔ parcel assignment lives in the DB only. Licence attribution for the
   GURS data: `TBD`, required before the portal moves to the collective's domain.
 - **One thread implementation.** Comments live in `comments`, keyed by

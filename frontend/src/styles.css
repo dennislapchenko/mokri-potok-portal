@@ -89,6 +89,7 @@ main { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 1rem 1r
 .peek h2 { margin-bottom: .4rem; }
 .peek-row { display: flex; align-items: center; gap: .5rem; text-decoration: none; color: var(--ink); padding: .3rem .2rem; border-bottom: 1px dashed var(--parch3); }
 .peek-row:last-child { border-bottom: 0; }
+.peek-row .tally { white-space: nowrap; }
 .peek-row:hover { background: #fff8e4; }
 .peek-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .weather { padding: .7rem .9rem; }
@@ -106,8 +107,13 @@ main { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 1rem 1r
 /* Five framed days must fit one phone row, so the rain line never wraps. */
 .w-rain { color: var(--blue); font-size: .72rem; white-space: nowrap; }
 .w-src { margin: .5rem 0 0; font-style: italic; }
-.place-pick { display: flex; gap: .3rem; }
-.place-pick select { width: auto; flex: 0 0 auto; }
+/* The dropdown is a sibling of the label, not its child, so it aligns to the
+   bottom of the field rather than to the caption above it. The select is capped
+   and allowed to shrink: its intrinsic width is the longest house name, which
+   on a phone pushed the whole field past the parchment. */
+.place-pick { display: flex; gap: .3rem; align-items: flex-end; margin-top: .5rem; min-width: 0; }
+.place-pick > label { flex: 1; min-width: 0; margin-top: 0; }
+.place-pick select { width: auto; flex: 0 1 auto; max-width: 5rem; }
 /* The answer emoji stood bare next to the houses' crest emoji, so the row read
    as one run of pictures. The answer wears the .lesser frame now — a label the
    eye separates from the crests, without a hover or a press. */

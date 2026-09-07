@@ -17,7 +17,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   const realHouses = houses.filter((h) => h.kind !== "common");
   const commons = houses.filter((h) => h.kind === "common");
   const [invites, setInvites] = useState<Record<number, { code?: string; expires_at?: string }>>({});
-  const [assign, setAssign] = useState<House | null>(null);
+  const [assign, setAssign] = useState<{ h: House; mine: boolean } | null>(null);
   const [sel, setSel] = useState<string[]>([]);
   const [devices, setDevices] = useState<any[]>([]);
   const [myName, setMyName] = useState(me.name);
@@ -46,7 +46,11 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   };
   const rotate = async (id: number) => { const i = await api(`/houses/${id}/invite`, { method: "POST" }); setInvites((s) => ({ ...s, [id]: i })); };
   const copy = (id: number, code: string) => { navigator.clipboard?.writeText(inviteLink(code)); setCopied(id); setTimeout(() => setCopied(null), 1500); };
-  const startAssign = (h: House) => { setAssign(h); setSel([...(h.parcels || []), ...(h.homes || [])]); };
+  const startAssign = (h: House) => { setAssign({ h, mine: false }); setSel([...(h.parcels || []), ...(h.homes || [])]); };
+  // Where a house lives is the house's own mark: no steward, no waiting. It
+  // cannot hand itself land — the picker writes `homes`, never `parcels`.
+  const myHouse = houses.find((h) => h.id === me.id);
+  const startHome = () => { if (myHouse) { setAssign({ h: myHouse, mine: true }); setSel([...(myHouse.homes || [])]); } };
   // Who holds a parcel, ignoring the house being edited: a parcel already in
   // another house's hands is not taken away by tapping it — it says the house
   // being edited lives there. That is how a member without land of their own
@@ -54,18 +58,26 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   const heldBy = (p: string, self?: number) => houses.find((x) => x.id !== self && x.parcels?.includes(p));
   const homeName = (p: string) => { const o = heldBy(p); return o ? `${o.crest} ${o.name}` : p; };
   const livesOn = (h: House) => [...new Set((h.homes || []).map(homeName))].join(", ");
-  const saveAssign = async () => { if (!assign) return; await api(`/houses/${assign.id}`, { method: "PUT", body: { parcels: sel } }); setAssign(null); await refresh(); };
+  const saveAssign = async () => {
+    if (!assign) return;
+    await api(`/houses/${assign.h.id}`, { method: "PUT", body: assign.mine ? { homes: sel } : { parcels: sel } });
+    setAssign(null); await refresh();
+  };
+  const selLand = assign && !assign.mine ? sel.filter((p) => !heldBy(p, assign.h.id)) : [];
+  const selLives = assign ? (assign.mine ? sel : sel.filter((p) => heldBy(p, assign.h.id))) : [];
   const toggleSteward = (h: House) => api(`/houses/${h.id}`, { method: "PUT", body: { is_steward: h.is_steward !== 1 } }).then(refresh);
 
   return (
     <>
       {assign && (
         <div className="parchment">
-          <h2>🗺️ {t("Assign land")}: {assign.crest} {assign.name}</h2>
-          <p className="small">{t("Tap parcels on the map to toggle, then save. A parcel another house holds stays theirs — tapping it says this house lives on their land.")}</p>
-          <VillageMap houses={houses.map((h) => (h.id === assign.id ? { ...h, parcels: [], homes: [] } : h))} selected={sel} onParcelClick={(p) => setSel((s) => (s.includes(p) ? s.filter((x) => x !== p) : [...s, p]))} />
-          {sel.some((p) => !heldBy(p, assign.id)) && <div className="small">🏞️ {t("Own land")}: {sel.filter((p) => !heldBy(p, assign.id)).join(", ")}</div>}
-          {sel.some((p) => heldBy(p, assign.id)) && <div className="small">🏠 {t("Lives on the land of")} {[...new Set(sel.filter((p) => heldBy(p, assign.id)).map(homeName))].join(", ")}</div>}
+          <h2>{assign.mine ? <>🏠 {t("Where you live")}</> : <>🗺️ {t("Assign land")}: {assign.h.crest} {assign.h.name}</>}</h2>
+          <p className="small">{assign.mine
+            ? t("Tap the parcel your house stands on. Your crest joins it beside the crest of the house whose land it is — it never gives you the land.")
+            : t("Tap parcels on the map to toggle, then save. A parcel another house holds stays theirs — tapping it says this house lives on their land.")}</p>
+          <VillageMap houses={houses.map((h) => (h.id === assign.h.id ? { ...h, parcels: assign.mine ? h.parcels : [], homes: [] } : h))} selected={sel} onParcelClick={(p) => setSel((s) => (s.includes(p) ? s.filter((x) => x !== p) : [...s, p]))} />
+          {selLand.length > 0 && <div className="small">🏞️ {t("Own land")}: {selLand.join(", ")}</div>}
+          {selLives.length > 0 && <div className="small">🏠 {t("Lives on the land of")} {[...new Set(selLives.map(homeName))].join(", ")}</div>}
           <div className="submit" style={{ display: "flex", gap: ".5rem", justifyContent: "flex-end", marginTop: ".6rem" }}>
             <button onClick={() => setAssign(null)}>✕</button>
             <button className="primary" onClick={saveAssign}>{t("Save")}</button>
@@ -144,6 +156,10 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
           </div>
           <label>{t("Where you live (optional)")}<input value={myAbout} onChange={(e) => setMyAbout(e.target.value)} maxLength={120} placeholder={t("e.g. in the hut by the stream")} /></label>
           <p className="small muted">{t("Where to find you — the hut by the stream, the top of the lane. Every house writes one; it shows beside your away-notices.")}</p>
+        <p>
+          <button className="lesser" onClick={startHome}>🗺️ {t("Where you live")}</button>
+          {myHouse?.homes?.length ? <span className="small"> {t("Lives on the land of")} {livesOn(myHouse)}</span> : null}
+        </p>
           <div className="submit"><button type="submit">{t("Save")}</button></div>
         </form>
         <Notifications steward={steward} />

@@ -410,6 +410,30 @@ func TestLivesOnAnothersLand(t *testing.T) {
 		}
 	}
 
+	// A house marks where it lives itself — no steward, no waiting.
+	vrbaC := &client{t: t, h: steward.h}
+	_, j, _ := vrbaC.do("POST", "/api/join", map[string]any{"code": obj["invite"].(map[string]any)["code"], "device": "koča"})
+	vrbaC.token = j["token"].(string)
+	code, _, _ = vrbaC.do("PUT", "/api/houses/"+vrba, map[string]any{"homes": []string{"2496", "3193"}})
+	vrbaC.must(204, code, "a house says where it lives")
+	_, _, hs = vrbaC.do("GET", "/api/houses", nil)
+	for _, h := range hs {
+		if h["name"] != "Hiša Vrba" {
+			continue
+		}
+		// 2496 is Žagar's, 3193 belongs to nobody yet — both are places to
+		// live, and neither is land this house now holds.
+		if len(h["homes"].([]any)) != 2 {
+			t.Fatalf("marks not kept: %v", h["homes"])
+		}
+		if len(h["parcels"].([]any)) != 0 {
+			t.Fatalf("a house gave itself land by saying it lives there: %v", h["parcels"])
+		}
+	}
+	// And only its own: another villager's house is not its to mark.
+	code, _, _ = zagar.do("PUT", "/api/houses/"+vrba, map[string]any{"homes": []string{"2494"}})
+	zagar.must(403, code, "a house marks another house's home")
+
 	// The exit path carries the new table, or a stay ends with it dropped.
 	_, exp, _ := steward.do("GET", "/api/export", nil)
 	if _, ok := exp["house_homes"]; !ok {
@@ -742,8 +766,12 @@ func TestRsvpAndComments(t *testing.T) {
 	if evs[0]["edited_by_name"] != "S" || answerOf(t, list, "S")["stale"].(float64) != 0 {
 		t.Fatalf("note edit made answers stale: %v", evs[0])
 	}
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
 	code, _, _ = steward.do("PUT", "/api/events/"+id, map[string]any{"starts_at": "2026-09-21T08:00"})
 	steward.must(204, code, "move the date")
+	waitFor(t, 1, fake) // the caller answered yes by calling it, so it hears too
 	_, _, evs = zagar.do("GET", "/api/events", nil)
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
 	if answerOf(t, list, "S")["stale"].(float64) != 1 || answerOf(t, list, "Žagar")["stale"].(float64) != 1 {

@@ -79,18 +79,14 @@ does not ship.
   the agency every villager's address on a logged-in page. Any future embed
   gets the same treatment or an argument written down here. **The fonts are
   served from this origin** (`frontend/public/fonts/`, SIL OFL, licences beside
-  the files) — Google Fonts was dropped on 2026-09-07 for the same reason.
-  **The page carries a CSP** (`static.go`, on `index.html` only): everything
-  `'self'`, inline styles allowed because React paints house colours into
-  style attributes, `blob:` images for photos and the export. It is set by the
-  Go server and not by Caddy so it ships and is tested with the frontend it
-  describes; the gaias-choice Caddyfile deliberately sets none for this host.
+  the files). **The page carries a CSP** (`static.go`, on `index.html` only):
+  everything `'self'`, inline styles allowed because React paints house colours
+  into style attributes, `blob:` images for photos and the export. The Go
+  server sets it, not Caddy, so it ships and is tested with the frontend it
+  describes; the gaias-choice Caddyfile sets none for this host on purpose.
   **A house colour is `#rrggbb` and nothing else** — CSS `background` also
   takes `url(...)`, so an unchecked colour is a beacon fired from every
-  villager's browser; the backend refuses anything else with a 400. **A push
-  endpoint is `https://` to a dotted hostname** — the backend POSTs to whatever
-  a phone registers, so `subscribe` refuses a bare IP or a compose neighbour
-  (`api`, `caddy`), which speak no TLS anyway.
+  villager's browser; the backend answers anything else with a 400.
 - **Nothing is public.** Every API route except `/api/healthz`, `/api/status`,
   `/api/bootstrap`, `/api/join` requires a bearer token. **No unauthenticated
   write surface, ever** — a camper self-check-in link from park4night was asked
@@ -207,6 +203,10 @@ does not ship.
   generated on first boot and printed to the container log. The VAPID key pair
   for web push is generated on first use and kept in the `settings` table.
 - **Push is opt-in per phone, filtered per house, mutable village-wide.** A
+  phone may register only an `https://` endpoint on a dotted hostname —
+  the backend POSTs to whatever it is given, and what actually keeps it off a
+  compose neighbour is TLS verification, which the hostname check just
+  fails early. A
   phone subscribes after the villager taps Allow and records the language it
   subscribed in; the house switches kinds off in `notify_off` (empty = all
   nine kinds on); a steward mutes a kind for everyone in `notify_off_global`,
@@ -323,9 +323,9 @@ deploy/app/         compose for the VM stack; deploy/infra-log.md = what was don
   something becomes history, delete it rather than framing it as a change.
 - A new room or a new table gets one line in `village.md` saying which
   villager job it serves. If that line cannot be written, the feature is not needed.
-- `.claude/launch.json` starts the dev frontend, or the backend on :8788 (the
-  way to check the CSP against a built frontend copied into `httpapi/web/`);
-  `task be:run` is the same backend from a terminal.
+- `.claude/launch.json` starts the dev frontend or the backend; `task be:run`
+  is the same backend from a terminal. Checking the CSP against a real page:
+  `README.md`.
 
 ## Memory
 

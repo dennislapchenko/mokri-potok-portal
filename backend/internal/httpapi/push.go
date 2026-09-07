@@ -331,10 +331,12 @@ func snippet(s string, n int) string {
 }
 
 // pushEndpointOK: the backend POSTs to whatever a phone registers, so the
-// address must be one a push service would hand out — https, to a named host
-// with a dot in it. That keeps the container from being pointed at a
-// neighbour on the compose network (`api`, `caddy`) or at a bare IP; those
-// speak no TLS, so nothing even connects. Real push endpoints all pass.
+// address must look like one a push service hands out — https, to a named
+// host with a dot in it. The hostname test only fails the obvious early
+// (`https://api:8787`, a bare IP): what actually keeps the send off a compose
+// neighbour is that webpush-go's default client verifies TLS, and nothing on
+// that network holds a certificate. Do not relax that client believing this
+// check protects on its own. Real push endpoints all pass.
 func pushEndpointOK(raw string) bool {
 	u, err := url.Parse(raw)
 	if err != nil || u.Scheme != "https" || u.User != nil {

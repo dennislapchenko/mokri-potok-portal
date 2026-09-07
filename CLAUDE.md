@@ -110,8 +110,8 @@ does not ship.
   survey disagree about this water — OSM calls the valley trunk *Reka* and puts
   *Mokri potok* 1.6 km west, `10-site/geodetic-survey-2013.md` reads *Mokri
   potok* on the trunk itself — and the owner has not picked. To take the water
-  off the map, delete those two files, the `<Water/>` line in `VillageMap.tsx`
-  and the clause in the caption — nothing else knows about it.
+  off the map, delete those two files and the `<Water/>` line in
+  `VillageMap.tsx` — nothing else knows about it.
 - **Cadastre is a view, not a source.** `parcels.geojson` is public GURS data;
   parcel numbers show only for assigned parcels (and to stewards in assign
   mode). The caption under the map is **one line**: the snapshot date and GURS.
@@ -291,7 +291,8 @@ frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons, 
 backend/internal/httpapi/shed.go   tool photos as BLOBs (≤2 MB, served with auth), wishlist; remind.go = return nudges
                     threads.go = comments on any subject + wish options; weather.go = ARSO, server-side; static.go = the embedded frontend
 docs/               design docs the owner and the assistant decide on together (navigation growth, Projects, Campground,
-                    and `design-membership.md` — accounts for people who live here without land, options only, nothing built)
+                    and `design-membership.md` — accounts for people who live here without land, options only, nothing built);
+                    `later.md` = the one home for what is brainstormed, designed-and-set-aside, or still undecided
 docs/diagrams/      hand-drawn SVG sketches belonging to those docs
 frontend/public/data/  parcels.geojson (cadastre), water.json (the modelled watercourses, drawn by map/Water.tsx)
 deploy/app/         compose for the VM stack; deploy/infra-log.md = what was done by hand
@@ -311,8 +312,37 @@ deploy/app/         compose for the VM stack; deploy/infra-log.md = what was don
   villager job it serves. If that line cannot be written, the feature is not needed.
 - `.claude/launch.json` starts the dev frontend; `task be:run` the backend.
 
+## Memory
+
+@.claude/memory/MEMORY.md
+
+In-repo memory lives in `.claude/memory/`: one file per fact, `MEMORY.md` the
+index, same frontmatter shape as the assistant's global memory. It holds how
+the owner likes to work, project constraints not derivable from code or git,
+and pointers. It never holds what a doc already records, and never anything
+private: the repo is public (first working rule below). Update a file rather
+than adding a duplicate, delete one that turns out wrong.
+
+## The reviewer
+
+`.claude/agents/reviewer.md` is a Fable subagent that answers one question
+about a finished turn: what should have been done better, as a
+psychotherapist, an engineer, a UX/UI specialist and a homesteading
+practitioner at once. **Every turn that changed files invokes it before
+ending**, with what was asked and what was done, and then acts on the
+feedback or surfaces it to the owner. `.claude/hooks/review-gate.py`, wired as
+a Stop hook in `.claude/settings.json`, blocks the turn once if that was
+skipped. The reviewer edits nothing.
+
 ## Working rules
 
+- **This repo is public.** The village name and the public GURS and ARSO
+  data are the only specifics in it. Nothing that identifies a person or
+  describes a household comes in here: no names of people, no phone numbers,
+  no house-by-house facts, no quotes from the owner's private homestead notes
+  about people or tenure. Pointing at a file in that repo by path is fine, its
+  content about people is not. Abstract it or leave it out. This applies to
+  docs, commits, memory and agent files alike.
 - Work on `main`. One person owns this repo; a side branch and a pull request
   only put a gate between a verified change and the village. Commit to `main`
   and push (owner's rule 2026-09-07).

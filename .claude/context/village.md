@@ -42,9 +42,9 @@ any house in both directions, and a steward ends such an account by deleting the
 house. The argument, the options not taken and the drawings:
 `docs/design-membership.md`.
 
-Later, only if the houses ask: growing plans (Fields), per-house frost log
-(Almanac — this site's binding constraint is frost pooling), village knowledge
-(Archive), seasonal map skins.
+Later, only if the houses ask: every room brainstormed and not built, every
+variant designed and set aside, and the open decisions are in `docs/later.md`.
+That file is the one home for "not yet".
 
 ## Things that are deliberately not here
 
@@ -67,8 +67,10 @@ SVG with northing flipped; no tiles. `water.json` is the watercourse network a
 D8 flow model finds across the whole village on ARSO 1 m bare earth — the
 villager job is "show me the potok", so a course is drawn once 2 ha of land
 drains into it, and only the three big ones carry the word *potok*. The village
-sits in a closed karst basin, so a course ends where it sinks; the caption says
-that, and says the lines are a model and not a survey.
+sits in a closed karst basin, so a course ends where it sinks. The lines are a
+model and not a survey; the caption no longer says so (cut 2026-09-07, a
+caption nobody finishes reading protects nobody), so that fact lives here and
+in `CLAUDE.md` only.
 
 `house_homes` (house ↔ parcel, many to many): where a house that owns no land
 lives. It puts the renter's crest on the map beside the crest of the house whose

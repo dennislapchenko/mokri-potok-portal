@@ -21,7 +21,7 @@ sends notifications.
   Image built by CI to GHCR; deployed by the doco-cd controller on the gaias-choice
   VM (`.doco-cd.yml`, `deploy/`).
 - **Map data:** `frontend/public/data/parcels.geojson` — public cadastre (GURS), EPSG:3794 —
-  and `water.json`, the watercourses of a terrain model over the plot's window.
+  and `water.json`, the watercourses a terrain model finds across the whole village.
   House ↔ parcel assignment is app data, never in git.
 
 ```sh

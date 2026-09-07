@@ -254,6 +254,9 @@ deploy/app/         compose for the VM stack; deploy/infra-log.md = what was don
 
 ## Working rules
 
+- Work on `main`. One person owns this repo; a side branch and a pull request
+  only put a gate between a verified change and the village. Commit to `main`
+  and push (owner's rule 2026-09-07).
 - Run `task check` before every commit. CI runs the same.
 - Migrations are append-only files in `backend/internal/store/migrations/`;
   never edit an applied one.

@@ -36,11 +36,14 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
     const g = by(state);
     if (!g.length) return null;
     return (
-      <div className="small signers">{icon} {g.map((sgn, i) => (
-        <span key={sgn.house_id} className={sgn.stale ? "stale" : ""}>
-          {i > 0 ? ", " : ""}{sgn.crest} {sgn.name}
-        </span>
-      ))}</div>
+      <div className="small signers">
+        <span className="state" title={t(RSVP.find((r) => r.state === state)!.label)}>{icon}</span>
+        <span className="who">{g.map((sgn, i) => (
+          <span key={sgn.house_id} className={sgn.stale ? "stale" : ""}>
+            {i > 0 ? ", " : ""}{sgn.crest} {sgn.name}
+          </span>
+        ))}</span>
+      </div>
     );
   };
 

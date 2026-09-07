@@ -108,6 +108,12 @@ main { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 1rem 1r
 .w-src { margin: .5rem 0 0; font-style: italic; }
 .place-pick { display: flex; gap: .3rem; }
 .place-pick select { width: auto; flex: 0 0 auto; }
+/* The answer emoji stood bare next to the houses' crest emoji, so the row read
+   as one run of pictures. The answer wears the .lesser frame now — a label the
+   eye separates from the crests, without a hover or a press. */
+.signers { display: flex; align-items: baseline; gap: .45rem; margin: .2rem 0; }
+.signers .state { flex: 0 0 auto; border: 1.5px solid var(--wood2); border-radius: 6px; background: linear-gradient(#f3e8cc, #e4d3a8); box-shadow: 0 1px 0 #3a281a; padding: .05rem .3rem .1rem; }
+.signers .who { min-width: 0; }
 .signers .stale { opacity: .6; text-decoration: line-through; text-decoration-thickness: 1px; }
 .stale-note { color: var(--red); font-style: italic; }
 .wish-option { display: flex; align-items: center; gap: .4rem; font-size: .95rem; padding: .15rem 0 .15rem .2rem; border-left: 3px solid var(--parch3); margin: .2rem 0 .2rem .3rem; padding-left: .5rem; }

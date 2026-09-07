@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { House } from "../api";
 import { useT } from "../i18n";
+import { Water } from "./Water";
 
 // Cadastral parcels in EPSG:3794 metres, drawn straight into an SVG with the
 // northing flipped. No tiles, no projection library: the village is ~1 km wide.
 type Feature = { properties: { parcel: string; area_m2: number; e: number; n: number }; geometry: { type: string; coordinates: any } };
 type Parcels = { features: Feature[] };
-type Channels = { segments: number[][] };
 
 // EPSG:3794 metres. The collective's plot is the village's high ground; the
 // event ground lies north-west across the stream. Stewards refine by assigning.
@@ -27,14 +27,12 @@ export function VillageMap({ houses, selected, onParcelClick, highlight }: {
 }) {
   const { t } = useT();
   const [parcels, setParcels] = useState<Parcels | null>(null);
-  const [channels, setChannels] = useState<Channels | null>(null);
   const [tip, setTip] = useState<string>("");
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     const base = import.meta.env.BASE_URL;
     fetch(base + "data/parcels.geojson").then((r) => r.json()).then(setParcels).catch(() => setParcels({ features: [] }));
-    fetch(base + "data/channels.json").then((r) => r.json()).then(setChannels).catch(() => setChannels(null));
   }, []);
 
   const owner = useMemo(() => {
@@ -42,6 +40,32 @@ export function VillageMap({ houses, selected, onParcelClick, highlight }: {
     for (const h of houses) for (const p of h.parcels || []) m.set(p, h);
     return m;
   }, [houses]);
+
+  // Where the crests go. A house sits on the first parcel it holds; a house
+  // that lives on somebody else's land sits on that land too, beside the crest
+  // of the house that holds it. Nothing here changes who owns what — the
+  // parcel keeps the holder's colour and the holder's parcel list.
+  const marks = useMemo(() => {
+    const at = new Map<string, { h: House; guest: boolean }[]>();
+    const add = (p: string, h: House, guest: boolean) => at.set(p, [...(at.get(p) || []), { h, guest }]);
+    const placed = new Set<number>();
+    for (const f of parcels?.features || []) {
+      const p = f.properties.parcel;
+      const o = owner.get(p);
+      if (o && !placed.has(o.id)) {
+        placed.add(o.id);
+        add(p, o, false);
+      }
+      for (const g of houses) if (g.homes?.includes(p)) add(p, g, true);
+    }
+    return at;
+  }, [parcels, houses, owner]);
+
+  const featureOf = useMemo(() => {
+    const m = new Map<string, Feature>();
+    for (const f of parcels?.features || []) m.set(f.properties.parcel, f);
+    return m;
+  }, [parcels]);
 
   // Default view: the collective's parcels if any are assigned, else the
   // 500 m around the middle of the data.
@@ -83,6 +107,12 @@ export function VillageMap({ houses, selected, onParcelClick, highlight }: {
 
   const strokeW = view.w / 900;
   const fontPx = view.w / 60;
+  const tipFor = (p: string) => {
+    const h = owner.get(p);
+    const guests = houses.filter((g) => g.homes?.includes(p)).map((g) => `${g.crest} ${g.name} (${t("lives here")})`);
+    const who = [h ? `${h.crest} ${h.name}` : "", ...guests].filter(Boolean).join(" · ");
+    return who ? `${who} · ${p}` : onParcelClick ? p : "";
+  };
   return (
     <div className="map-wrap">
       <svg ref={svgRef} viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp} onWheel={onWheel}>
@@ -98,23 +128,22 @@ export function VillageMap({ houses, selected, onParcelClick, highlight }: {
               fill={fill} fillOpacity={op} stroke={sel ? "#8a2f2f" : "#6b5a44"} strokeWidth={sel ? strokeW * 2.5 : strokeW}
               style={{ cursor: onParcelClick ? "pointer" : "grab" }}
               onClick={() => onParcelClick?.(p)}
-              onPointerEnter={() => setTip(h ? `${h.crest} ${h.name} · ${p}` : onParcelClick ? p : "")}
+              onPointerEnter={() => setTip(tipFor(p))}
               onPointerLeave={() => setTip("")}
             />
           ));
         })}
-        {channels?.segments.map((s, i) => (
-          <line key={i} x1={s[0]} y1={-s[1]} x2={s[2]} y2={-s[3]} stroke="#3f5f8a" strokeWidth={strokeW * 1.6} strokeDasharray={`${strokeW * 4} ${strokeW * 3}`} strokeOpacity={0.7} />
-        ))}
-        {houses.filter((h) => h.parcels?.length).map((h) => {
-          // Crest at the centroid of the house's first parcel.
-          const f = parcels.features.find((x) => h.parcels.includes(x.properties.parcel));
+        <Water scale={strokeW} />
+        {[...marks].map(([p, list]) => {
+          const f = featureOf.get(p);
           if (!f) return null;
-          return (
-            <text key={h.id} x={f.properties.e} y={-f.properties.n} fontSize={fontPx} textAnchor="middle" dominantBaseline="central" style={{ pointerEvents: "none" }}>
-              {h.crest}
+          // Several crests on one parcel spread sideways so neither hides the other.
+          return list.map((m, i) => (
+            <text key={p + "-" + m.h.id} x={f.properties.e + (i - (list.length - 1) / 2) * fontPx * 0.95} y={-f.properties.n}
+              fontSize={m.guest ? fontPx * 0.8 : fontPx} textAnchor="middle" dominantBaseline="central" style={{ pointerEvents: "none" }}>
+              {m.h.crest}
             </text>
-          );
+          ));
         })}
       </svg>
       <div className="map-controls">
@@ -123,7 +152,7 @@ export function VillageMap({ houses, selected, onParcelClick, highlight }: {
         <button aria-label={t("reset")} onClick={() => setView(home)}>⌂</button>
       </div>
       {tip && <div className="map-tip">{tip}</div>}
-      <div className="map-note">{t("Cadastre snapshot 2026-08-15 (GURS). Lines are legal boundaries, not fences. Dashed blue: modelled water paths near the plot, not a survey.")}</div>
+      <div className="map-note">{t("Cadastre snapshot 2026-08-15 (GURS). Lines are legal boundaries, not fences. Blue: the stream and the gully a terrain model finds around the collective's parcels — that window only, and a model, not a survey.")}</div>
     </div>
   );
 }

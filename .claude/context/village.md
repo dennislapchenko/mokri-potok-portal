@@ -63,8 +63,15 @@ Later, only if the houses ask: growing plans (Fields), per-house frost log
 cadastre WFS snapshot 2026-08-15, EPSG:3794 metres, rounded to 0.1 m. The
 GURS open-data licence string is not recorded yet — it must be, before the
 portal moves to the collective's own domain. Drawn as
-SVG with northing flipped; no tiles. `channels.json` is a D8 flow model of the
-plot's own window only — dashed, labelled as a model, not a survey.
+SVG with northing flipped; no tiles. `water.json` is the stream and the gully a
+D8 flow model finds in the plot's own window — the villager job is "show me the
+potok", so only courses with real catchment are drawn, and the caption says the
+window ends where the model does.
+
+`house_homes` (house ↔ parcel, many to many): where a house that owns no land
+lives. It puts the renter's crest on the map beside the crest of the house whose
+land it is, and gives the Houses room something true to print where a landholder
+has parcel numbers.
 
 ## Where the thinking lives
 

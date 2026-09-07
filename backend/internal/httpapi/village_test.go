@@ -13,6 +13,20 @@ import (
 	"github.com/dennislapchenko/mokri-potok-portal/backend/internal/store"
 )
 
+// answerOf: the sign-up row of one house, by name. The list carries every
+// house that answered — including the house that called the event, which is
+// signed up the moment it creates one — so nothing may read it by position.
+func answerOf(t *testing.T, list []map[string]any, name string) map[string]any {
+	t.Helper()
+	for _, r := range list {
+		if r["name"] == name {
+			return r
+		}
+	}
+	t.Fatalf("no answer from %s in %v", name, list)
+	return nil
+}
+
 func newVillage(t *testing.T) (*Server, *fakeSender, *client, *client) {
 	t.Helper()
 	st, err := store.Open(t.TempDir())
@@ -160,6 +174,12 @@ func TestWorkBeeSignup(t *testing.T) {
 	zagar.must(201, code, "event")
 	id := itoa(obj["id"].(float64))
 
+	// The house that calls a work bee is at it: no separate tap needed.
+	_, _, evs := zagar.do("GET", "/api/events", nil)
+	if evs[0]["signups"].(float64) != 1 || evs[0]["mine"] != "yes" {
+		t.Fatalf("caller not signed up: %v", evs[0])
+	}
+
 	fake.mu.Lock()
 	fake.sent, fake.payloads = nil, nil
 	fake.mu.Unlock()
@@ -167,11 +187,11 @@ func TestWorkBeeSignup(t *testing.T) {
 	steward.must(204, code, "signup")
 	waitFor(t, 1, fake) // the house that called it hears
 
-	_, _, evs := zagar.do("GET", "/api/events", nil)
-	// `mine` is this house's own answer, or null when it has not answered.
-	if evs[0]["signups"].(float64) != 1 || evs[0]["mine"] != nil {
+	_, _, evs = zagar.do("GET", "/api/events", nil)
+	if evs[0]["signups"].(float64) != 2 {
 		t.Fatalf("signups: %v", evs[0])
 	}
+	// `mine` is this house's own answer, or null when it has not answered.
 	_, _, evs = steward.do("GET", "/api/events", nil)
 	if evs[0]["mine"] != "yes" {
 		t.Fatalf("mine answer: %v", evs[0])
@@ -179,8 +199,15 @@ func TestWorkBeeSignup(t *testing.T) {
 	code, _, _ = steward.do("DELETE", "/api/events/"+id+"/signup", nil)
 	steward.must(204, code, "sign off")
 	_, _, evs = zagar.do("GET", "/api/events", nil)
-	if evs[0]["signups"].(float64) != 0 {
+	if evs[0]["signups"].(float64) != 1 {
 		t.Fatalf("still signed up: %v", evs[0])
+	}
+	// Signing off is an answer a caller may give too.
+	code, _, _ = zagar.do("DELETE", "/api/events/"+id+"/signup", nil)
+	zagar.must(204, code, "the caller signs off")
+	_, _, evs = zagar.do("GET", "/api/events", nil)
+	if evs[0]["signups"].(float64) != 0 || evs[0]["mine"] != nil {
+		t.Fatalf("caller cannot take it back: %v", evs[0])
 	}
 }
 
@@ -319,11 +346,74 @@ func TestSignupIsAnAnswerOnly(t *testing.T) {
 	_, _, evs := zagar.do("GET", "/api/events", nil)
 	var list []map[string]any
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
-	if len(list) != 1 || list[0]["name"] != "S" {
+	// Two answers: the house that called it, and the one that answered.
+	if len(list) != 2 {
 		t.Fatalf("signup_list: %v", evs[0]["signup_list"])
 	}
-	if _, ok := list[0]["note"]; ok {
-		t.Fatalf("sign-up still carries a note: %v", list[0])
+	if _, ok := answerOf(t, list, "S")["note"]; ok {
+		t.Fatalf("sign-up still carries a note: %v", list)
+	}
+}
+
+// TestLivesOnAnothersLand: a house without land of its own is put on the map
+// by marking the parcel it lives on. That parcel is not taken from the house
+// that holds it, and it never joins the marker's own parcel list — a member
+// who rents a hut holds no land, and the map must not say otherwise.
+func TestLivesOnAnothersLand(t *testing.T) {
+	_, _, steward, zagar := newVillage(t)
+	_, _, hs := steward.do("GET", "/api/houses", nil)
+	var zagarID string
+	for _, h := range hs {
+		if h["name"] == "Žagar" {
+			zagarID = itoa(h["id"].(float64))
+		}
+	}
+	code, _, _ := steward.do("PUT", "/api/houses/"+zagarID, map[string]any{"parcels": []string{"2494", "2496"}})
+	steward.must(204, code, "Žagar holds two parcels")
+
+	code, obj, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Hiša Vrba", "crest": "🌿"})
+	steward.must(201, code, "a house with no land")
+	vrba := itoa(obj["id"].(float64))
+	code, _, _ = steward.do("PUT", "/api/houses/"+vrba, map[string]any{"parcels": []string{"2494", "2500"}})
+	steward.must(204, code, "mark where it lives")
+
+	_, _, hs = zagar.do("GET", "/api/houses", nil)
+	byName := map[string]map[string]any{}
+	for _, h := range hs {
+		byName[h["name"].(string)] = h
+	}
+	// 2494 is Žagar's: marking it says Vrba lives there, nothing changes hands.
+	if p := byName["Žagar"]["parcels"].([]any); len(p) != 2 {
+		t.Fatalf("land taken from the house that holds it: %v", p)
+	}
+	// 2500 belongs to nobody, so it is Vrba's land like any other assignment.
+	if p := byName["Hiša Vrba"]["parcels"].([]any); len(p) != 1 || p[0] != "2500" {
+		t.Fatalf("free land not assigned, or a neighbour's counted as its own: %v", p)
+	}
+	if h := byName["Hiša Vrba"]["homes"].([]any); len(h) != 1 || h[0] != "2494" {
+		t.Fatalf("does not live anywhere: %v", h)
+	}
+	if h := byName["Žagar"]["homes"].([]any); len(h) != 0 {
+		t.Fatalf("a landholder was given a home on its own land: %v", h)
+	}
+
+	// Clearing the marks leaves the neighbour's land untouched.
+	code, _, _ = steward.do("PUT", "/api/houses/"+vrba, map[string]any{"parcels": []string{}})
+	steward.must(204, code, "clear")
+	_, _, hs = zagar.do("GET", "/api/houses", nil)
+	for _, h := range hs {
+		if h["name"] == "Hiša Vrba" && len(h["homes"].([]any))+len(h["parcels"].([]any)) != 0 {
+			t.Fatalf("marks survived clearing: %v", h)
+		}
+		if h["name"] == "Žagar" && len(h["parcels"].([]any)) != 2 {
+			t.Fatalf("clearing one house took another's land: %v", h)
+		}
+	}
+
+	// The exit path carries the new table, or a stay ends with it dropped.
+	_, exp, _ := steward.do("GET", "/api/export", nil)
+	if _, ok := exp["house_homes"]; !ok {
+		t.Fatal("export drops where houses live")
 	}
 }
 
@@ -632,15 +722,16 @@ func TestRsvpAndComments(t *testing.T) {
 	_, _, evs := zagar.do("GET", "/api/events", nil)
 	var list []map[string]any
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
-	if evs[0]["signups"].(float64) != 0 || list[0]["state"] != "no" {
+	// One yes stands: the house that called it. The steward's no is not one.
+	if evs[0]["signups"].(float64) != 1 || answerOf(t, list, "S")["state"] != "no" {
 		t.Fatalf("no-answer counted as coming: %v", evs[0])
 	}
 	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "maybe"})
 	steward.must(204, code, "rsvp maybe")
 	_, _, evs = zagar.do("GET", "/api/events", nil)
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
-	if evs[0]["signups"].(float64) != 0 || list[0]["state"] != "maybe" || list[0]["stale"].(float64) != 0 {
-		t.Fatalf("maybe folded into coming: %v %v", evs[0], list[0])
+	if s := answerOf(t, list, "S"); evs[0]["signups"].(float64) != 1 || s["state"] != "maybe" || s["stale"].(float64) != 0 {
+		t.Fatalf("maybe folded into coming: %v %v", evs[0], list)
 	}
 
 	// Any house edits; moving the time marks earlier answers stale.
@@ -648,15 +739,15 @@ func TestRsvpAndComments(t *testing.T) {
 	steward.must(204, code, "any house edits")
 	_, _, evs = zagar.do("GET", "/api/events", nil)
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
-	if evs[0]["edited_by_name"] != "S" || list[0]["stale"].(float64) != 0 {
+	if evs[0]["edited_by_name"] != "S" || answerOf(t, list, "S")["stale"].(float64) != 0 {
 		t.Fatalf("note edit made answers stale: %v", evs[0])
 	}
 	code, _, _ = steward.do("PUT", "/api/events/"+id, map[string]any{"starts_at": "2026-09-21T08:00"})
 	steward.must(204, code, "move the date")
 	_, _, evs = zagar.do("GET", "/api/events", nil)
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
-	if list[0]["stale"].(float64) != 1 {
-		t.Fatalf("answer survived a moved date as current: %v", list[0])
+	if answerOf(t, list, "S")["stale"].(float64) != 1 || answerOf(t, list, "Žagar")["stale"].(float64) != 1 {
+		t.Fatalf("answer survived a moved date as current: %v", list)
 	}
 
 	// Comments: one reply level, a reply to a reply hangs off the root.
@@ -765,7 +856,7 @@ func TestMovedTimeIsLoud(t *testing.T) {
 	id := itoa(obj["id"].(float64))
 	steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "yes"})
 	_, _, evs := zagar.do("GET", "/api/events", nil)
-	if evs[0]["signups"].(float64) != 1 {
+	if evs[0]["signups"].(float64) != 2 { // the caller, and the house that said yes
 		t.Fatalf("fresh yes not counted: %v", evs[0])
 	}
 

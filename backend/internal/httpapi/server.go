@@ -429,9 +429,21 @@ func (s *Server) listHouses(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	// `homes` are parcels a house lives on but does not own — a member without
+	// land of their own. They are a separate list on purpose: nothing may fold
+	// them into `parcels`, or a house would appear to hold a neighbour's land.
+	homes, err := s.st.Rows(r.Context(), `SELECT house_id, parcel FROM house_homes`)
+	if err != nil {
+		fail(w, err)
+		return
+	}
 	byHouse := map[int64][]string{}
 	for _, p := range parcels {
 		byHouse[p["house_id"].(int64)] = append(byHouse[p["house_id"].(int64)], p["parcel"].(string))
+	}
+	livesOn := map[int64][]string{}
+	for _, p := range homes {
+		livesOn[p["house_id"].(int64)] = append(livesOn[p["house_id"].(int64)], p["parcel"].(string))
 	}
 	for _, h := range houses {
 		ps := byHouse[h["id"].(int64)]
@@ -439,6 +451,11 @@ func (s *Server) listHouses(w http.ResponseWriter, r *http.Request) {
 			ps = []string{}
 		}
 		h["parcels"] = ps
+		hs := livesOn[h["id"].(int64)]
+		if hs == nil {
+			hs = []string{}
+		}
+		h["homes"] = hs
 	}
 	writeJSON(w, 200, houses)
 }
@@ -529,10 +546,22 @@ func (s *Server) updateHouse(w http.ResponseWriter, r *http.Request) {
 		}
 		if ps, ok := m["parcels"].([]any); ok {
 			s.st.Exec(r.Context(), `DELETE FROM house_parcels WHERE house_id=?`, id)
+			s.st.Exec(r.Context(), `DELETE FROM house_homes WHERE house_id=?`, id)
 			for _, p := range ps {
-				if ps, ok := p.(string); ok && ps != "" {
-					// A parcel can belong to one house; the newest assignment wins.
-					s.st.Exec(r.Context(), `INSERT OR REPLACE INTO house_parcels(house_id, parcel) VALUES (?,?)`, id, ps)
+				parcel, ok := p.(string)
+				if !ok || parcel == "" {
+					continue
+				}
+				// Marking a parcel another house already holds does not take it
+				// away: it says this house lives there. A house without land of
+				// its own is placed on the map that way, and the Houses room
+				// names whose land it is. Moving a parcel between houses means
+				// clearing it from the first house.
+				owned, _ := s.st.One(r.Context(), `SELECT house_id FROM house_parcels WHERE parcel=?`, parcel)
+				if owned == nil {
+					s.st.Exec(r.Context(), `INSERT INTO house_parcels(house_id, parcel) VALUES (?,?)`, id, parcel)
+				} else {
+					s.st.Exec(r.Context(), `INSERT OR IGNORE INTO house_homes(house_id, parcel) VALUES (?,?)`, id, parcel)
 				}
 			}
 		}
@@ -696,6 +725,11 @@ func (s *Server) createEvent(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	// Whoever calls a work party is at it: the creator answers yes for its own
+	// house, so a headcount of one is never mistaken for nobody answering. Any
+	// of the three answers can replace it afterwards, like any other house's.
+	s.st.Exec(r.Context(), `INSERT INTO event_signups(event_id, house_id, state, answered_at, answered_version) VALUES (?,?, 'yes', datetime('now'), 0)`, id, houseFrom(r).ID)
+
 	icon := map[string]string{"event": "🔔", "work": "🤝"}[kind]
 	s.notify("events", houseFrom(r).ID, func(lang string) Payload {
 		body := join(" · ", humanWhen(str(m, "starts_at"), lang, s.now()), str(m, "place"))
@@ -1003,7 +1037,7 @@ func (s *Server) updateAway(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 	out := map[string]any{"exported_at": time.Now().UTC().Format(time.RFC3339)}
-	for _, t := range []string{"houses", "house_parcels", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "wish_options", "comments", "projects", "project_tasks", "camp_takings"} {
+	for _, t := range []string{"houses", "house_parcels", "house_homes", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "wish_options", "comments", "projects", "project_tasks", "camp_takings"} {
 		cols := "*"
 		if t == "tools" { // photos are bytes, not text — they stay in the SQLite backup
 			cols = "id, house_id, name, notes, category, held_by, held_since, reminded_at, created_at"

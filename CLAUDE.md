@@ -29,6 +29,15 @@ does not ship.
   building stands empty is not surprised by the notice. **The Houses room shows
   no parcel count**, in either block: a parcel list is a list, a count beside a
   name is a tally.
+- **Marking a parcel somebody else holds says "we live here", never "this is
+  ours"** (owner's decision 2026-09-07). In assign mode a tap on a free parcel
+  assigns it as before; a tap on a parcel another house holds writes
+  `house_homes` instead, so the crest joins that parcel on the map beside the
+  holder's, and the Houses room reads *"Živi na zemlji hiše 🏠 …"* where a
+  landholder has parcel numbers. It is never folded into `parcels`: a house
+  that rents a hut holds no land and no list may say it does. The cost, paid
+  knowingly: **a parcel no longer changes hands by assigning it to the new
+  house** — clear it from the old one first.
 - **A stay ends by deleting the house** (owner's decision 2026-09-06), and only
   a steward can. **This is the one deletion the app allows, and the deliberate
   exception to "done is a state, never a deletion" below.** Deleting cascades
@@ -70,6 +79,17 @@ does not ship.
   burglary information: they never leave the logged-in app (no digests, no feeds).
 - **No tallies of favours.** "Taken by", "claimed by", "watched by" are
   acknowledgments. No counts, points, leaderboards, streaks. Ever.
+- **Water on the map is one file and one component.** `map/Water.tsx` draws
+  `public/data/water.json` — the watercourses chained out of the D8 flow model
+  in the homestead repo (`10-site/terrain-data/channel-segments.json`), only
+  those with a catchment above 0.25 ha, so what is drawn is water and not every
+  wet line, and only the east stream is named *potok* — the west course is the
+  eroded road that water took over, so it is drawn as a *grapa*. It covers **the model's window around the collective's parcels, not
+  the village**: the caption says so, because a stream that stops in the middle
+  of the map otherwise reads as a bug. Village-wide watercourses need a
+  hydrography layer nobody has fetched yet. To take the water off the map,
+  delete those two files, the `<Water/>` line in `VillageMap.tsx` and the clause
+  in the caption — nothing else knows about it.
 - **Cadastre is a view, not a source.** `parcels.geojson` is public GURS data;
   parcel numbers show only for assigned parcels (and to stewards in assign
   mode). The map carries its snapshot date and "boundaries, not fences" line.
@@ -93,7 +113,11 @@ does not ship.
   badge and the tavern peek use the same function — never re-derive it with a
   date comparison, which counts this morning's finished event as ahead.
 - **An answer is not a headcount.** A sign-up is `yes`, `no` or `maybe`, and
-  silence is a fourth thing. Only `yes` is counted; never fold `maybe` into it.
+  silence is a fourth thing. **The house that creates an event answers `yes` for
+  itself in the same request** — whoever calls a work party is at it, and a
+  headcount of nobody beside an event somebody called reads as a failure that
+  did not happen. It is an ordinary answer: the caller can change it or take it
+  back like any house. Only `yes` is counted; never fold `maybe` into it.
   It carries **no note** — the sign-up note was removed on 2026-09-06 and the
   old ones moved into the event's thread (`013_quiet_and_notes.sql`), because a
   line only the signer can edit and nobody can answer is a worse comment. A
@@ -243,7 +267,7 @@ backend/internal/httpapi/shed.go   tool photos as BLOBs (≤2 MB, served with au
 docs/               design docs the owner and the assistant decide on together (navigation growth, Projects, Campground,
                     and `design-membership.md` — accounts for people who live here without land, options only, nothing built)
 docs/diagrams/      hand-drawn SVG sketches belonging to those docs
-frontend/public/data/  parcels.geojson (cadastre), channels.json (modelled water, dashed)
+frontend/public/data/  parcels.geojson (cadastre), water.json (the modelled watercourses, drawn by map/Water.tsx)
 deploy/app/         compose for the VM stack; deploy/infra-log.md = what was done by hand
 .doco-cd.yml        deploy config the VM's doco-cd polls; BE_TAG rolled by CI
 .github/workflows/  build-backend (GHCR + roll tag), deploy-pages (the signpost at the old address)

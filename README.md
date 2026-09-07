@@ -20,7 +20,8 @@ sends notifications.
 - **Backend:** Go, stdlib HTTP, SQLite (pure Go), VAPID web push, one binary, nightly backups in-process.
   Image built by CI to GHCR; deployed by the doco-cd controller on the gaias-choice
   VM (`.doco-cd.yml`, `deploy/`).
-- **Map data:** `frontend/public/data/parcels.geojson` — public cadastre (GURS), EPSG:3794.
+- **Map data:** `frontend/public/data/parcels.geojson` — public cadastre (GURS), EPSG:3794 —
+  and `water.json`, the watercourses of a terrain model over the plot's window.
   House ↔ parcel assignment is app data, never in git.
 
 ```sh

@@ -14,6 +14,10 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   const [nh, setNh] = useState({ name: "", crest: "🏠", color: "#b5651d", kind: "house" });
   const [nc, setNc] = useState({ name: "", crest: "🌳", color: "#7a8f5a" });
   const [commonOpen, setCommonOpen] = useState(false);
+  // A common place has no household behind it to rename itself, so the steward
+  // who maintains the map maintains its name, crest and colour too. This is not
+  // a steward editing a house: a house speaks for itself, event grounds do not.
+  const [editC, setEditC] = useState<{ id: number; name: string; crest: string; color: string } | null>(null);
   const realHouses = houses.filter((h) => h.kind !== "common");
   const commons = houses.filter((h) => h.kind === "common");
   const [invites, setInvites] = useState<Record<number, { code?: string; expires_at?: string }>>({});
@@ -136,15 +140,29 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
           </form>
         )}
         {commons.length === 0 && <p className="small muted">{t("None yet.")}</p>}
-        {commons.map((h) => (
+        {commons.map((h) => (editC?.id === h.id ? (
+          <form key={h.id} className="inline" onSubmit={async (e) => {
+            e.preventDefault();
+            await api(`/houses/${h.id}`, { method: "PUT", body: { name: editC.name, crest: editC.crest, color: editC.color } });
+            setEditC(null); await refresh();
+          }}>
+            <div className="row">
+              <label>{t("Name")}<input value={editC.name} onChange={(e) => setEditC({ ...editC, name: e.target.value })} required maxLength={60} /></label>
+              <label>{t("Crest")}<input value={editC.crest} onChange={(e) => setEditC({ ...editC, crest: e.target.value })} maxLength={4} /></label>
+              <label>{t("Colour")}<input type="color" value={editC.color} onChange={(e) => setEditC({ ...editC, color: e.target.value })} /></label>
+            </div>
+            <div className="submit"><button type="button" className="ghost" onClick={() => setEditC(null)}>✕</button><button className="primary" type="submit">{t("Save")}</button></div>
+          </form>
+        ) : (
           <div key={h.id} className="common-row">
             <Crest crest={h.crest} color={h.color} /> <strong>{h.name}</strong>
             {h.parcels?.length ? <span className="small">{h.parcels.join(", ")}</span> : null}
             {h.homes?.length ? <span className="small">{t("Lives on the land of")} {livesOn(h)}</span> : null}
+            {steward && <button className="lesser" onClick={() => setEditC({ id: h.id, name: h.name, crest: h.crest, color: h.color })}>✎ {t("Edit")}</button>}
             {steward && <button className="lesser" onClick={() => startAssign(h)}>🗺️ {t("Assign land")}</button>}
             {steward && <button className="ghost" onClick={() => confirm(h.name + " — " + t("everything this house wrote goes with it: posts, events, comments, projects, tools and away-notices. Only last night’s backup can bring it back, and restoring it rolls the whole village back with it. Export first if any of this matters.")) && api(`/houses/${h.id}`, { method: "DELETE" }).then(refresh)}>🗑</button>}
           </div>
-        ))}
+        )))}
       </div>
       <div className="parchment">
         <h2>{me.crest} {t("Your house")}</h2>

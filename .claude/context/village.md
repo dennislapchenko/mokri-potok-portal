@@ -63,10 +63,12 @@ Later, only if the houses ask: growing plans (Fields), per-house frost log
 cadastre WFS snapshot 2026-08-15, EPSG:3794 metres, rounded to 0.1 m. The
 GURS open-data licence string is not recorded yet — it must be, before the
 portal moves to the collective's own domain. Drawn as
-SVG with northing flipped; no tiles. `water.json` is the stream and the gully a
-D8 flow model finds in the plot's own window — the villager job is "show me the
-potok", so only courses with real catchment are drawn, and the caption says the
-window ends where the model does.
+SVG with northing flipped; no tiles. `water.json` is the watercourse network a
+D8 flow model finds across the whole village on ARSO 1 m bare earth — the
+villager job is "show me the potok", so a course is drawn once 2 ha of land
+drains into it, and only the three big ones carry the word *potok*. The village
+sits in a closed karst basin, so a course ends where it sinks; the caption says
+that, and says the lines are a model and not a survey.
 
 `house_homes` (house ↔ parcel, many to many): where a house that owns no land
 lives. It puts the renter's crest on the map beside the crest of the house whose

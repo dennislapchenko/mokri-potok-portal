@@ -836,3 +836,55 @@ func TestCodeCommand(t *testing.T) {
 		}
 	}
 }
+
+// TestNextEventIsToday pins the shape of the clock in SQL. An event time is
+// local wall clock and datetime('now') is UTC with a space, so the old
+// comparison read 'T' against ' ' and called every event today upcoming. The
+// project's next event is the one still running, not the one that ended.
+func TestNextEventIsToday(t *testing.T) {
+	_, _, _, zagar := newVillage(t)
+	at := func(d time.Duration) string { return time.Now().Add(d).Format("2006-01-02T15:04") }
+
+	code, obj, _ := zagar.do("POST", "/api/projects", map[string]any{"title": "Beton"})
+	zagar.must(201, code, "project")
+	pid := obj["id"].(float64)
+
+	code, _, _ = zagar.do("POST", "/api/events", map[string]any{
+		"title": "over", "kind": "work", "starts_at": at(-4 * time.Hour), "ends_at": at(-2 * time.Hour), "project_id": pid})
+	zagar.must(201, code, "finished event")
+	code, _, _ = zagar.do("POST", "/api/events", map[string]any{
+		"title": "running", "kind": "work", "starts_at": at(-time.Hour), "ends_at": at(2 * time.Hour), "project_id": pid})
+	zagar.must(201, code, "running event")
+
+	_, _, list := zagar.do("GET", "/api/projects", nil)
+	if len(list) != 1 {
+		t.Fatalf("want 1 project got %d", len(list))
+	}
+	if got := list[0]["next_event"]; got != at(-time.Hour) {
+		t.Fatalf("next_event = %v, want the running event at %s", got, at(-time.Hour))
+	}
+}
+
+// TestExpiredPairingIsSwept: expires_at is RFC3339, so the sweep must compare
+// in that shape. A dead code of another house goes when anyone makes a new one.
+// The dead code died a minute ago, not years ago: a code lives 15 minutes, so
+// the sweep almost always compares two stamps of the same day, where the shape
+// mismatch ('T' against ' ') is the whole comparison.
+func TestExpiredPairingIsSwept(t *testing.T) {
+	srv, _, steward, zagar := newVillage(t)
+	_, me, _ := zagar.do("GET", "/api/me", nil)
+	dead := time.Now().UTC().Add(-time.Minute).Format(time.RFC3339)
+	if _, err := srv.st.Exec(context.Background(),
+		`INSERT INTO pairings(code, house_id, expires_at) VALUES ('000000', ?, ?)`, int64(me["id"].(float64)), dead); err != nil {
+		t.Fatal(err)
+	}
+	code, _, _ := steward.do("POST", "/api/pair", nil)
+	steward.must(201, code, "pair")
+	row, err := srv.st.One(context.Background(), `SELECT count(*) AS n FROM pairings WHERE code='000000'`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if row["n"].(int64) != 0 {
+		t.Fatalf("expired pairing survived: %v", row)
+	}
+}

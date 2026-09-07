@@ -12,7 +12,12 @@ func (s *Server) listProjects(w http.ResponseWriter, r *http.Request) {
 		(SELECT count(*) FROM project_tasks t WHERE t.project_id=p.id) AS tasks,
 		(SELECT count(*) FROM project_tasks t WHERE t.project_id=p.id AND t.state='done') AS tasks_done,
 		(SELECT count(*) FROM project_tasks t WHERE t.project_id=p.id AND t.state='open' AND t.assigned_to IS NULL) AS tasks_free,
-		(SELECT min(e.starts_at) FROM events e WHERE e.project_id=p.id AND e.starts_at >= datetime('now')) AS next_event
+		-- An event time is local wall clock ("2026-09-07T18:00"), datetime('now')
+		-- is UTC with a space, so comparing the two compared 'T' against ' ' and
+		-- called every event today upcoming. strftime gives now in the same shape.
+		-- An event that has begun but not ended is still the next one.
+		(SELECT min(e.starts_at) FROM events e WHERE e.project_id=p.id
+			AND COALESCE(NULLIF(e.ends_at, ''), e.starts_at) >= strftime('%Y-%m-%dT%H:%M', 'now', 'localtime')) AS next_event
 		FROM projects p JOIN houses h ON h.id=p.house_id ORDER BY p.state, COALESCE(p.due_at, '9999'), p.created_at DESC`)
 	if err != nil {
 		fail(w, err)

@@ -198,6 +198,15 @@ does not ship.
   reopens the popup you just closed. It also anchors to the field's right edge
   when the left would hang it off a narrow screen; a popup past the edge makes
   the page pan sideways and taps get eaten as scrolls.
+- **Two clocks live in the database, and they never compare directly.** A time a
+  villager typed is local wall clock, `YYYY-MM-DDTHH:MM`. Anything
+  `datetime('now')` wrote is UTC with a space and seconds — SQLite ignores the
+  container's `TZ`, which only reaches Go's `time.Now()` (so quiet hours are
+  local). `When` in `rooms/shared.tsx` tells the two apart by that space and
+  appends the `Z`; a bare stamp reads as local and shows the village two hours
+  early in summer. SQL comparing a wall-clock column to now needs `strftime` in
+  that column's own shape — `starts_at >= datetime('now')` compares `'T'` with
+  `' '` and quietly answers wrong.
 - **The button frame is the house style, not only the button.** A weather
   forecast day wears `.lesser`'s border, fill and thin shadow (`.w-day`) and is
   not clickable: no hover, no press. Reuse the frame where a small box needs to

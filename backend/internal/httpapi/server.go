@@ -1229,7 +1229,10 @@ func (s *Server) updateTool(w http.ResponseWriter, r *http.Request) {
 // same house can log in. Only one live code per house.
 func (s *Server) createPairing(w http.ResponseWriter, r *http.Request) {
 	h := houseFrom(r)
-	if _, err := s.st.Exec(r.Context(), `DELETE FROM pairings WHERE house_id=? OR expires_at < datetime('now')`, h.ID); err != nil {
+	// expires_at is RFC3339 ("...T19:44:00Z"); datetime('now') is "... 19:44:00",
+	// so the sweep never matched — same instant, different shape. strftime writes
+	// UTC now in the shape the column holds.
+	if _, err := s.st.Exec(r.Context(), `DELETE FROM pairings WHERE house_id=? OR expires_at < strftime('%Y-%m-%dT%H:%M:%SZ', 'now')`, h.ID); err != nil {
 		fail(w, err)
 		return
 	}

@@ -15,10 +15,19 @@ export function Crest({ crest, color }: { crest: string; color: string }) {
   return <span className="crest" style={{ background: color }}>{crest}</span>;
 }
 
+// Two shapes reach When, and only one of them is UTC. A date or a time a
+// villager typed is local wall clock — "2026-09-07T19:30", no seconds — and is
+// already the hour they mean. A stamp SQLite wrote is "2026-09-07 19:30:00" —
+// a space and seconds — and is always UTC, because datetime('now') ignores the
+// container's TZ. Mark that one with a Z so the browser shifts it; a bare
+// string reads as local and shows the village two hours early in summer.
+const parse = (iso: string) =>
+  new Date(iso.length <= 10 ? iso + "T00:00" : iso[10] === " " ? iso.replace(" ", "T") + "Z" : iso);
+
 export function When({ iso }: { iso?: string | null }) {
   const { lang } = useT();
   if (!iso) return null;
-  const d = new Date(iso.length <= 10 ? iso + "T00:00" : iso);
+  const d = parse(iso);
   const opts: Intl.DateTimeFormatOptions = iso.length <= 10 ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" };
   return <time dateTime={iso}>{d.toLocaleString(lang === "sl" ? "sl-SI" : "en-GB", opts)}</time>;
 }

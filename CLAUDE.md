@@ -51,11 +51,13 @@ does not ship.
   exception to "done is a state, never a deletion" below.** Deleting cascades
   through everything that house wrote — posts, its replies inside other houses'
   threads, events, sign-ups, needs, give-aways, away-notices, its tools, wishes,
-  projects, tasks, camp rows, the pictures it put on any project — so **the confirm dialog names them, and says the
+  projects, tasks, camp rows — so **the confirm dialog names them, and says the
   honest thing about undo**: last night's `VACUUM INTO` backup can bring the
   house back, at the price of rolling the whole village back to it, so the
   dialog tells the steward to export first. Never make that button quieter, and
-  never let it claim the loss is absolute — it is a day, not forever. Going home
+  never let it claim the loss is absolute — it is a day, not forever. Pictures
+  the house put on projects stay with the project and lose only their house
+  (owner's decision 2026-09-08). Going home
   for the season is not leaving: that is an away-notice, same as any house that
   winters elsewhere. The softer variant (`houses.left_at`) is designed and not
   built — `docs/design-membership.md` § Off-season, and ending a stay.
@@ -221,9 +223,13 @@ does not ship.
   every send. **Nothing is exempt**: the alarm kind was removed on 2026-09-06
   because a real emergency is a phone call, and a notification nobody is holding
   is worse than none. An event is `event` or `work`, and that is all. The author's
-  house never receives its own event. Push carries a title, a one-line snippet
-  and a route, in human words — `banner_test.go` pins every string, so read it
-  before changing copy.
+  house never receives its own event. **A run's riders hear when it moves**
+  (owner's decision 2026-09-08): editing a run's place or time pushes to the
+  houses whose open needs sit on it, named after the driver whoever edited,
+  and to nobody else — not the driver, not the editor; a notes edit rings
+  nobody. Push carries a title, a one-line snippet and a route, in human words
+  — `banner_test.go` pins every creation banner and `TestMarketEdits` the
+  run-change one, so read them before changing copy.
 - **What a lock screen may say about an empty house.** Anyone holding a phone
   can read a notification. The line: a **multi-day absence is anonymous** — an
   away push names no house, no dates, no notes, only "new notice, open the

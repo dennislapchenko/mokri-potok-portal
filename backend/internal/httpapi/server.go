@@ -895,9 +895,11 @@ func (s *Server) createRun(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
-// updateRun: destination, cutoff_at, notes — owner or steward. No push: the
-// village heard about the run when it was posted.
+// updateRun: destination, cutoff_at, notes — owner or steward. The village
+// heard about the run when it was posted; a changed place or time is told only
+// to the houses whose open needs ride on it (owner's decision 2026-09-08).
 func (s *Server) updateRun(w http.ResponseWriter, r *http.Request) {
+	h := houseFrom(r)
 	id, _ := pathID(r)
 	if !s.ownerOrSteward(w, r, "runs", id) {
 		return
@@ -913,9 +915,36 @@ func (s *Server) updateRun(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	before, err := s.st.One(r.Context(), `SELECT r.destination, r.cutoff_at, r.house_id, d.name AS driver FROM runs r JOIN houses d ON d.id=r.house_id WHERE r.id=?`, id)
+	if err != nil {
+		fail(w, err)
+		return
+	}
 	for _, k := range []string{"destination", "cutoff_at", "notes"} {
 		if _, ok := m[k]; ok {
 			s.st.Exec(r.Context(), `UPDATE runs SET `+k+`=? WHERE id=?`, str(m, k), id)
+		}
+	}
+	dest, at := str(before, "destination"), str(before, "cutoff_at")
+	if v, ok := m["destination"]; ok {
+		dest, _ = v.(string)
+	}
+	if v, ok := m["cutoff_at"]; ok {
+		at, _ = v.(string)
+	}
+	if dest != str(before, "destination") || at != str(before, "cutoff_at") {
+		// The banner names the driver, whoever edited (a steward may): the
+		// rider needs to know whose car moved. Driver and editor hear nothing.
+		driver, driverID := str(before, "driver"), before["house_id"].(int64)
+		riders, _ := s.st.Rows(r.Context(), `SELECT DISTINCT house_id FROM needs WHERE run_id=? AND state!='done' AND house_id NOT IN (?, ?)`, id, driverID, h.ID)
+		for _, n := range riders {
+			s.notifyHouse("runs", n["house_id"].(int64), func(lang string) Payload {
+				return Payload{
+					Title: "🚗 " + driver + tr(lang, " spremeni vožnjo v ", " changes the run to ") + dest,
+					Body:  tr(lang, "odhod ", "leaves ") + humanWhen(at, lang, s.now()) + tr(lang, " — tvoja potreba je na tej vožnji", " — your need rides on it"),
+					URL:   "#/market",
+				}
+			})
 		}
 	}
 	w.WriteHeader(204)

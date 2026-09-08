@@ -1125,6 +1125,26 @@ func TestProjectPhotos(t *testing.T) {
 	if row := exp["project_photos"].([]any)[0].(map[string]any); row["photo"] != nil || row["photo_type"] != "image/jpeg" {
 		t.Fatalf("export: %v", row)
 	}
+	// A picture outlives the house that added it: Žagar adds one and leaves.
+	code, c := upload(zagar, "\xff\xd8three")
+	if code != 201 {
+		t.Fatalf("upload: %d", code)
+	}
+	_, me, _ := zagar.do("GET", "/api/me", nil)
+	code, _, _ = steward.do("DELETE", fmtID("/api/houses/%d", int64(me["id"].(float64))), nil)
+	steward.must(204, code, "delete house")
+	_, p, _ = steward.do("GET", "/api/projects/"+pid, nil)
+	var kept map[string]any
+	for _, f := range p["photos"].([]any) {
+		if f.(map[string]any)["id"] == c["id"] {
+			kept = f.(map[string]any)
+		}
+	}
+	if kept == nil || kept["house_id"] != nil || kept["house_name"] != nil {
+		t.Fatalf("picture after the house left: %v", kept)
+	}
+	code, _, _ = steward.do("GET", "/api/photos/"+itoa(c["id"].(float64)), nil)
+	steward.must(200, code, "orphan picture still served")
 	code, _, _ = steward.do("DELETE", "/api/projects/"+pid, nil)
 	steward.must(204, code, "delete project")
 	code, _, _ = steward.do("GET", "/api/photos/"+itoa(b["id"].(float64)), nil)
@@ -1132,13 +1152,53 @@ func TestProjectPhotos(t *testing.T) {
 }
 
 // TestMarketEdits: a run's destination, time and notes, and an offer's kind,
-// are the poster's to change — or a steward's — and nobody else's.
+// are the poster's to change — or a steward's — and nobody else's. A house
+// whose need rides on the run hears when its place or time moves; a notes
+// edit rings nobody.
 func TestMarketEdits(t *testing.T) {
-	_, _, steward, zagar := newVillage(t)
+	_, fake, steward, zagar := newVillage(t)
+	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	steward.must(204, code, "subscribe")
 	_, run, _ := zagar.do("POST", "/api/runs", map[string]any{"destination": "Kočevje", "cutoff_at": "2026-09-10T09:00"})
 	rid := itoa(run["id"].(float64))
-	code, _, _ := zagar.do("PUT", "/api/runs/"+rid, map[string]any{"destination": "Ribnica", "notes": "Merkur too"})
+	waitFor(t, 1, fake) // the run itself
+	code, _, _ = steward.do("POST", "/api/needs", map[string]any{"text": "kvas", "run_id": run["id"]})
+	steward.must(201, code, "need on the run")
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+	code, _, _ = zagar.do("PUT", "/api/runs/"+rid, map[string]any{"notes": "only notes"})
+	zagar.must(204, code, "notes edit")
+	waitFor(t, 0, fake)
+	code, _, _ = zagar.do("PUT", "/api/runs/"+rid, map[string]any{"destination": "Ribnica", "notes": "Merkur too"})
 	zagar.must(204, code, "edit own run")
+	waitFor(t, 1, fake)
+	var pl Payload
+	json.Unmarshal(fake.payloads[0], &pl)
+	if pl.Title != "🚗 Žagar spremeni vožnjo v Ribnica" || pl.Body != "odhod v četrtek ob 9:00 — tvoja potreba je na tej vožnji" || pl.URL != "#/market" {
+		t.Fatalf("rider push: %q / %q / %q", pl.Title, pl.Body, pl.URL)
+	}
+	// A steward moves the time: the banner still names the driver, and the
+	// steward — who is also a rider — hears nothing about its own edit.
+	_, o, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Tretja"})
+	third := &client{t: t, h: steward.h}
+	_, j, _ := third.do("POST", "/api/join", map[string]any{"code": o["invite"].(map[string]any)["code"]})
+	third.token = j["token"].(string)
+	code, _, _ = third.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/3", "lang": "en", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	third.must(204, code, "subscribe third")
+	code, _, _ = third.do("POST", "/api/needs", map[string]any{"text": "nails", "run_id": run["id"]})
+	third.must(201, code, "third's need")
+	waitFor(t, 2, fake) // the need rang steward and Žagar
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+	code, _, _ = steward.do("PUT", "/api/runs/"+rid, map[string]any{"cutoff_at": "2026-09-10T14:00"})
+	steward.must(204, code, "steward moves the time")
+	waitFor(t, 1, fake)
+	json.Unmarshal(fake.payloads[0], &pl)
+	if fake.sent[0].Endpoint != "https://push.example/3" || pl.Title != "🚗 Žagar changes the run to Ribnica" || pl.Body != "leaves Thursday at 14:00 — your need rides on it" {
+		t.Fatalf("steward edit: %s %q / %q", fake.sent[0].Endpoint, pl.Title, pl.Body)
+	}
 	code, _, _ = zagar.do("PUT", "/api/runs/"+rid, map[string]any{"destination": ""})
 	zagar.must(400, code, "blank destination")
 	_, _, runs := steward.do("GET", "/api/runs", nil)

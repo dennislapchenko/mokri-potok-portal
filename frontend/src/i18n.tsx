@@ -20,7 +20,7 @@ const sl: Record<string, string> = {
   "Next": "Naslednje",
   "Nearest": "Najbližje",
   "outside this month": "izven tega meseca",
-  "everything this house wrote goes with it: posts, events, comments, projects, pictures, tools and away-notices. Only last night’s backup can bring it back, and restoring it rolls the whole village back with it. Export first if any of this matters.": "z njo gre vse, kar je ta hiša napisala: objave, dogodki, komentarji, projekti, slike, orodja in obvestila o odsotnosti. Nazaj jo lahko prinese samo sinočnja varnostna kopija, ta pa zavrti nazaj celo vas. Najprej izvozite, če je kaj od tega pomembno.",
+  "everything this house wrote goes with it: posts, events, comments, projects, tools and away-notices. Only last night’s backup can bring it back, and restoring it rolls the whole village back with it. Export first if any of this matters.": "z njo gre vse, kar je ta hiša napisala: objave, dogodki, komentarji, projekti, orodja in obvestila o odsotnosti. Nazaj jo lahko prinese samo sinočnja varnostna kopija, ta pa zavrti nazaj celo vas. Najprej izvozite, če je kaj od tega pomembno.",
   "Where you live (optional)": "Kje živite (neobvezno)",
   "e.g. in the hut by the stream": "npr. v koči ob potoku",
   "Where to find you — the hut by the stream, the top of the lane. Every house writes one; it shows beside your away-notices.": "Kje vas najdemo — koča ob potoku, vrh poti. Napiše jo vsaka hiša; vidna je ob vaših obvestilih o odsotnosti.",

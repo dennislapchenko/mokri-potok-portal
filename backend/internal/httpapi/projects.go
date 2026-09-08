@@ -55,7 +55,7 @@ func (s *Server) getProject(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	photos, err := s.st.Rows(r.Context(), `SELECT f.id, f.house_id, f.created_at, h.name AS house_name FROM project_photos f JOIN houses h ON h.id=f.house_id WHERE f.project_id=? ORDER BY f.created_at, f.id`, id)
+	photos, err := s.st.Rows(r.Context(), `SELECT f.id, f.house_id, f.created_at, h.name AS house_name FROM project_photos f LEFT JOIN houses h ON h.id=f.house_id WHERE f.project_id=? ORDER BY f.created_at, f.id`, id)
 	if err != nil {
 		fail(w, err)
 		return

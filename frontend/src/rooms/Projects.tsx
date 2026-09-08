@@ -204,7 +204,7 @@ function Pictures({ p, me, reload }: { p: any; me: Me; reload: () => void }) {
       {err && <p className="small" style={{ color: "var(--red)" }}>{err}</p>}
       {photos.length === 0 && <Empty text={t("No pictures yet.")} />}
       {photos.length > 0 && <div className="thumbs">{photos.map((f) => <Thumb key={f.id} f={f} onOpen={(url) => setBig({ url, f })} onDelete={mayDelete(f) ? () => confirm("?") && api(`/photos/${f.id}`, { method: "DELETE" }).then(reload) : undefined} />)}</div>}
-      {big && <div className="lightbox" onClick={() => setBig(null)}><img src={big.url} alt="" /><div className="cap">{big.f.house_name} · <When iso={big.f.created_at} /></div></div>}
+      {big && <div className="lightbox" onClick={() => setBig(null)}><img src={big.url} alt="" /><div className="cap">{big.f.house_name ? big.f.house_name + " · " : ""}<When iso={big.f.created_at} /></div></div>}
     </div>
   );
 }
@@ -213,7 +213,7 @@ function Thumb({ f, onOpen, onDelete }: { f: any; onOpen: (url: string) => void;
   const [url, setUrl] = useState("");
   useEffect(() => { photoURL(`/photos/${f.id}`).then(setUrl).catch(() => setUrl("")); }, [f.id]);
   return (
-    <figure className="thumb" title={f.house_name}>
+    <figure className="thumb" title={f.house_name || ""}>
       {url && <img src={url} alt="" onClick={() => onOpen(url)} />}
       {onDelete && <button type="button" className="ghost thumb-del" onClick={onDelete}>🗑</button>}
     </figure>

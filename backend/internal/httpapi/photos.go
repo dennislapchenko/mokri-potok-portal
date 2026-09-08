@@ -86,7 +86,8 @@ func (s *Server) getProjectPhoto(w http.ResponseWriter, r *http.Request) {
 	servePhoto(w, row)
 }
 
-// deleteProjectPhoto: the house that added it, the project's house, or a steward.
+// deleteProjectPhoto: the house that added it, the project's house, or a
+// steward. house_id is NULL once the adding house has left the village.
 func (s *Server) deleteProjectPhoto(w http.ResponseWriter, r *http.Request) {
 	h := houseFrom(r)
 	id, _ := pathID(r)
@@ -99,7 +100,8 @@ func (s *Server) deleteProjectPhoto(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "no photo")
 		return
 	}
-	if row["house_id"].(int64) != h.ID && row["project_house"].(int64) != h.ID && !h.IsSteward {
+	by, _ := row["house_id"].(int64)
+	if by != h.ID && row["project_house"].(int64) != h.ID && !h.IsSteward {
 		writeErr(w, 403, "not yours")
 		return
 	}

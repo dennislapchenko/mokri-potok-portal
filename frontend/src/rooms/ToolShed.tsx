@@ -18,7 +18,7 @@ export const CATEGORIES = [
 
 function Photo({ id, version, onOpen }: { id: number; version: number; onOpen: (url: string) => void }) {
   const [url, setUrl] = useState<string>("");
-  useEffect(() => { photoURL(id, version).then(setUrl).catch(() => setUrl("")); }, [id, version]);
+  useEffect(() => { photoURL(`/tools/${id}/photo`, version).then(setUrl).catch(() => setUrl("")); }, [id, version]);
   if (!url) return <div className="tool-photo empty" />;
   return <img className="tool-photo" src={url} alt="" onClick={() => onOpen(url)} />;
 }
@@ -40,6 +40,10 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [ef, setEf] = useState({ name: "", notes: "", category: "other" });
+  const startEdit = (x: any) => { setEf({ name: x.name, notes: x.notes || "", category: x.category }); setEditing(x.id); };
+  const saveEdit = async (id: number) => { await api(`/tools/${id}`, { method: "PUT", body: ef }); setEditing(null); reload(); };
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +51,7 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
     setBusy(true);
     try {
       const { id } = await api<{ id: number }>("/tools", { method: "POST", body: f });
-      if (file) await uploadPhoto(id, file);
+      if (file) await uploadPhoto(`/tools/${id}/photo`, file);
       setF({ name: "", notes: "", category: "other" }); setFile(null); if (fileRef.current) fileRef.current.value = "";
       setAdding(false); reload();
     } finally { setBusy(false); }
@@ -55,7 +59,7 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
   const take = (id: number, v: boolean) => api(`/tools/${id}`, { method: "PUT", body: { take: v } }).then(reload);
   const replacePhoto = async (id: number, fl: File | null) => {
     if (!fl) return;
-    await uploadPhoto(id, fl);
+    await uploadPhoto(`/tools/${id}/photo`, fl);
     setVer((v) => ({ ...v, [id]: (v[id] || 0) + 1 }));
     reload();
   };
@@ -68,6 +72,16 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
   const Tool = ({ x }: { x: any }) => (
     <div className={"card tool" + (x.held_by ? " out" : "")} style={{ borderLeftColor: x.held_by ? "var(--parch3)" : "var(--green)" }}>
       <div className="tool-main">
+        {editing === x.id ? (
+          <form className="inline" onSubmit={(e) => { e.preventDefault(); saveEdit(x.id); }}>
+            <div className="row">
+              <label>{t("I share a tool")}<input value={ef.name} onChange={(e) => setEf({ ...ef, name: e.target.value })} required maxLength={80} autoFocus /></label>
+              <label>{t("Category")}<select value={ef.category} onChange={(e) => setEf({ ...ef, category: e.target.value })}>{CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.icon} {t(c.name)}</option>)}</select></label>
+              <label>{t("Notes")}<input value={ef.notes} onChange={(e) => setEf({ ...ef, notes: e.target.value })} maxLength={200} /></label>
+            </div>
+            <div className="submit"><button type="button" className="ghost" onClick={() => setEditing(null)}>✕</button><button className="primary" type="submit">{t("Save")}</button></div>
+          </form>
+        ) : (<>
         <div className="head">
           <Link to="/houses" title={x.house_name} className="crest-link"><Crest crest={x.house_crest} color={x.house_color} /></Link>
           <strong>{x.name}</strong>
@@ -75,6 +89,7 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
           {x.held_by ? <span className="tag taken">{x.held_by_crest} {x.held_by_name}</span> : <span className="tag open">{t("in the shed")}</span>}
         </div>
         {(x.held_since || x.notes) && <div className="small">{x.held_since ? <When iso={x.held_since} /> : null}{x.held_since && x.notes ? " · " : ""}{x.notes}</div>}
+        </>)}
         <div className="actions">
           {!x.held_by && <button className="primary" onClick={() => take(x.id, true)}>🤲 {t("I take it")}</button>}
           {x.held_by === me.id && <button onClick={() => take(x.id, false)}>↩ {t("I brought it back")}</button>}
@@ -82,6 +97,7 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
           {canEdit(me, x) && (
             <label className="btn-file">📷<input type="file" accept="image/*" capture="environment" onChange={(e) => replacePhoto(x.id, e.target.files?.[0] || null)} /></label>
           )}
+          {canEdit(me, x) && editing !== x.id && <button className="ghost" onClick={() => startEdit(x)}>✎ {t("Edit")}</button>}
           {canEdit(me, x) && <button className="ghost" onClick={() => confirm(x.name + "?") && api(`/tools/${x.id}`, { method: "DELETE" }).then(reload)}>🗑</button>}
         </div>
       </div>

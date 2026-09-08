@@ -38,7 +38,7 @@ export function Board({ me, items, reload }: { me: Me; items: any[]; reload: () 
       {roots.length === 0 && <Empty text={t("No posts yet. Be the first.")} />}
       {roots.map((p) => (
         <div key={p.id} className={"card" + (p.pinned ? " pinned" : "")}>
-          <div className="head"><Crest crest={p.house_crest} color={p.house_color} /><span className="who">{p.house_name}{p.author ? ` · ${p.author}` : ""}</span>{p.pinned ? <span className="tag alarm">📌 {t("Pinned")}</span> : null}<When iso={p.created_at} /></div>
+          <div className="head"><Crest crest={p.house_crest} color={p.house_color} /><span className="who">{p.house_name}{p.author && p.author !== p.house_name ? ` · ${p.author}` : ""}</span>{p.pinned ? <span className="tag alarm">📌 {t("Pinned")}</span> : null}<When iso={p.created_at} /></div>
           <div className="body">{p.body}</div>
           <div className="actions">
             <button className="ghost" onClick={() => setReplyTo(p.id)}>↩ {t("Reply")}</button>
@@ -47,7 +47,7 @@ export function Board({ me, items, reload }: { me: Me; items: any[]; reload: () 
           </div>
           {replies(p.id).map((r) => (
             <div key={r.id} className="card" style={{ marginLeft: "1.5rem", borderLeftColor: "var(--parch3)" }}>
-              <div className="head"><Crest crest={r.house_crest} color={r.house_color} /><span className="who">{r.house_name}{r.author ? ` · ${r.author}` : ""}</span><When iso={r.created_at} /></div>
+              <div className="head"><Crest crest={r.house_crest} color={r.house_color} /><span className="who">{r.house_name}{r.author && r.author !== r.house_name ? ` · ${r.author}` : ""}</span><When iso={r.created_at} /></div>
               <div className="body">{r.body}</div>
               {canEdit(me, r) && <div className="actions"><button className="ghost" onClick={() => confirm("?") && api(`/posts/${r.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button></div>}
             </div>

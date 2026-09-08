@@ -93,6 +93,7 @@ func (s *Server) routes() {
 	// Market
 	m.HandleFunc("GET /api/runs", s.requireHouse(s.listRuns))
 	m.HandleFunc("POST /api/runs", s.requireHouse(s.createRun))
+	m.HandleFunc("PUT /api/runs/{id}", s.requireHouse(s.updateRun))
 	m.HandleFunc("DELETE /api/runs/{id}", s.requireHouse(s.deleteRow("runs")))
 	m.HandleFunc("GET /api/needs", s.requireHouse(s.listNeeds))
 	m.HandleFunc("POST /api/needs", s.requireHouse(s.createNeed))
@@ -124,6 +125,9 @@ func (s *Server) routes() {
 	m.HandleFunc("POST /api/projects/{id}/tasks", s.requireHouse(s.createTask))
 	m.HandleFunc("PUT /api/tasks/{id}", s.requireHouse(s.updateTask))
 	m.HandleFunc("DELETE /api/tasks/{id}", s.requireHouse(s.deleteTask))
+	m.HandleFunc("POST /api/projects/{id}/photos", s.requireHouse(s.addProjectPhoto))
+	m.HandleFunc("GET /api/photos/{id}", s.requireHouse(s.getProjectPhoto))
+	m.HandleFunc("DELETE /api/photos/{id}", s.requireHouse(s.deleteProjectPhoto))
 	// Campground
 	m.HandleFunc("GET /api/camp", s.requireHouse(s.listCamp))
 	m.HandleFunc("POST /api/camp", s.requireHouse(s.createCamp))
@@ -891,6 +895,32 @@ func (s *Server) createRun(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
+// updateRun: destination, cutoff_at, notes — owner or steward. No push: the
+// village heard about the run when it was posted.
+func (s *Server) updateRun(w http.ResponseWriter, r *http.Request) {
+	id, _ := pathID(r)
+	if !s.ownerOrSteward(w, r, "runs", id) {
+		return
+	}
+	m, err := readJSON(r)
+	if err != nil {
+		writeErr(w, 400, "bad json")
+		return
+	}
+	for _, k := range []string{"destination", "cutoff_at"} {
+		if _, ok := m[k]; ok && str(m, k) == "" {
+			writeErr(w, 400, k+" required")
+			return
+		}
+	}
+	for _, k := range []string{"destination", "cutoff_at", "notes"} {
+		if _, ok := m[k]; ok {
+			s.st.Exec(r.Context(), `UPDATE runs SET `+k+`=? WHERE id=?`, str(m, k), id)
+		}
+	}
+	w.WriteHeader(204)
+}
+
 func (s *Server) listNeeds(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.st.Rows(r.Context(), `SELECT x.*,`+houseJoin+`, t.name AS taken_by_name FROM needs x JOIN houses h ON h.id=x.house_id
 		LEFT JOIN houses t ON t.id=x.taken_by WHERE x.state!='done' OR x.created_at >= datetime('now','-7 days') ORDER BY x.created_at DESC LIMIT 500`)
@@ -944,10 +974,7 @@ func (s *Server) createOffer(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "text required")
 		return
 	}
-	tag := str(m, "tag")
-	if tag != "seeds" && tag != "surplus" && tag != "joint" {
-		tag = "giveaway"
-	}
+	tag := offerTag(str(m, "tag"))
 	id, err := s.st.Exec(r.Context(), `INSERT INTO offers(house_id, text, tag) VALUES (?,?,?)`, houseFrom(r).ID, str(m, "text"), tag)
 	if err != nil {
 		fail(w, err)
@@ -966,6 +993,13 @@ func (s *Server) createOffer(w http.ResponseWriter, r *http.Request) {
 		return Payload{Title: icon + " " + houseFrom(r).Name + what, Body: snippet(str(m, "text"), 140), URL: "#/market"}
 	})
 	writeJSON(w, 201, map[string]any{"id": id})
+}
+
+func offerTag(tag string) string {
+	if tag != "seeds" && tag != "surplus" && tag != "joint" {
+		return "giveaway"
+	}
+	return tag
 }
 
 func (s *Server) updateOffer(w http.ResponseWriter, r *http.Request) {
@@ -1020,6 +1054,13 @@ func (s *Server) updateClaimable(w http.ResponseWriter, r *http.Request, table, 
 			return
 		}
 		s.st.Exec(r.Context(), `UPDATE `+table+` SET text=? WHERE id=?`, t, id)
+	}
+	if tag := str(m, "tag"); tag != "" && table == "offers" {
+		if !owner {
+			writeErr(w, 403, "not yours")
+			return
+		}
+		s.st.Exec(r.Context(), `UPDATE offers SET tag=? WHERE id=?`, offerTag(tag), id)
 	}
 	w.WriteHeader(204)
 }
@@ -1117,10 +1158,13 @@ func (s *Server) updateAway(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 	out := map[string]any{"exported_at": time.Now().UTC().Format(time.RFC3339)}
-	for _, t := range []string{"houses", "house_parcels", "house_homes", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "wish_options", "comments", "projects", "project_tasks", "camp_takings"} {
+	for _, t := range []string{"houses", "house_parcels", "house_homes", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "wish_options", "comments", "projects", "project_tasks", "project_photos", "camp_takings"} {
 		cols := "*"
-		if t == "tools" { // photos are bytes, not text — they stay in the SQLite backup
+		switch t { // photos are bytes, not text — they stay in the SQLite backup
+		case "tools":
 			cols = "id, house_id, name, notes, category, held_by, held_since, reminded_at, created_at"
+		case "project_photos":
+			cols = "id, project_id, house_id, photo_type, created_at"
 		}
 		rows, err := s.st.Rows(r.Context(), `SELECT `+cols+` FROM `+t)
 		if err != nil {

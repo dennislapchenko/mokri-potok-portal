@@ -106,7 +106,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
                 </>) : null}
                 <button className="ghost" onClick={() => rotate(h.id)}>♻ {t("New link")}</button>
                 {h.id !== me.id && <button className="ghost" onClick={() => toggleSteward(h)}>{h.is_steward === 1 ? t("Remove steward") : t("Make steward")}</button>}
-                {h.id !== me.id && <button className="ghost" onClick={() => confirm(h.name + " — " + t("everything this house wrote goes with it: posts, events, comments, projects, tools and away-notices. Only last night’s backup can bring it back, and restoring it rolls the whole village back with it. Export first if any of this matters.")) && api(`/houses/${h.id}`, { method: "DELETE" }).then(refresh)}>🗑</button>}
+                {h.id !== me.id && <button className="ghost" onClick={() => confirm(h.name + " — " + t("everything this house wrote goes with it: posts, events, comments, projects, pictures, tools and away-notices. Only last night’s backup can bring it back, and restoring it rolls the whole village back with it. Export first if any of this matters.")) && api(`/houses/${h.id}`, { method: "DELETE" }).then(refresh)}>🗑</button>}
               </div>
             )}
             {steward && invites[h.id]?.code && <div className="small" style={{ wordBreak: "break-all" }}>{inviteLink(invites[h.id].code!)}</div>}
@@ -160,7 +160,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
             {h.homes?.length ? <span className="small">{t("Lives on the land of")} {livesOn(h)}</span> : null}
             {steward && <button className="lesser" onClick={() => setEditC({ id: h.id, name: h.name, crest: h.crest, color: h.color })}>✎ {t("Edit")}</button>}
             {steward && <button className="lesser" onClick={() => startAssign(h)}>🗺️ {t("Assign land")}</button>}
-            {steward && <button className="ghost" onClick={() => confirm(h.name + " — " + t("everything this house wrote goes with it: posts, events, comments, projects, tools and away-notices. Only last night’s backup can bring it back, and restoring it rolls the whole village back with it. Export first if any of this matters.")) && api(`/houses/${h.id}`, { method: "DELETE" }).then(refresh)}>🗑</button>}
+            {steward && <button className="ghost" onClick={() => confirm(h.name + " — " + t("everything this house wrote goes with it: posts, events, comments, projects, pictures, tools and away-notices. Only last night’s backup can bring it back, and restoring it rolls the whole village back with it. Export first if any of this matters.")) && api(`/houses/${h.id}`, { method: "DELETE" }).then(refresh)}>🗑</button>}
           </div>
         )))}
       </div>

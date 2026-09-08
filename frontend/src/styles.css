@@ -234,7 +234,15 @@ details.parchment[open] > summary { border-bottom: 2px solid var(--parch3); padd
 .chip { padding: .05rem .6rem; font-size: .85rem; border-radius: 999px; }
 .chip.on { background: linear-gradient(#d9b45a, #b88d2c); border-color: #5a3d12; }
 .chip-label { font-size: .72rem; color: var(--ink3); font-style: italic; padding-left: .3rem; line-height: 1; }
-.lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(20,12,6,.88); display: flex; align-items: center; justify-content: center; cursor: zoom-out; padding: 1rem; }
+/* Project pictures: a thin strip of square thumbnails that scrolls sideways.
+   Each wears the .lesser / .w-day frame; a tall or wide picture is cropped to
+   its centre square (object-fit: cover), never squashed. */
+.thumbs { display: flex; gap: .5rem; overflow-x: auto; padding: .2rem .1rem .5rem; scroll-snap-type: x proximity; }
+.thumb { flex: 0 0 auto; width: 84px; height: 84px; margin: 0; position: relative; padding: 3px; border: 1.5px solid var(--wood2); border-radius: 6px; background: linear-gradient(#f3e8cc, #e4d3a8); box-shadow: 0 1px 0 #3a281a; scroll-snap-align: start; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 3px; display: block; cursor: zoom-in; }
+.thumb .thumb-del { position: absolute; right: 1px; bottom: 1px; padding: 0 .25rem; font-size: .8rem; line-height: 1.4; background: rgba(241,228,198,.92); border-radius: 4px; }
+.lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(20,12,6,.88); display: flex; flex-direction: column; gap: .5rem; align-items: center; justify-content: center; cursor: zoom-out; padding: 1rem; }
+.lightbox .cap { color: var(--parch); font-family: "IM Fell English", Georgia, serif; font-size: 1rem; }
 .lightbox img { max-width: 100%; max-height: 100%; border: 4px solid var(--parch); border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
 .balloon { padding: 0 .2rem; font-size: .95rem; }
 select.assign { width: auto; display: inline-block; padding: .1rem .4rem; font-size: .9rem; }

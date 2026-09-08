@@ -1,15 +1,11 @@
 package httpapi
 
 import (
-	"io"
 	"net/http"
 	"strings"
 )
 
-// Tool photos and the wishlist. A photo is resized in the browser to ~1000 px
-// and kept as a blob, so the nightly SQLite backup carries it and nothing else
-// needs a file store. <img> cannot send a bearer header, so the frontend fetches
-// the bytes with auth and shows an object URL.
+// Tool photos and the wishlist. How a photo is read and served: photos.go.
 
 var toolCategories = []string{"power", "garden", "other"}
 
@@ -22,14 +18,8 @@ func (s *Server) putToolPhoto(w http.ResponseWriter, r *http.Request) {
 	if !s.ownerOrSteward(w, r, "tools", id) {
 		return
 	}
-	ct := r.Header.Get("Content-Type")
-	if ct != "image/jpeg" && ct != "image/png" && ct != "image/webp" {
-		writeErr(w, 415, "jpeg, png or webp")
-		return
-	}
-	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 2<<20))
-	if err != nil {
-		writeErr(w, 413, "photo over 2 MB — the app should have shrunk it")
+	body, ct, ok := readPhoto(w, r)
+	if !ok {
 		return
 	}
 	if _, err := s.st.Exec(r.Context(), `UPDATE tools SET photo=?, photo_type=? WHERE id=?`, body, ct, id); err != nil {
@@ -59,16 +49,7 @@ func (s *Server) getToolPhoto(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "no photo")
 		return
 	}
-	var b []byte
-	switch v := row["photo"].(type) {
-	case []byte:
-		b = v
-	case string:
-		b = []byte(v)
-	}
-	w.Header().Set("Content-Type", row["photo_type"].(string))
-	w.Header().Set("Cache-Control", "private, max-age=86400")
-	w.Write(b)
+	servePhoto(w, row)
 }
 
 // ---- wishlist ------------------------------------------------------------

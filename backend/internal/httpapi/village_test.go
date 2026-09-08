@@ -1069,3 +1069,93 @@ func TestPageCarriesCSP(t *testing.T) {
 }
 
 func fmtID(f string, id int64) string { return fmt.Sprintf(f, id) }
+
+// TestProjectPhotos: any house puts a picture on a project; the project lists
+// it without the bytes; the bytes need a token; the uploader, the project's
+// house or a steward removes it; deleting the project takes its pictures with
+// it; the export never carries the blob.
+func TestProjectPhotos(t *testing.T) {
+	srv, _, steward, zagar := newVillage(t)
+	_, pr, _ := steward.do("POST", "/api/projects", map[string]any{"title": "Ograja"})
+	pid := itoa(pr["id"].(float64))
+	upload := func(c *client, body string) (int, map[string]any) {
+		req := httptest.NewRequest("POST", "/api/projects/"+pid+"/photos", bytes.NewReader([]byte(body)))
+		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set("Content-Type", "image/jpeg")
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, req)
+		var o map[string]any
+		json.Unmarshal(rec.Body.Bytes(), &o)
+		return rec.Code, o
+	}
+	code, a := upload(zagar, "\xff\xd8one")
+	if code != 201 {
+		t.Fatalf("upload by another house: %d", code)
+	}
+	code, b := upload(steward, "\xff\xd8two")
+	if code != 201 {
+		t.Fatalf("upload by owner: %d", code)
+	}
+	_, p, _ := zagar.do("GET", "/api/projects/"+pid, nil)
+	photos := p["photos"].([]any)
+	if len(photos) != 2 || photos[0].(map[string]any)["house_name"] != "Žagar" {
+		t.Fatalf("photos: %v", photos)
+	}
+	if _, ok := photos[0].(map[string]any)["photo"]; ok {
+		t.Fatal("project leaks the blob")
+	}
+	req := httptest.NewRequest("GET", "/api/photos/"+itoa(a["id"].(float64)), nil)
+	req.Header.Set("Authorization", "Bearer "+steward.token)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != 200 || rec.Header().Get("Content-Type") != "image/jpeg" || rec.Body.String() != "\xff\xd8one" {
+		t.Fatalf("photo get: %d %s", rec.Code, rec.Body.String())
+	}
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/api/photos/"+itoa(a["id"].(float64)), nil))
+	if rec.Code != 401 {
+		t.Fatalf("photo without token: %d", rec.Code)
+	}
+	code, _, _ = zagar.do("DELETE", "/api/photos/"+itoa(b["id"].(float64)), nil)
+	zagar.must(403, code, "delete the owner's picture")
+	code, _, _ = steward.do("DELETE", "/api/photos/"+itoa(a["id"].(float64)), nil)
+	steward.must(204, code, "project house deletes a neighbour's picture")
+	code, exp, _ := steward.do("GET", "/api/export", nil)
+	steward.must(200, code, "export")
+	if row := exp["project_photos"].([]any)[0].(map[string]any); row["photo"] != nil || row["photo_type"] != "image/jpeg" {
+		t.Fatalf("export: %v", row)
+	}
+	code, _, _ = steward.do("DELETE", "/api/projects/"+pid, nil)
+	steward.must(204, code, "delete project")
+	code, _, _ = steward.do("GET", "/api/photos/"+itoa(b["id"].(float64)), nil)
+	steward.must(404, code, "picture gone with the project")
+}
+
+// TestMarketEdits: a run's destination, time and notes, and an offer's kind,
+// are the poster's to change — or a steward's — and nobody else's.
+func TestMarketEdits(t *testing.T) {
+	_, _, steward, zagar := newVillage(t)
+	_, run, _ := zagar.do("POST", "/api/runs", map[string]any{"destination": "Kočevje", "cutoff_at": "2026-09-10T09:00"})
+	rid := itoa(run["id"].(float64))
+	code, _, _ := zagar.do("PUT", "/api/runs/"+rid, map[string]any{"destination": "Ribnica", "notes": "Merkur too"})
+	zagar.must(204, code, "edit own run")
+	code, _, _ = zagar.do("PUT", "/api/runs/"+rid, map[string]any{"destination": ""})
+	zagar.must(400, code, "blank destination")
+	_, _, runs := steward.do("GET", "/api/runs", nil)
+	if runs[0]["destination"] != "Ribnica" || runs[0]["notes"] != "Merkur too" {
+		t.Fatalf("run: %v", runs[0])
+	}
+	code, _, _ = steward.do("PUT", "/api/runs/"+rid, map[string]any{"notes": "steward may"})
+	steward.must(204, code, "steward edits")
+
+	_, off, _ := steward.do("POST", "/api/offers", map[string]any{"text": "Sadike", "tag": "seeds"})
+	oid := itoa(off["id"].(float64))
+	code, _, _ = zagar.do("PUT", "/api/offers/"+oid, map[string]any{"tag": "surplus"})
+	zagar.must(403, code, "another house edits the kind")
+	code, _, _ = steward.do("PUT", "/api/offers/"+oid, map[string]any{"text": "Sadike paradižnika", "tag": "spaceships"})
+	steward.must(204, code, "owner edits")
+	_, _, offers := zagar.do("GET", "/api/offers", nil)
+	if offers[0]["text"] != "Sadike paradižnika" || offers[0]["tag"] != "giveaway" {
+		t.Fatalf("offer: %v", offers[0])
+	}
+}

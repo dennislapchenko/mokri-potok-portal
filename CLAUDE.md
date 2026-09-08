@@ -51,7 +51,7 @@ does not ship.
   exception to "done is a state, never a deletion" below.** Deleting cascades
   through everything that house wrote — posts, its replies inside other houses'
   threads, events, sign-ups, needs, give-aways, away-notices, its tools, wishes,
-  projects, tasks, camp rows — so **the confirm dialog names them, and says the
+  projects, tasks, camp rows, the pictures it put on any project — so **the confirm dialog names them, and says the
   honest thing about undo**: last night's `VACUUM INTO` backup can bring the
   house back, at the price of rolling the whole village back to it, so the
   dialog tells the steward to export first. Never make that button quieter, and
@@ -171,11 +171,17 @@ does not ship.
   (day 1, 3, 7, 15), read off two timestamps — never a counter, never the
   owner, never in quiet hours. A cap "after N reminders" would need a count;
   do not add one.
-- **Photos stay in the database.** A tool photo is shrunk in the browser and
-  stored as a BLOB, so the SQLite backup is the whole village. The list and the
-  export never carry the bytes; `GET /api/tools/{id}/photo` needs a token.
-  The export hardcodes the `tools` column list — a new `tools` column must be
-  added there too, or it silently drops out of the exit path.
+- **Photos stay in the database.** A tool photo, or a picture on a project, is
+  shrunk in the browser and stored as a BLOB (`photos.go` reads and serves
+  both), so the SQLite backup is the whole village. Lists and the export never
+  carry the bytes; `GET /api/tools/{id}/photo` and `GET /api/photos/{id}` need
+  a token. The export hardcodes the `tools` and `project_photos` column lists —
+  a new column on either must be added there too, or it silently drops out of
+  the exit path. **Any house may put a picture on any project** — a project is
+  the village's, like its events — and the full-size view says which house and
+  when; the house that added it, the project's house or a steward takes it
+  down. The input opens the chooser, not the camera: before-and-after pictures
+  are already in the gallery.
 - **Wishlist names are not votes.** Never sort, badge or count by how many
   houses want a thing. A wish ends when the wisher marks it arrived.
 - **A task is taken by any house, or handed to one by its creator.** Any
@@ -302,7 +308,7 @@ frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons, 
                     icon.svg is hand-drawn paths, full-bleed, content inside the central 80 % safe circle
                     (an emoji glyph renders off-centre and monochrome — do not go back to one)
                     src/push.ts, src/Install.tsx, src/AddPhone.tsx, src/photo.ts (auth'd photo fetch + browser-side shrink)
-backend/internal/httpapi/shed.go   tool photos as BLOBs (≤2 MB, served with auth), wishlist; remind.go = return nudges
+backend/internal/httpapi/shed.go   tool photo routes, wishlist; photos.go = how a photo is read and served (≤2 MB, auth) + project pictures; remind.go = return nudges
                     threads.go = comments on any subject + wish options; weather.go = ARSO, server-side; static.go = the embedded frontend
 docs/               design docs the owner and the assistant decide on together (navigation growth, Projects, Campground,
                     and `design-membership.md` — accounts for people who live here without land, options only, nothing built);

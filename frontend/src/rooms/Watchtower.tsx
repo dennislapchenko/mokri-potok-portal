@@ -14,6 +14,10 @@ export function Watchtower({ me }: { me: Me }) {
     setF({ from_date: "", to_date: "", notes: "" }); reload();
   };
   const today = new Date().toISOString().slice(0, 10);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [ef, setEf] = useState({ from_date: "", to_date: "", notes: "" });
+  const startEdit = (a: any) => { setEf({ from_date: a.from_date, to_date: a.to_date, notes: a.notes || "" }); setEditing(a.id); };
+  const saveEdit = async (id: number) => { await api(`/away/${id}`, { method: "PUT", body: ef }); setEditing(null); reload(); };
   return (
     <div className="parchment">
       <h2>🕯️ {t("Watchtower")} <span className="sub">{t("who is away")}</span></h2>
@@ -31,13 +35,25 @@ export function Watchtower({ me }: { me: Me }) {
         const now = a.from_date <= today && a.to_date >= today;
         return (
           <div key={a.id} className="card" style={{ borderLeftColor: now ? "var(--red)" : "var(--brass)" }}>
+            {editing === a.id ? (
+              <form className="inline" onSubmit={(e) => { e.preventDefault(); saveEdit(a.id); }}>
+                <div className="row">
+                  <label>{t("From")}<DatePicker required value={ef.from_date} onChange={(v) => setEf({ ...ef, from_date: v, to_date: ef.to_date && ef.to_date < v ? v : ef.to_date })} /></label>
+                  <label>{t("To")}<DatePicker required min={ef.from_date} value={ef.to_date} onChange={(v) => setEf({ ...ef, to_date: v })} /></label>
+                </div>
+                <label>{t("Notes")}<textarea value={ef.notes} onChange={(e) => setEf({ ...ef, notes: e.target.value })} maxLength={2000} /></label>
+                <div className="submit"><button type="button" className="ghost" onClick={() => setEditing(null)}>✕</button><button className="primary" type="submit">{t("Save")}</button></div>
+              </form>
+            ) : (<>
             <div className="head"><Crest crest={a.house_crest} color={a.house_color} /><span className="who">{a.house_name}</span>{now && <span className="tag alarm">{t("away now")}</span>}<span className="when"><When iso={a.from_date} /> → <When iso={a.to_date} /></span></div>
             {a.house_about && <div className="small muted">{a.house_about}</div>}
             {a.notes && <div className="body">{a.notes}</div>}
+            </>)}
             <div className="small">{a.watcher ? <>👁 {t("Watched by")}: <strong>{a.watcher_name}</strong></> : <span className="muted">—</span>}</div>
             <div className="actions">
               {!a.watcher && a.house_id !== me.id && <button className="primary" onClick={() => api(`/away/${a.id}`, { method: "PUT", body: { watch: true } }).then(reload)}>👁 {t("I will watch")}</button>}
               {a.watcher === me.id && <button onClick={() => api(`/away/${a.id}`, { method: "PUT", body: { watch: false } }).then(reload)}>{t("Step back")}</button>}
+              {canEdit(me, a) && editing !== a.id && <button className="ghost" onClick={() => startEdit(a)}>✎ {t("Edit")}</button>}
               {canEdit(me, a) && <button className="ghost" onClick={() => confirm("?") && api(`/away/${a.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button>}
             </div>
           </div>

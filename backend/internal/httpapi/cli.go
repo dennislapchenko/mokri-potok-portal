@@ -11,7 +11,7 @@ import (
 // the credential to use it is SSH access to the machine, which is the strongest
 // one the village has:
 //
-//	docker exec mokri-potok-potok-api-1 /server code "Solnce"
+//	docker exec mokri-potok-potok-api-1 /server code "<house>"
 //
 // It rotates that house's invite and prints the link. The old link stops
 // working, which is the point: an invite that leaks is replaced, not shared.
@@ -33,7 +33,7 @@ func (s *Server) Code(match string) error {
 			}
 			fmt.Printf("  %-30s %s%s\n", r["name"], r["kind"], star)
 		}
-		fmt.Println("\nrun again with part of a name, e.g. /server code \"Solnce\"")
+		fmt.Println("\nrun again with part of a name, e.g. /server code \"<house>\"")
 		return nil
 	}
 	var hit map[string]any

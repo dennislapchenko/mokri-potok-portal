@@ -44,6 +44,9 @@ does not ship.
   itself on the map as a landholder, and a parcel it already holds is dropped
   rather than printed back at it. Marking a parcel nobody holds is allowed —
   living somewhere is a fact whether or not the app knows the owner yet.
+  The 🗺 button in the Houses room that opens the picker **stays** (owner's
+  decision 2026-09-08): dropping the sentence about where a house lives did not
+  drop the mark, which is the answer that replaced it.
 - **A stay ends by deleting the house** (owner's decision 2026-09-06), and only
   a steward can. **This is the one deletion the app allows, and the deliberate
   exception to "done is a state, never a deletion" below.** Deleting cascades
@@ -93,6 +96,11 @@ does not ship.
   is `backdrop.jpg` behind the gate — the owner chose it knowing the repo is
   public; provenance `TBD`. Away-notices are
   burglary information: they never leave the logged-in app (no digests, no feeds).
+  **The away card carries the dates and the note its house wrote, and nothing
+  else** (owner's decision 2026-09-08, when the dropped `houses.about` left the
+  card a line short): the map mark was considered for that line and refused —
+  the room answers who is away and until when, and a house's address is not
+  part of the answer.
 - **No tallies of favours.** "Taken by", "claimed by", "watched by" are
   acknowledgments. No counts, points, leaderboards, streaks. Ever.
 - **Water on the map is one file and one component.** `map/Water.tsx` draws
@@ -179,7 +187,15 @@ does not ship.
   the village's, like its events — and the full-size view says which house and
   when; the house that added it, the project's house or a steward takes it
   down. The input opens the chooser, not the camera: before-and-after pictures
-  are already in the gallery.
+  are already in the gallery. **The full-size view walks the strip** (owner's
+  decision 2026-09-08): the arrow keys on a computer, a swipe on a phone, and
+  the ‹ › buttons that make both discoverable. It never wraps around — each
+  button is absent at its end of the strip, so the end is visible instead of
+  looping back unannounced. A swipe must be **more sideways than vertical**,
+  and the view sets `touch-action: none`, because a finger trying to scroll
+  must neither move the strip nor drag the page behind it. The picture on
+  screen stays until the next one has loaded: an empty frame reads as a
+  closed or broken view on a slow phone.
 - **Wishlist names are not votes.** Never sort, badge or count by how many
   houses want a thing. A wish ends when the wisher marks it arrived.
 - **A task is taken by any house, or handed to one by its creator.** Any
@@ -224,13 +240,21 @@ does not ship.
   every send. **Nothing is exempt**: the alarm kind was removed on 2026-09-06
   because a real emergency is a phone call, and a notification nobody is holding
   is worse than none. An event is `event` or `work`, and that is all. The author's
-  house never receives its own event. **A run's riders hear when it moves**
-  (owner's decision 2026-09-08): editing a run's place or time pushes to the
-  houses whose open needs sit on it, named after the driver whoever edited,
-  and to nobody else — not the driver, not the editor; a notes edit rings
-  nobody. Push carries a title, a one-line snippet and a route, in human words
-  — `banner_test.go` pins every creation banner and `TestMarketEdits` the
-  run-change one, so read them before changing copy.
+  house never receives its own event. **A run's riders hear when it moves and
+  when it is called off** (owner's decision 2026-09-08): editing a run's place
+  or time, or deleting the run, pushes to the houses whose open needs sit on
+  it, and to nobody else — not the driver, not the editor; a notes edit rings
+  nobody. Both banners name the driver, but a **cancellation names it as a
+  label, not as an actor** — a steward may be the one who deleted the row, and
+  "Žagar calls it off" would blame a house for something it did not do; moving
+  a run is neutral enough to keep the active form. Deleting needs its own
+  handler (`deleteRun`, not `deleteRow`) because the riders have to be read
+  before the row goes: `needs.run_id` is `ON DELETE SET NULL`, so the need
+  outlives the car, and the banner says so rather than letting a house think
+  its need went too. Push carries a title, a one-line snippet and a route, in
+  human words — `banner_test.go` pins every creation banner and
+  `TestMarketEdits` the run-change and run-cancelled ones, so read them before
+  changing copy.
 - **What a lock screen may say about an empty house.** Anyone holding a phone
   can read a notification. The line: a **multi-day absence is anonymous** — an
   away push names no house, no dates, no notes, only "new notice, open the

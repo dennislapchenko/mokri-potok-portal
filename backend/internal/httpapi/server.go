@@ -94,7 +94,7 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/runs", s.requireHouse(s.listRuns))
 	m.HandleFunc("POST /api/runs", s.requireHouse(s.createRun))
 	m.HandleFunc("PUT /api/runs/{id}", s.requireHouse(s.updateRun))
-	m.HandleFunc("DELETE /api/runs/{id}", s.requireHouse(s.deleteRow("runs")))
+	m.HandleFunc("DELETE /api/runs/{id}", s.requireHouse(s.deleteRun))
 	m.HandleFunc("GET /api/needs", s.requireHouse(s.listNeeds))
 	m.HandleFunc("POST /api/needs", s.requireHouse(s.createNeed))
 	m.HandleFunc("PUT /api/needs/{id}", s.requireHouse(s.updateNeed))
@@ -933,6 +933,52 @@ func (s *Server) updateRun(w http.ResponseWriter, r *http.Request) {
 				}
 			})
 		}
+	}
+	w.WriteHeader(204)
+}
+
+// deleteRun: the riders hear that the car is off, the same houses the edit
+// banner reaches and by the same rule — not the driver, not whoever deleted.
+// Their needs survive the run (`run_id` is ON DELETE SET NULL), so the banner
+// says the need is still standing and only its ride is gone.
+func (s *Server) deleteRun(w http.ResponseWriter, r *http.Request) {
+	h := houseFrom(r)
+	id, _ := pathID(r)
+	if !s.ownerOrSteward(w, r, "runs", id) {
+		return
+	}
+	before, err := s.st.One(r.Context(), `SELECT r.destination, r.house_id, d.name AS driver FROM runs r JOIN houses d ON d.id=r.house_id WHERE r.id=?`, id)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	// Read the riders before the delete: it clears run_id on their needs.
+	riders, err := s.st.Rows(r.Context(), `SELECT DISTINCT house_id FROM needs WHERE run_id=? AND state!='done' AND house_id NOT IN (?, ?)`, id, before["house_id"].(int64), h.ID)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if _, err := s.st.Exec(r.Context(), `DELETE FROM runs WHERE id=?`, id); err != nil {
+		fail(w, err)
+		return
+	}
+	driver, dest := str(before, "driver"), str(before, "destination")
+	for _, n := range riders {
+		s.notifyHouse("runs", n["house_id"].(int64), func(lang string) Payload {
+			// The driver is a label here, not the actor: a steward may be the
+			// one who removed the row, and "Žagar calls it off" would blame a
+			// house for something it did not do. The edit banner can name the
+			// driver as the actor because moving a run is neutral; cancelling
+			// one is not.
+			return Payload{
+				// Verb first: a lock screen truncates a long typed
+				// destination, and "Odpade vožnja …" still says the run is off
+				// where "… odpade" would have been cut away.
+				Title: tr(lang, "🚗 Odpade vožnja hiše "+driver+" v "+dest, "🚗 Called off: the run to "+dest+" by "+driver),
+				Body:  tr(lang, "tvoja potreba ostane na tržnici, brez vožnje", "your need stays on the market, without a run"),
+				URL:   "#/market",
+			}
+		})
 	}
 	w.WriteHeader(204)
 }

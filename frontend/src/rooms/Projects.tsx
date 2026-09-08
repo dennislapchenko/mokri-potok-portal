@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
@@ -198,7 +198,7 @@ export function Project({ me, houses: allHouses }: { me: Me; houses: { id: numbe
 // chooser, not the camera: before-and-after pictures are already in the gallery.
 function Pictures({ p, me, reload }: { p: any; me: Me; reload: () => void }) {
   const { t } = useT();
-  const [big, setBig] = useState<{ url: string; f: any } | null>(null);
+  const [at, setAt] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const photos: any[] = p.photos || [];
@@ -215,19 +215,84 @@ function Pictures({ p, me, reload }: { p: any; me: Me; reload: () => void }) {
       </h2>
       {err && <p className="small" style={{ color: "var(--red)" }}>{err}</p>}
       {photos.length === 0 && <Empty text={t("No pictures yet.")} />}
-      {photos.length > 0 && <div className="thumbs">{photos.map((f) => <Thumb key={f.id} f={f} onOpen={(url) => setBig({ url, f })} onDelete={mayDelete(f) ? () => confirm("?") && api(`/photos/${f.id}`, { method: "DELETE" }).then(reload) : undefined} />)}</div>}
-      {big && <div className="lightbox" onClick={() => setBig(null)}><img src={big.url} alt="" /><div className="cap">{big.f.house_name ? big.f.house_name + " · " : ""}<When iso={big.f.created_at} /></div></div>}
+      {photos.length > 0 && <div className="thumbs">{photos.map((f, i) => <Thumb key={f.id} f={f} onOpen={() => setAt(i)} onDelete={mayDelete(f) ? () => confirm("?") && api(`/photos/${f.id}`, { method: "DELETE" }).then(reload) : undefined} />)}</div>}
+      {at !== null && photos[at] && <Lightbox photos={photos} at={at} go={setAt} close={() => setAt(null)} />}
     </div>
   );
 }
 
-function Thumb({ f, onOpen, onDelete }: { f: any; onOpen: (url: string) => void; onDelete?: () => void }) {
+function Thumb({ f, onOpen, onDelete }: { f: any; onOpen: () => void; onDelete?: () => void }) {
   const [url, setUrl] = useState("");
   useEffect(() => { photoURL(`/photos/${f.id}`).then(setUrl).catch(() => setUrl("")); }, [f.id]);
   return (
     <figure className="thumb" title={f.house_name || ""}>
-      {url && <img src={url} alt="" onClick={() => onOpen(url)} />}
+      {url && <img src={url} alt="" onClick={onOpen} />}
       {onDelete && <button type="button" className="ghost thumb-del" onClick={onDelete}>🗑</button>}
     </figure>
+  );
+}
+
+// "2 / 5", read off the picture on screen and not off the index being walked
+// to, and left out of a strip of one.
+function place(photos: any[], f: any) {
+  if (photos.length < 2) return "";
+  const i = photos.findIndex((x) => x.id === f.id);
+  return i < 0 ? "" : ` · ${i + 1} / ${photos.length}`;
+}
+
+// The full-size view walks the strip three ways — the arrow keys on a computer,
+// a swipe on a phone, and the ‹ › buttons, which are there so both are
+// discoverable. It does not wrap around: the button vanishes at each end, so
+// the edge of the strip is visible instead of looping back without warning.
+// A swipe suppresses the click that would otherwise close the picture; the flag
+// is cleared when the next touch begins, not when a click arrives, because a
+// swipe does not always produce one and a stale flag would eat the tap that
+// closes the view.
+function Lightbox({ photos, at, go, close }: { photos: any[]; at: number; go: (i: number) => void; close: () => void }) {
+  const f = photos[at];
+  // The picture and the words under it are one piece of state, set together
+  // when the bytes arrive. So the picture already on screen stays while the
+  // next one loads — a dark frame with a caption reads as "the swipe closed
+  // it" on a slow phone — and the caption always belongs to what is on screen.
+  // A picture that fails to load leaves an honestly empty frame, not the last
+  // one under somebody else's name.
+  const [shown, setShown] = useState<{ url: string; f: any } | null>(null);
+  const from = useRef<{ x: number; y: number } | null>(null);
+  const swiped = useRef(false);
+  const step = (d: number) => { const i = at + d; if (i >= 0 && i < photos.length) go(i); };
+  useEffect(() => {
+    let live = true;
+    photoURL(`/photos/${f.id}`).then((u) => live && setShown({ url: u, f })).catch(() => live && setShown(null));
+    return () => { live = false; };
+  }, [f.id]);
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") step(-1);
+      else if (e.key === "ArrowRight") step(1);
+      else if (e.key === "Escape") close();
+      else return;
+      e.preventDefault();
+    };
+    addEventListener("keydown", key);
+    return () => removeEventListener("keydown", key);
+  }, [at, photos.length]);
+  return (
+    <div className="lightbox"
+      onClick={() => { if (!swiped.current) close(); }}
+      onTouchStart={(e) => { swiped.current = false; from.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
+      onTouchEnd={(e) => {
+        const at0 = from.current;
+        from.current = null;
+        if (!at0) return;
+        const dx = e.changedTouches[0].clientX - at0.x, dy = e.changedTouches[0].clientY - at0.y;
+        // Sideways and far enough: a drag that is mostly vertical is somebody
+        // trying to scroll, and must not walk the strip.
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { swiped.current = true; step(dx < 0 ? 1 : -1); }
+      }}>
+      {at > 0 && <button type="button" className="lb-nav prev" onClick={(e) => { e.stopPropagation(); step(-1); }}>‹</button>}
+      {shown && <img src={shown.url} alt="" />}
+      {at < photos.length - 1 && <button type="button" className="lb-nav next" onClick={(e) => { e.stopPropagation(); step(1); }}>›</button>}
+      {shown && <div className="cap">{shown.f.house_name ? shown.f.house_name + " · " : ""}<When iso={shown.f.created_at} />{place(photos, shown.f)}</div>}
+    </div>
   );
 }

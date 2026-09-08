@@ -23,6 +23,7 @@ memory.
 | Task due reminders, read off `due_at` and one `reminded_at`, like tool returns | `design-more-rooms.md` § Push | A second nudge loop in `remind.go`. No counter, ever |
 | Steward button that clears camp labels older than 12 months | `design-more-rooms.md` § Privacy | One endpoint, one button. Waits for the privacy note |
 | Narrowing "any house may edit an event" to the creator and stewards | `CLAUDE.md`, provisional invariant | Waits for a reduced viewer role, which waits for volunteers who are not villagers |
+| Slovenian case in the run banners. A destination is free text a house typed, so "v " + text prints "v Ribnica" where "v Ribnico" is correct. All three banners have it — the run created, the run moved, the run called off | `server.go`, the run notifications | The case-free form is "smer Ribnica" ("vožnja smer Ribnica"), applied to all three at once so they still read alike. Three strings and their pins in `banner_test.go` and `TestMarketEdits` |
 
 ## Brainstormed rooms, ranked by how often a village would reach for them
 

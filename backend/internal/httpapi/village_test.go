@@ -1192,6 +1192,60 @@ func TestMarketEdits(t *testing.T) {
 	code, _, _ = steward.do("PUT", "/api/runs/"+rid, map[string]any{"notes": "steward may"})
 	steward.must(204, code, "steward edits")
 
+	// Calling the run off rings the same riders by the same rule, each in the
+	// language its phone subscribed in. The needs outlive the run: run_id is
+	// ON DELETE SET NULL, so a rider is told to look for another car, not that
+	// its need is gone.
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+	code, _, _ = zagar.do("DELETE", "/api/runs/"+rid, nil)
+	zagar.must(204, code, "driver calls off the run")
+	waitFor(t, 2, fake)
+	said := map[string][2]string{}
+	fake.mu.Lock()
+	for i, sub := range fake.sent {
+		var q Payload
+		json.Unmarshal(fake.payloads[i], &q)
+		said[sub.Endpoint] = [2]string{q.Title, q.Body}
+	}
+	fake.mu.Unlock()
+	if got := said["https://push.example/s"]; got[0] != "🚗 Odpade vožnja hiše Žagar v Ribnica" || got[1] != "tvoja potreba ostane na tržnici, brez vožnje" {
+		t.Fatalf("rider in sl: %q / %q", got[0], got[1])
+	}
+	if got := said["https://push.example/3"]; got[0] != "🚗 Called off: the run to Ribnica by Žagar" || got[1] != "your need stays on the market, without a run" {
+		t.Fatalf("rider in en: %q / %q", got[0], got[1])
+	}
+	_, _, left := steward.do("GET", "/api/needs", nil)
+	if len(left) != 2 {
+		t.Fatalf("needs after the run went: %v", left)
+	}
+	for _, n := range left {
+		if n["run_id"] != nil {
+			t.Fatalf("need still points at the run: %v", n)
+		}
+	}
+	code, _, _ = steward.do("DELETE", "/api/runs/"+rid, nil)
+	steward.must(404, code, "the run is gone")
+
+	// A steward calls off somebody else's run: the driver and the rider are two
+	// houses now, so both exclusions are exercised. The driver hears nothing —
+	// the same rule as the edit, and the same open question with it.
+	_, run2, _ := zagar.do("POST", "/api/runs", map[string]any{"destination": "Trgovina", "cutoff_at": "2026-09-11T08:00"})
+	code, _, _ = third.do("POST", "/api/needs", map[string]any{"text": "sol", "run_id": run2["id"]})
+	third.must(201, code, "third rides again")
+	waitFor(t, 5, fake) // the two cancels above, the new run to both phones, the need to one
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+	code, _, _ = steward.do("DELETE", fmtID("/api/runs/%d", int64(run2["id"].(float64))), nil)
+	steward.must(204, code, "steward calls off another house's run")
+	waitFor(t, 1, fake)
+	json.Unmarshal(fake.payloads[0], &pl)
+	if fake.sent[0].Endpoint != "https://push.example/3" || pl.Title != "🚗 Called off: the run to Trgovina by Žagar" {
+		t.Fatalf("steward cancel: %s %q", fake.sent[0].Endpoint, pl.Title)
+	}
+
 	_, off, _ := steward.do("POST", "/api/offers", map[string]any{"text": "Sadike", "tag": "seeds"})
 	oid := itoa(off["id"].(float64))
 	code, _, _ = zagar.do("PUT", "/api/offers/"+oid, map[string]any{"tag": "surplus"})

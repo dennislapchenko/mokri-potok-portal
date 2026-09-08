@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
 import { EventCard } from "./EventCard";
-import { Crest, Empty, When, canEdit, useList } from "./shared";
+import { Crest, Empty, When, canEdit, isOver, useList } from "./shared";
 import { DatePicker } from "../DatePicker";
 import { photoURL, uploadPhoto } from "../photo";
 
@@ -27,7 +27,7 @@ export function Projects({ me }: { me: Me }) {
   const live = items.filter((p) => p.state === "open"), done = items.filter((p) => p.state === "done");
   // Render functions, not components — see Market.tsx. Lowercase on purpose.
   const card = (p: any) => (
-    <Link key={p.id} to={`/projects/${p.id}`} className="card project" style={{ opacity: p.state === "done" ? 0.7 : 1 }}>
+    <Link key={p.id} to={`/projects/${p.id}`} className={"card project" + (p.state === "done" ? " faded" : "")}>
       <div className="head"><Crest crest={p.house_crest} color={p.house_color} /><strong>📋 {p.title}</strong>{p.due_at && <span className="when">{t("by")} <When iso={p.due_at} /></span>}</div>
       <div className="small">
         <span>
@@ -87,7 +87,6 @@ export function Project({ me, houses: allHouses }: { me: Me; houses: { id: numbe
   const editable = canEdit(me, p);
   const tasks: any[] = p.tasks || [], events: any[] = p.events || [];
   const openTasks = tasks.filter((x) => x.state === "open"), doneTasks = tasks.filter((x) => x.state === "done");
-  const today = new Date().toISOString().slice(0, 10);
   const put = (path: string, body: any) => api(path, { method: "PUT", body }).then(load);
   const startEdit = () => { setPf({ title: p.title, due_at: p.due_at || "", notes: p.notes || "" }); setEditing(true); };
   const startEditTask = (x: any) => { setEf({ title: x.title, due_at: x.due_at || "", notes: x.notes || "" }); setEditTask(x.id); };
@@ -97,7 +96,7 @@ export function Project({ me, houses: allHouses }: { me: Me; houses: { id: numbe
     const mine = x.assigned_to === me.id;
     const creator = x.house_id === me.id || editable;
     return (
-      <div key={x.id} className="card" style={{ opacity: x.state === "done" ? 0.7 : 1, borderLeftColor: x.state === "done" ? "var(--parch3)" : x.assigned_to ? "var(--brass)" : "var(--green)" }}>
+      <div key={x.id} className={"card" + (x.state === "done" ? " faded" : "")} style={{ borderLeftColor: x.state === "done" ? "var(--parch3)" : x.assigned_to ? "var(--brass)" : "var(--green)" }}>
         {editTask === x.id ? (
           <form className="inline" onSubmit={(e) => { e.preventDefault(); put(`/tasks/${x.id}`, ef).then(() => setEditTask(null)); }}>
             <div className="row">
@@ -183,9 +182,12 @@ export function Project({ me, houses: allHouses }: { me: Me; houses: { id: numbe
       <div className="parchment">
         <h2>🔔 {t("Events")} <button style={{ marginLeft: "auto" }} onClick={() => nav(`/tavern?project=${p.id}`)}>+ {t("Add an event")}</button></h2>
         {events.length === 0 && <Empty text={t("No dates yet.")} />}
-        {events.filter((e) => (e.ends_at || e.starts_at) >= today).map((e) => <EventCard key={e.id} ev={e} me={me} reload={load} linkToTavern />)}
-        {events.some((e) => (e.ends_at || e.starts_at) < today) && <h3 className="small" style={{ marginTop: ".8rem" }}>{t("Happened")}</h3>}
-        {events.filter((e) => (e.ends_at || e.starts_at) < today).map((e) => <EventCard key={e.id} ev={e} me={me} reload={load} linkToTavern />)}
+        {/* isOver, never a date comparison: a work party that ended this
+            morning belongs under "Happened", and the card greys itself off the
+            same answer. */}
+        {events.filter((e) => !isOver(e)).map((e) => <EventCard key={e.id} ev={e} me={me} reload={load} linkToTavern />)}
+        {events.some((e) => isOver(e)) && <h3 className="small" style={{ marginTop: ".8rem" }}>{t("Happened")}</h3>}
+        {events.filter((e) => isOver(e)).map((e) => <EventCard key={e.id} ev={e} me={me} reload={load} linkToTavern />)}
       </div>
     </>
   );

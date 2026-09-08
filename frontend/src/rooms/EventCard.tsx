@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
-import { Crest, When, canEdit } from "./shared";
+import { Crest, When, canEdit, isOver } from "./shared";
 import { Thread } from "./Thread";
 import { DatePicker } from "../DatePicker";
 
@@ -32,6 +32,10 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
   const save = async () => { await api(`/events/${ev.id}`, { method: "PUT", body: f }); setEditing(false); reload(); };
 
   const anyStale = list.some((x) => x.stale);
+  // An event that is over sinks the way a closed task and a handed camp row do:
+  // faded, its kind colour gone from the edge. It stays readable and stays
+  // answerable — the past is history, not an archive.
+  const over = isOver(ev);
   // A render function, not a component — see Market.tsx. Lowercase on purpose.
   const group = ({ state, icon }: { state: string; icon: string }) => {
     const g = by(state);
@@ -49,7 +53,7 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
   };
 
   return (
-    <div className="card" style={{ borderLeftColor: ev.kind === "alarm" ? "var(--red)" : ev.kind === "work" ? "var(--green)" : "var(--brass)" }}>
+    <div className={"card" + (over ? " faded" : "")} style={{ borderLeftColor: over ? "var(--parch3)" : ev.kind === "alarm" ? "var(--red)" : ev.kind === "work" ? "var(--green)" : "var(--brass)" }}>
       {editing ? (
         <form className="inline" onSubmit={(e) => { e.preventDefault(); save(); }}>
           <div className="row">

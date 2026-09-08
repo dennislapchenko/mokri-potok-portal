@@ -152,8 +152,17 @@ does not ship.
   `rooms/shared.tsx` decides: an event is over when its **end** has passed, and
   an event with no end lasts until the end of its day, because dropping a work
   party a minute after it starts hides it from whoever is running late. The Home
-  badge and the tavern peek use the same function — never re-derive it with a
-  date comparison, which counts this morning's finished event as ahead.
+  badge, the tavern peek and a project's two event groups use the same function
+  — never re-derive it with a date comparison, which counts this morning's
+  finished event as ahead; the project page did exactly that until 2026-09-08.
+  It takes no clock argument, so it cannot be handed an array index by
+  `list.some`. **An event that is over wears `.faded`** and loses its kind
+  colour from the left edge (`EventCard.tsx`), so the past reads as past in
+  every room at once — a day cell, a project, the tavern. `.card.faded` is the
+  one fade shared by a closed task, a done project, a handed camp row and a
+  past event; a done need or give-away still fades further on its own
+  (`Market.tsx`), and `.card.tool.out` is a tool on loan, which is a state and
+  not a finished thing.
 - **An answer is not a headcount.** A sign-up is `yes`, `no` or `maybe`, and
   silence is a fourth thing. **The house that creates an event answers `yes` for
   itself in the same request** — whoever calls a work party is at it, and a

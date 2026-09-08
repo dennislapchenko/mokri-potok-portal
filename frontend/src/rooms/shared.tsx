@@ -48,9 +48,11 @@ export const stamp = (d = new Date()) => {
 // dropping a work party from the list one minute after it begins would hide it
 // from exactly the person who is running late. A past event never disappears:
 // it stays in its day cell in the calendar, one click away.
-export function isOver(ev: { starts_at: string; ends_at?: string | null }, now = stamp()): boolean {
+// It takes no clock argument on purpose: nothing passed one, and a second
+// parameter is what makes `list.some(isOver)` hand in the array index.
+export function isOver(ev: { starts_at: string; ends_at?: string | null }): boolean {
   const end = ev.ends_at || ev.starts_at;
-  return (end.length <= 10 ? end + "T23:59" : end) < now;
+  return (end.length <= 10 ? end + "T23:59" : end) < stamp();
 }
 
 export const canEdit = (me: { id: number; is_steward: number }, row: { house_id: number }) => row.house_id === me.id || me.is_steward === 1;

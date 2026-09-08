@@ -1,6 +1,6 @@
 // Thin fetch wrapper. The device token lives in localStorage and rides as a
 // bearer header — no cookie, so no CSRF surface.
-export const API = (import.meta.env.VITE_API_URL as string | undefined) || "/api";
+export const API = "/api";
 const KEY = "potok.token";
 
 export function getToken(): string | null {

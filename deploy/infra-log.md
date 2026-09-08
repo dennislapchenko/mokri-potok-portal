@@ -80,6 +80,6 @@
 - Everyone had moved to `vas.mokri-potok.si`. The Pages site was disabled
   (`gh api -X DELETE repos/dennislapchenko/mokri-potok-portal/pages`), its
   workflow deleted, and the Pages origin dropped from `CORS_ORIGINS`; the
-  compose file no longer passes that variable, so the `config.go` default
-  (the Vite dev origin) is what production answers. The old `/potok/*` route
+  compose file no longer passes that variable, and since the same day the
+  backend reads none. The old `/potok/*` route
   left the gaias-choice Caddyfile: that repo's `deploy/infra-log.md`, same date.

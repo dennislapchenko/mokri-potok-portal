@@ -17,7 +17,7 @@ tasks:
     desc: build the backend image locally
     cmds: [docker build -t mokri-potok-portal-be:local backend]
   fe:dev:
-    desc: vite dev server on :5173 (expects backend on :8788, see frontend/.env.development)
+    desc: vite dev server on :5173, proxies /api to the backend on :8788
     dir: frontend
     cmds: [npm run dev]
   fe:build:

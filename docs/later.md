@@ -102,4 +102,3 @@ Tavern asking the houses what they miss, and then four weeks of listening.
 | The all-kinds-on push default once more houses join | Every house, after a week | `village.md` § Notifications |
 | A second steward | The village | `village.md` § People and roles |
 | What a household without land calls itself | The household, when the first one joins | `design-membership.md` |
-| Drop CORS altogether: a Vite dev proxy for `/api` makes dev same-origin too, and `cors()`, `CORS_ORIGINS`, `VITE_API_URL` and `.env.development` all go | The owner; raised 2026-09-08 when the Pages origin left | `CLAUDE.md` § One origin |

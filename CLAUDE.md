@@ -68,9 +68,9 @@ does not ship.
   own small block.
 - **One origin.** The Go container serves the API *and* the built frontend
   (`static.go`, embedded at image build). The portal lives at its own domain,
-  in `SITE.md` of the homestead repo. No second host. The one CORS origin is
-  the Vite dev server, as the `config.go` default; production passes no
-  `CORS_ORIGINS`, so it inherits that same entry.
+  in `SITE.md` of the homestead repo. No second host and no CORS: in dev the
+  Vite server proxies `/api` to the backend (`vite.config.ts`), so the page is
+  same-origin there too.
 - **No third party in the page.** Weather is fetched by the backend from ARSO
   and trimmed (`weather.go`, cached 30 min), never framed. ARSO's terms require
   naming the source, so the panel shows *Vir: ARSO*; the fetch sends a

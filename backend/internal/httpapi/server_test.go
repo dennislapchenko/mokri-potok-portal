@@ -23,7 +23,6 @@ func (c *client) do(method, path string, body any) (int, map[string]any, []map[s
 		json.NewEncoder(&buf).Encode(body)
 	}
 	req := httptest.NewRequest(method, path, &buf)
-	req.Header.Set("Origin", "http://localhost:5173")
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
@@ -54,7 +53,7 @@ func TestVillageFlow(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer st.Close()
-	srv := New(st, config.Config{CORSOrigins: []string{"http://localhost:5173"}, BootstrapCode: "letmein"})
+	srv := New(st, config.Config{BootstrapCode: "letmein"})
 	steward := &client{t: t, h: srv.Handler()}
 
 	code, obj, _ := steward.do("GET", "/api/status", nil)
@@ -187,14 +186,6 @@ func TestVillageFlow(t *testing.T) {
 	code, _, _ = second.do("GET", "/api/me", nil)
 	if code != 401 && code != 200 {
 		t.Fatalf("unexpected %d", code)
-	}
-	// CORS: allowed origin echoed.
-	req := httptest.NewRequest("OPTIONS", "/api/me", nil)
-	req.Header.Set("Origin", "http://localhost:5173")
-	rec := httptest.NewRecorder()
-	srv.Handler().ServeHTTP(rec, req)
-	if rec.Header().Get("Access-Control-Allow-Origin") != "http://localhost:5173" {
-		t.Fatal("cors header missing")
 	}
 }
 

@@ -37,7 +37,7 @@ func New(st *store.Store, cfg config.Config) *Server {
 }
 
 func (s *Server) Handler() http.Handler {
-	return cors(s.cfg.CORSOrigins, logRequests(s.mux))
+	return logRequests(s.mux)
 }
 
 func (s *Server) routes() {
@@ -219,27 +219,6 @@ func (s *Server) deleteRow(table string) http.HandlerFunc {
 		}
 		w.WriteHeader(204)
 	}
-}
-
-func cors(allowed []string, next http.Handler) http.Handler {
-	allow := map[string]bool{}
-	for _, o := range allowed {
-		allow[o] = true
-	}
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if o := r.Header.Get("Origin"); o != "" && allow[o] {
-			h := w.Header()
-			h.Set("Access-Control-Allow-Origin", o)
-			h.Add("Vary", "Origin")
-			h.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
-			h.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		}
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
 }
 
 func logRequests(next http.Handler) http.Handler {

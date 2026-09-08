@@ -484,8 +484,9 @@ func TestQuietHoursOptOut(t *testing.T) {
 
 // TestHouseWithoutLand: option F, the owner's decision 2026-09-06 — a member
 // who lives here without land is an ordinary house with an empty parcel list.
-// No new kind, so nothing sorts them apart; the line they write about
-// themselves rides along with their away-notices.
+// No new kind, so nothing sorts them apart. Where it lives is a mark on the
+// map (house_homes), never a sentence: `about` was dropped on 2026-09-08 and a
+// client still sending it is ignored, not refused.
 func TestHouseWithoutLand(t *testing.T) {
 	_, _, steward, _ := newVillage(t)
 	code, obj, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Hiša Vrba", "crest": "🌿"})
@@ -495,8 +496,8 @@ func TestHouseWithoutLand(t *testing.T) {
 	guest := &client{t: t, h: steward.h}
 	_, j, _ := guest.do("POST", "/api/join", map[string]any{"code": obj["invite"].(map[string]any)["code"], "device": "koča"})
 	guest.token = j["token"].(string)
-	code, _, _ = guest.do("PUT", "/api/houses/"+id, map[string]any{"about": "v koči ob potoku"})
-	guest.must(204, code, "a house writes its own line")
+	code, _, _ = guest.do("PUT", "/api/houses/"+id, map[string]any{"crest": "🌱", "about": "v koči ob potoku"})
+	guest.must(204, code, "an old client still sending about")
 
 	_, _, hs := guest.do("GET", "/api/houses", nil)
 	var row map[string]any
@@ -505,49 +506,22 @@ func TestHouseWithoutLand(t *testing.T) {
 			row = h
 		}
 	}
-	if row == nil || row["kind"] != "house" || row["about"] != "v koči ob potoku" {
+	if row == nil || row["kind"] != "house" || row["crest"] != "🌱" {
 		t.Fatalf("landless house: %v", row)
 	}
-	if _, ok := row["parcels"]; ok {
-		if p, _ := row["parcels"].([]any); len(p) != 0 {
-			t.Fatalf("house was given land it never asked for: %v", row["parcels"])
-		}
+	if _, ok := row["about"]; ok {
+		t.Fatalf("about is back: %v", row)
+	}
+	if p, _ := row["parcels"].([]any); len(p) != 0 {
+		t.Fatalf("house was given land it never asked for: %v", row["parcels"])
 	}
 
-	// The Watchtower treats it like any house, and carries the line.
+	// The Watchtower treats it like any house.
 	code, _, _ = guest.do("POST", "/api/away", map[string]any{"from_date": "2026-10-01", "to_date": "2026-10-08"})
 	guest.must(201, code, "away notice from a house without land")
 	_, _, aw := steward.do("GET", "/api/away", nil)
-	if len(aw) != 1 || aw[0]["house_about"] != "v koči ob potoku" {
+	if len(aw) != 1 || aw[0]["house_name"] != "Hiša Vrba" {
 		t.Fatalf("away notice: %v", aw)
-	}
-
-	// A save that does not mention the line must not wipe it — /api/me carries
-	// `about`, so the form round-trips it instead of posting an empty string.
-	_, mine, _ := guest.do("GET", "/api/me", nil)
-	if mine["about"] != "v koči ob potoku" {
-		t.Fatalf("/api/me dropped the line, so the form would wipe it: %v", mine)
-	}
-	guest.do("PUT", "/api/houses/"+id, map[string]any{"name": "Hiša Vrba", "crest": "🌱"})
-	_, mine, _ = guest.do("GET", "/api/me", nil)
-	if mine["about"] != "v koči ob potoku" {
-		t.Fatalf("changing the crest wiped the line: %v", mine)
-	}
-
-	// A steward edits anything else about a house, never the line it wrote.
-	steward.do("PUT", "/api/houses/"+id, map[string]any{"about": "podnajemniki"})
-	_, mine, _ = guest.do("GET", "/api/me", nil)
-	if mine["about"] != "v koči ob potoku" {
-		t.Fatalf("a steward spoke for another house: %v", mine)
-	}
-
-	// The line clears; every other field keeps its old behaviour.
-	guest.do("PUT", "/api/houses/"+id, map[string]any{"about": ""})
-	_, _, hs = guest.do("GET", "/api/houses", nil)
-	for _, h := range hs {
-		if h["name"] == "Hiša Vrba" && h["about"] != "" {
-			t.Fatalf("line did not clear: %v", h)
-		}
 	}
 }
 

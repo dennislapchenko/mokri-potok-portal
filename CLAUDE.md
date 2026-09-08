@@ -23,10 +23,9 @@ does not ship.
   option F in `docs/design-membership.md`). **No third kind of row**: a
   `kind='household'` would also make `ORDER BY kind, name` put them last in
   every list with nobody deciding it. What replaces the land on such a row is
-  `houses.about`, a line of at most 120 characters the house writes about
-  itself and may blank — **every** house may write one, so it is never a badge.
-  The Watchtower shows it beside that house's absence, so the neighbour whose
-  building stands empty is not surprised by the notice. **The Houses room shows
+  a mark on the map — `house_homes`, next bullet. **No sentence about where a
+  house lives**: `houses.about` was dropped on 2026-09-08 (owner's decision),
+  the mark is the answer. **The Houses room shows
   no parcel count**, in either block: a parcel list is a list, a count beside a
   name is a tally.
 - **Marking a parcel somebody else holds says "we live here", never "this is
@@ -40,8 +39,7 @@ does not ship.
   house** — clear it from the old one first.
   **The house itself marks where it lives** — `PUT /api/houses/{id}` takes
   `homes` from that house (a steward may write it too, because a steward keeps
-  the map for houses that will not open a picker; that is the difference from
-  `about`, which is a sentence in the house's own voice and never a steward's).
+  the map for houses that will not open a picker).
   A mark grants nothing: `homes` is not `house_parcels`, so a house cannot put
   itself on the map as a landholder, and a parcel it already holds is dropped
   rather than printed back at it. Marking a parcel nobody holds is allowed —
@@ -61,9 +59,7 @@ does not ship.
   for the season is not leaving: that is an away-notice, same as any house that
   winters elsewhere. The softer variant (`houses.left_at`) is designed and not
   built — `docs/design-membership.md` § Off-season, and ending a stay.
-  The line a house writes about itself is **its own**: `PUT /api/houses/{id}`
-  accepts `about` only from that house, never from a steward, and `/api/me`
-  returns it so the form round-trips it instead of blanking it. A **common place** (`houses.kind = common`:
+  A **common place** (`houses.kind = common`:
   event grounds, parking) shares the table because the map colours it, but it
   is land, not an account: no invite, no login, never offered where a house is
   meant (hand a task to, notifications, invite links). The UI keeps it in its

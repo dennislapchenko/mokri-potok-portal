@@ -11,10 +11,11 @@ three answers from the owner:
    already exists. `left_at` was designed below and **not built**; what that
    costs is written into § Ending a stay, and the button now says it out loud.
 
-What shipped: `014_house_about.sql` (one line a house writes about itself),
-the parcel count gone from both blocks of the Houses room, that line shown
-beside a house's away-notices, and a delete confirm that names what it takes.
-The sections below stay as the argument that got there.
+What shipped: the parcel count gone from both blocks of the Houses room, a
+delete confirm that names what it takes, and (015) the mark on the map for
+whose land a house lives on. The one-line `about` a house wrote about itself
+(014) shipped and was dropped again on 2026-09-08 (018): the mark answers the
+same question. The sections below stay as the argument that got there.
 
 ## Answer first
 
@@ -220,11 +221,12 @@ numbers in them are invented.
 **What F actually cost, once built:**
 
 - Houses room: subtitle is now "houses, with land and without". The `N parcels`
-  count is gone from both blocks — a parcel list is a list. A row shows the line
-  its house wrote about itself.
-- `houses.about`, 120 characters, written by the house, blankable. Any house may
-  write one, so it is not a badge. It is also what the Watchtower shows beside
-  that house's absence — the W3 line, without a second field.
+  count is gone from both blocks — a parcel list is a list. A row shows whose
+  land the house lives on, when it marked that (`house_homes`, 015).
+- `houses.about`, the 120-character line a house wrote about itself, shipped in
+  014 and was dropped in 018 (owner's decision 2026-09-08): the map mark
+  answers the same question. With it went the W3 line on the Watchtower card —
+  an absence there now shows the house and its dates only.
 - Home screen: **nothing**. The legend under the map already lists every house,
   landed or not, so the strip this doc proposed was never needed — with one
   qualifier: the legend renders only in map mode, and the home widget opens on
@@ -243,7 +245,7 @@ steward's list can be generated from `kind`. That is the whole gain, and the
 | Decision | Outcome | Who to ask | By when |
 | --- | --- | --- | --- |
 | F or A | ✅ **F**, decided 2026-09-06. Built | — | Done |
-| Away-notices | ✅ **W1**, full symmetry, decided 2026-09-06. The W3 line rides on `about` | — | Done |
+| Away-notices | ✅ **W1**, full symmetry, decided 2026-09-06. The W3 line rode on `about` and went with it (2026-09-08) | — | Done |
 | The off-season | ✅ An away-notice, not an ended account | — | Done |
 | Ending a stay | ✅ **The steward deletes the house.** `left_at` designed, not built | — | Done |
 | The room's name | ✅ Keep **Houses / Hiše**, subtitle changed | A Slovenian-speaking house checks "hiše, z zemljo in brez" | With the first household |

@@ -27,7 +27,6 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   const [myName, setMyName] = useState(me.name);
   const [myCrest, setMyCrest] = useState(me.crest);
   const [myColor, setMyColor] = useState(me.color);
-  const [myAbout, setMyAbout] = useState(me.about || "");
   const [copied, setCopied] = useState<number | null>(null);
   const [newOpen, setNewOpen] = useState(false);
 
@@ -95,7 +94,6 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
             <div className="head"><Crest crest={h.crest} color={h.color} /><span className="who">{h.name}</span>{h.kind === "common" && <span className="tag">{t("common land")}</span>}{h.is_steward === 1 && <span className="tag">🗝️ {t("Steward")}</span>}</div>
             {h.parcels?.length ? <div className="small">{h.parcels.join(", ")}</div> : null}
             {h.homes?.length ? <div className="small">{t("Lives on the land of")} {livesOn(h)}</div> : null}
-            {h.about ? <div className="small">{h.about}</div> : null}
             {steward && (
               <div className="actions">
                 <button onClick={() => startAssign(h)}>🗺️ {t("Assign land")}</button>
@@ -166,16 +164,14 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
       </div>
       <div className="parchment">
         <h2>{me.crest} {t("Your house")}</h2>
-        <form className="inline" onSubmit={(e) => { e.preventDefault(); api(`/houses/${me.id}`, { method: "PUT", body: { name: myName, crest: myCrest, color: myColor, about: myAbout } }).then(refresh); }}>
+        <form className="inline" onSubmit={(e) => { e.preventDefault(); api(`/houses/${me.id}`, { method: "PUT", body: { name: myName, crest: myCrest, color: myColor } }).then(refresh); }}>
           <div className="row">
             <label>{t("Rename house")}<input value={myName} onChange={(e) => setMyName(e.target.value)} maxLength={60} /></label>
             <label>{t("Crest")}<input value={myCrest} onChange={(e) => setMyCrest(e.target.value)} maxLength={4} /></label>
             <label>{t("Colour")}<input type="color" value={myColor} onChange={(e) => setMyColor(e.target.value)} /></label>
           </div>
-          <label>{t("Where you live (optional)")}<input value={myAbout} onChange={(e) => setMyAbout(e.target.value)} maxLength={120} placeholder={t("e.g. in the hut by the stream")} /></label>
-          <p className="small muted">{t("Where to find you — the hut by the stream, the top of the lane. Every house writes one; it shows beside your away-notices.")}</p>
         <p>
-          <button className="lesser" onClick={startHome}>🗺️ {t("Where you live")}</button>
+          <button type="button" className="lesser" onClick={startHome}>🗺️ {t("Where you live")}</button>
           {myHouse?.homes?.length ? <span className="small"> {t("Lives on the land of")} {livesOn(myHouse)}</span> : null}
         </p>
           <div className="submit"><button type="submit">{t("Save")}</button></div>

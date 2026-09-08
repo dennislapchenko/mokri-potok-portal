@@ -12,6 +12,10 @@ func (s *Server) listProjects(w http.ResponseWriter, r *http.Request) {
 		(SELECT count(*) FROM project_tasks t WHERE t.project_id=p.id) AS tasks,
 		(SELECT count(*) FROM project_tasks t WHERE t.project_id=p.id AND t.state='done') AS tasks_done,
 		(SELECT count(*) FROM project_tasks t WHERE t.project_id=p.id AND t.state='open' AND t.assigned_to IS NULL) AS tasks_free,
+		-- Pictures and events, all of them: the list says how much a project
+		-- carries, and a work party that happened counts as much as one ahead.
+		(SELECT count(*) FROM project_photos f WHERE f.project_id=p.id) AS photos,
+		(SELECT count(*) FROM events e WHERE e.project_id=p.id) AS events,
 		-- An event time is local wall clock ("2026-09-07T18:00"), datetime('now')
 		-- is UTC with a space, so comparing the two compared 'T' against ' ' and
 		-- called every event today upcoming. strftime gives now in the same shape.

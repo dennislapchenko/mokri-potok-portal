@@ -30,9 +30,19 @@ export function Projects({ me }: { me: Me }) {
     <Link key={p.id} to={`/projects/${p.id}`} className="card project" style={{ opacity: p.state === "done" ? 0.7 : 1 }}>
       <div className="head"><Crest crest={p.house_crest} color={p.house_color} /><strong>📋 {p.title}</strong>{p.due_at && <span className="when">{t("by")} <When iso={p.due_at} /></span>}</div>
       <div className="small">
-        {p.tasks > 0 ? `${p.tasks_done} / ${p.tasks} ${t("tasks done")}` : t("no tasks yet")}
-        {p.tasks_free > 0 && <> · <span className="tag open">{p.tasks_free} {t("free to take")}</span></>}
-        {p.next_event && <> · 🔔 <When iso={p.next_event} /></>}
+        <span>
+          {p.tasks > 0 ? `${p.tasks_done} / ${p.tasks} ${t("tasks done")}` : t("no tasks yet")}
+          {p.tasks_free > 0 && <> · <span className="tag open">{p.tasks_free} {t("free to take")}</span></>}
+          {/* The bell is the tally's, so the date takes the calendar's own
+              wording instead — one glyph, one meaning, one line. */}
+          {p.next_event && <> · {t("Next")}: <When iso={p.next_event} /></>}
+        </span>
+        {(p.photos > 0 || p.events > 0) && (
+          <span className="tally">
+            {p.photos > 0 && <span title={t("Pictures")}>📷 {p.photos}</span>}
+            {p.events > 0 && <span title={t("Events")}>🔔 {p.events}</span>}
+          </span>
+        )}
       </div>
     </Link>
   );

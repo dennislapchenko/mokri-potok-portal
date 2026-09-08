@@ -189,7 +189,12 @@ does not ship.
   reversing the afternoon's "never assigned": the reminder that will one day
   read `due_at` replaces the assigner nagging in person). No other house
   touches `assigned_to`. The project's creator hears when a task is taken. "3 of 5
-  done" is a project's progress; never show a house's count of tasks.
+  done" is a project's progress; never show a house's count of tasks. The list
+  also tallies a project's **pictures and events on the right of its summary
+  line** — every event, finished ones too, because the tally says how much the
+  job carries and not what is left to do. That is a count of the work, never of
+  a house, so it is no exception to "no tallies of favours"; a zero is left off
+  the line rather than printed.
 - **The campground holds no amounts.** One row = one camper's stay: a house
   noticed it (arrived), a house has the money (held), it reached the box
   (handed). A tick on arrival ("I already have the money") lands the row in

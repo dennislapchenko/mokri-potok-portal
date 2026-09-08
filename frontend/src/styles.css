@@ -210,6 +210,11 @@ details.parchment > summary::-webkit-details-marker { display: none; }
 details.parchment > summary .sub { font-family: Alegreya, serif; font-size: .9rem; color: var(--ink3); font-style: italic; }
 details.parchment[open] > summary { border-bottom: 2px solid var(--parch3); padding-bottom: .3rem; margin-bottom: .8rem; }
 
+/* A project's summary line: progress on the left, what the project carries on
+   the right. It wraps on a narrow phone instead of running off the panel. */
+.card.project .small { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .5rem; }
+.card.project .tally { margin-left: auto; display: flex; gap: .5rem; white-space: nowrap; }
+
 /* Tool shed: compact rows, photo in a rounded square on the right (~1/5). */
 .card.tool { display: flex; gap: .7rem; align-items: stretch; padding: .45rem .7rem; }
 .card.tool .tool-main { flex: 1; min-width: 0; }

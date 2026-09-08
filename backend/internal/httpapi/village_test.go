@@ -957,6 +957,11 @@ func TestNextEventIsToday(t *testing.T) {
 	if got := list[0]["next_event"]; got != at(-time.Hour) {
 		t.Fatalf("next_event = %v, want the running event at %s", got, at(-time.Hour))
 	}
+	// The list's tally counts every event, the finished one too, and says a
+	// project with no pictures has none rather than leaving the field out.
+	if list[0]["events"] != 2.0 || list[0]["photos"] != 0.0 {
+		t.Fatalf("tally: events=%v photos=%v", list[0]["events"], list[0]["photos"])
+	}
 }
 
 // TestExpiredPairingIsSwept: expires_at is RFC3339, so the sweep must compare
@@ -1077,6 +1082,11 @@ func TestProjectPhotos(t *testing.T) {
 	}
 	if _, ok := photos[0].(map[string]any)["photo"]; ok {
 		t.Fatal("project leaks the blob")
+	}
+	// The list counts the pictures without carrying them.
+	_, _, list := zagar.do("GET", "/api/projects", nil)
+	if list[0]["photos"] != 2.0 {
+		t.Fatalf("photo tally: %v", list[0]["photos"])
 	}
 	req := httptest.NewRequest("GET", "/api/photos/"+itoa(a["id"].(float64)), nil)
 	req.Header.Set("Authorization", "Bearer "+steward.token)

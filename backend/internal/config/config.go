@@ -22,7 +22,7 @@ func Load() Config {
 	return Config{
 		Port:            envOr("PORT", "8788"),
 		DataDir:         envOr("DATA_DIR", "./data"),
-		CORSOrigins:     splitCSV(envOr("CORS_ORIGINS", "http://localhost:5173,https://dennislapchenko.github.io")),
+		CORSOrigins:     splitCSV(envOr("CORS_ORIGINS", "http://localhost:5173")), // the Vite dev server; production has no second origin
 		BootstrapCode:   os.Getenv("POTOK_BOOTSTRAP_CODE"),
 		PushSubject:     envOr("PUSH_SUBJECT", "https://vas.mokri-potok.si/"),
 		WeatherLocation: envOr("WEATHER_LOCATION", "Kočevje"),

@@ -1,5 +1,5 @@
 // Thin fetch wrapper. The device token lives in localStorage and rides as a
-// bearer header (a cookie would be third-party from github.io and iOS blocks it).
+// bearer header — no cookie, so no CSRF surface.
 export const API = (import.meta.env.VITE_API_URL as string | undefined) || "/api";
 const KEY = "potok.token";
 

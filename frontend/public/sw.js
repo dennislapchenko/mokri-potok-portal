@@ -1,6 +1,6 @@
 // Service worker: the reason it exists is web push. No caching on purpose —
 // a stale shell after a deploy is worse than a network round trip on a village
-// Wi-Fi. The page registers it with the Pages base path as scope.
+// Wi-Fi. The page registers it with the site root as scope.
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 

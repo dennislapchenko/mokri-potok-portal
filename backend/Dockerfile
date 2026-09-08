@@ -7,8 +7,8 @@ WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json frontend/.npmrc ./
 RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
-# No BASE_PATH and no VITE_API_URL: the app is served from the site root and
-# talks to /api on its own origin.
+# No VITE_API_URL: the app is served from the site root and talks to /api on
+# its own origin.
 RUN npm run build
 
 FROM golang:1.25-alpine AS build

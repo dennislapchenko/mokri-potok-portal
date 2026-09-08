@@ -6,9 +6,6 @@
 name: mokri-potok
 working_dir: deploy/app
 environment:
-  # The portal serves its own frontend on vas.mokri-potok.si, so that origin
-  # needs no CORS entry. The Pages origin stays until that frontend is retired.
-  CORS_ORIGINS: https://dennislapchenko.github.io,http://localhost:5173
   PUSH_SUBJECT: https://vas.mokri-potok.si/
   BE_TAG: sha-1ccb3409c65387a8b1c0681a2340a127bad42c18
 reconciliation:

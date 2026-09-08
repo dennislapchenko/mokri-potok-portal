@@ -8,9 +8,8 @@
 - **VM:** the gaias-choice VM (Hetzner, Helsinki). SSH
   `ssh -p 13337 -i ~/.ssh/gaia root@gaias-choice.gardenofatlantis.com`.
   Owned by the gaias-choice repo; this stack is a tenant.
-- **API URL:** `https://gaias-choice.gardenofatlantis.com/potok/api` (Caddy
-  route in gaias-choice, prefix stripped).
-- **Frontend:** `https://dennislapchenko.github.io/mokri-potok-portal/` (GitHub Pages, workflow build).
+- **URL:** `https://vas.mokri-potok.si` — page and `/api` from the one
+  container, the whole host proxied by the gaias-choice Caddy.
 - **Data:** `/srv/mokri-potok/data/potok.db` + `backups/` on the VM.
 - **Image:** `ghcr.io/dennislapchenko/mokri-potok-portal-be`, tag rolled by CI into `.doco-cd.yml`.
 
@@ -71,8 +70,16 @@
   generated on first `GET /api/push/key` and stored in the `settings` table —
   it is inside the nightly SQLite backup. Losing it would silently orphan
   every subscription; phones would need to re-enable.
-- `PUSH_SUBJECT` (VAPID subject) defaults to the Pages URL; set it in
-  `deploy/app/compose.yaml` if the frontend moves.
+- `PUSH_SUBJECT` (VAPID subject) defaults to `https://vas.mokri-potok.si/`;
+  set it in `deploy/app/compose.yaml` if the domain moves.
 - `TZ=Europe/Ljubljana` is set on the service and the binary embeds
   `time/tzdata` (distroless carries no zoneinfo). Without it a notification
   would say "tomorrow" for tonight. Change both together if the village moves.
+
+### 6. Pages taken down — 2026-09-08
+- Everyone had moved to `vas.mokri-potok.si`. The Pages site was disabled
+  (`gh api -X DELETE repos/dennislapchenko/mokri-potok-portal/pages`), its
+  workflow deleted, and the Pages origin dropped from `CORS_ORIGINS`; the
+  compose file no longer passes that variable, so the `config.go` default
+  (the Vite dev origin) is what production answers. The old `/potok/*` route
+  left the gaias-choice Caddyfile: that repo's `deploy/infra-log.md`, same date.

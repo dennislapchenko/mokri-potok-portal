@@ -68,8 +68,9 @@ does not ship.
   own small block.
 - **One origin.** The Go container serves the API *and* the built frontend
   (`static.go`, embedded at image build). The portal lives at its own domain,
-  in `SITE.md` of the homestead repo. No CORS, no second host. The old GitHub
-  Pages address is a signpost pointing here, not a second copy of the app.
+  in `SITE.md` of the homestead repo. No second host. The one CORS origin is
+  the Vite dev server, as the `config.go` default; production passes no
+  `CORS_ORIGINS`, so it inherits that same entry.
 - **No third party in the page.** Weather is fetched by the backend from ARSO
   and trimmed (`weather.go`, cached 30 min), never framed. ARSO's terms require
   naming the source, so the panel shows *Vir: ARSO*; the fetch sends a
@@ -310,7 +311,7 @@ docs/diagrams/      hand-drawn SVG sketches belonging to those docs
 frontend/public/data/  parcels.geojson (cadastre), water.json (the modelled watercourses, drawn by map/Water.tsx)
 deploy/app/         compose for the VM stack; deploy/infra-log.md = what was done by hand
 .doco-cd.yml        deploy config the VM's doco-cd polls; BE_TAG rolled by CI
-.github/workflows/  build-backend (GHCR + roll tag), deploy-pages (the signpost at the old address)
+.github/workflows/  build-backend (GHCR + roll tag)
 ```
 
 ## Docs stay current, in the same change
@@ -374,8 +375,7 @@ skipped. The reviewer edits nothing.
   rolls `BE_TAG`, and the VM's doco-cd reconciles within ~2 min of that roll
   commit. Verify with `task vm:logs`, not by assumption. Only `backend/**`,
   `frontend/**` and the workflow itself trigger it — a docs-only commit builds
-  nothing. `deploy-pages` runs only when its own file changes: it publishes the
-  signpost that points the old Pages address at `vas.mokri-potok.si`.
+  nothing.
 - The VM is shared with gaias-choice: Caddy and the controller belong to that
   repo. A portal change that needs a new route or a new poll entry is a change
   **there** — see `deploy/infra-log.md`.

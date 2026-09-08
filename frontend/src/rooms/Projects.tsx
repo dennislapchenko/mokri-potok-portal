@@ -25,8 +25,9 @@ export function Projects({ me }: { me: Me }) {
     nav(`/projects/${id}`);
   };
   const live = items.filter((p) => p.state === "open"), done = items.filter((p) => p.state === "done");
-  const Card = ({ p }: { p: any }) => (
-    <Link to={`/projects/${p.id}`} className="card project" style={{ opacity: p.state === "done" ? 0.7 : 1 }}>
+  // Render functions, not components — see Market.tsx. Lowercase on purpose.
+  const card = (p: any) => (
+    <Link key={p.id} to={`/projects/${p.id}`} className="card project" style={{ opacity: p.state === "done" ? 0.7 : 1 }}>
       <div className="head"><Crest crest={p.house_crest} color={p.house_color} /><strong>📋 {p.title}</strong>{p.due_at && <span className="when">{t("by")} <When iso={p.due_at} /></span>}</div>
       <div className="small">
         {p.tasks > 0 ? `${p.tasks_done} / ${p.tasks} ${t("tasks done")}` : t("no tasks yet")}
@@ -49,8 +50,8 @@ export function Projects({ me }: { me: Me }) {
         </form>
       )}
       {items.length === 0 && <Empty text={t("No projects yet. Start one — a fence, a roof, a road.")} />}
-      {live.map((p) => <Card key={p.id} p={p} />)}
-      {done.length > 0 && <details style={{ marginTop: "1rem" }}><summary className="small">✓ {t("Finished")} ({done.length})</summary>{done.map((p) => <Card key={p.id} p={p} />)}</details>}
+      {live.map(card)}
+      {done.length > 0 && <details style={{ marginTop: "1rem" }}><summary className="small">✓ {t("Finished")} ({done.length})</summary>{done.map(card)}</details>}
     </div>
   );
 }
@@ -81,11 +82,12 @@ export function Project({ me, houses: allHouses }: { me: Me; houses: { id: numbe
   const startEdit = () => { setPf({ title: p.title, due_at: p.due_at || "", notes: p.notes || "" }); setEditing(true); };
   const startEditTask = (x: any) => { setEf({ title: x.title, due_at: x.due_at || "", notes: x.notes || "" }); setEditTask(x.id); };
 
-  const Task = ({ x }: { x: any }) => {
+  // A render function, not a component — see Market.tsx. Lowercase on purpose.
+  const task = (x: any) => {
     const mine = x.assigned_to === me.id;
     const creator = x.house_id === me.id || editable;
     return (
-      <div className="card" style={{ opacity: x.state === "done" ? 0.7 : 1, borderLeftColor: x.state === "done" ? "var(--parch3)" : x.assigned_to ? "var(--brass)" : "var(--green)" }}>
+      <div key={x.id} className="card" style={{ opacity: x.state === "done" ? 0.7 : 1, borderLeftColor: x.state === "done" ? "var(--parch3)" : x.assigned_to ? "var(--brass)" : "var(--green)" }}>
         {editTask === x.id ? (
           <form className="inline" onSubmit={(e) => { e.preventDefault(); put(`/tasks/${x.id}`, ef).then(() => setEditTask(null)); }}>
             <div className="row">
@@ -163,8 +165,8 @@ export function Project({ me, houses: allHouses }: { me: Me; houses: { id: numbe
           </form>
         )}
         {tasks.length === 0 && <Empty text={t("No tasks yet. Split the job into pieces a house can take.")} />}
-        {openTasks.map((x) => <Task key={x.id} x={x} />)}
-        {doneTasks.map((x) => <Task key={x.id} x={x} />)}
+        {openTasks.map(task)}
+        {doneTasks.map(task)}
         {editable && <p className="small" style={{ marginTop: ".6rem" }}><button className="ghost danger" onClick={() => confirm(p.title + "?") && api(`/projects/${p.id}`, { method: "DELETE" }).then(() => location.assign("#/projects"))}>🗑 {t("Delete project")}</button></p>}
       </div>
       <Pictures p={p} me={me} reload={load} />

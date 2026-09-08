@@ -69,8 +69,9 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
   const free = shown.filter((x) => !x.held_by), out = shown.filter((x) => x.held_by);
   const catOf = (id: string) => CATEGORIES.find((c) => c.id === id) || CATEGORIES[2];
 
-  const Tool = ({ x }: { x: any }) => (
-    <div className={"card tool" + (x.held_by ? " out" : "")} style={{ borderLeftColor: x.held_by ? "var(--parch3)" : "var(--green)" }}>
+  // A render function, not a component — see Market.tsx. Lowercase on purpose.
+  const tool = (x: any) => (
+    <div key={x.id} className={"card tool" + (x.held_by ? " out" : "")} style={{ borderLeftColor: x.held_by ? "var(--parch3)" : "var(--green)" }}>
       <div className="tool-main">
         {editing === x.id ? (
           <form className="inline" onSubmit={(e) => { e.preventDefault(); saveEdit(x.id); }}>
@@ -139,9 +140,9 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
         )}
         {items.length === 0 && <Empty text={t("The shed is empty. Put something in it.")} />}
         {items.length > 0 && shown.length === 0 && <Empty text={t("Nothing here yet.")} />}
-        {free.map((x) => <Tool key={x.id} x={x} />)}
+        {free.map(tool)}
         {out.length > 0 && <h3 style={{ marginTop: "1rem", color: "var(--ink2)" }}>{t("Out on loan")}</h3>}
-        {out.map((x) => <Tool key={x.id} x={x} />)}
+        {out.map(tool)}
       </div>
 
       <details className="parchment wish">

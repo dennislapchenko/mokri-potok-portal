@@ -27,11 +27,16 @@ export function Market({ me, houses }: { me: Me; houses: House[] }) {
   };
   const setState = (path: string, id: number, state: string, reload: () => void) => api(`${path}/${id}`, { method: "PUT", body: { state } }).then(reload);
 
-  const Claimable = ({ x, path, byName, claimedState, reload }: { x: any; path: string; byName?: string; claimedState: "taken" | "claimed"; reload: () => void }) => {
+  // Render functions, not components: a component declared inside the room is
+  // a new type on every render, so React would remount the card on each
+  // keystroke and throw the caret to the end of the field being edited. The
+  // lowercase name is the guard — <claimable /> does not typecheck.
+  const claimable = (path: string, byCol: string, claimedState: "taken" | "claimed", reload: () => void) => (x: any) => {
     const mine = x.house_id === me.id;
     const claimer = (x.taken_by ?? x.claimed_by) === me.id;
+    const byName: string | undefined = x[byCol];
     return (
-      <div className="card" style={{ opacity: x.state === "done" ? 0.55 : 1 }}>
+      <div key={x.id} className="card" style={{ opacity: x.state === "done" ? 0.55 : 1 }}>
         {editing === path + x.id ? (
           <form className="inline" onSubmit={(e) => { e.preventDefault(); saveEdit(path, x.id, reload); }}>
             <div className="row">
@@ -84,8 +89,8 @@ export function Market({ me, houses }: { me: Me; houses: House[] }) {
         )}
         <div className="submit"><button className="primary" type="submit">{tab === "runs" ? t("Post the run") : t("Post")}</button></div>
       </form>
-      {tab === "needs" && (needs.items.length ? needs.items.map((x) => <Claimable key={x.id} x={x} path="/needs" byName={x.taken_by_name} claimedState="taken" reload={needs.reload} />) : <Empty text={t("Nothing here yet.")} />)}
-      {tab === "offers" && (offers.items.length ? offers.items.map((x) => <Claimable key={x.id} x={x} path="/offers" byName={x.claimed_by_name} claimedState="claimed" reload={offers.reload} />) : <Empty text={t("Nothing here yet.")} />)}
+      {tab === "needs" && (needs.items.length ? needs.items.map(claimable("/needs", "taken_by_name", "taken", needs.reload)) : <Empty text={t("Nothing here yet.")} />)}
+      {tab === "offers" && (offers.items.length ? offers.items.map(claimable("/offers", "claimed_by_name", "claimed", offers.reload)) : <Empty text={t("Nothing here yet.")} />)}
       {tab === "runs" && (runs.items.length ? runs.items.map((r) => (
         <div key={r.id} className="card">
           {editing === "/runs" + r.id ? (

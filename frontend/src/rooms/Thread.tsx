@@ -26,8 +26,10 @@ export function Thread({ subject, id, me, onChanged }: { subject: "event" | "wis
   const roots = items.filter((c) => !c.parent_id);
   const replies = (cid: number) => items.filter((c) => c.parent_id === cid);
 
-  const One = ({ c, reply }: { c: any; reply?: boolean }) => (
-    <div className="card comment" style={reply ? { marginLeft: "1.4rem" } : undefined}>
+  // A render function, not a component — see Market.tsx: as a component it
+  // remounted every comment card on each keystroke in the reply box.
+  const one = (c: any, reply?: boolean) => (
+    <div key={c.id} className="card comment" style={reply ? { marginLeft: "1.4rem" } : undefined}>
       <div className="head"><Crest crest={c.house_crest} color={c.house_color} /><span className="who">{c.author || c.house_name}</span><When iso={c.created_at} /></div>
       <div className="body">{c.body}</div>
       <div className="actions">
@@ -45,7 +47,7 @@ export function Thread({ subject, id, me, onChanged }: { subject: "event" | "wis
         <div className="submit">{replyTo && <button type="button" className="ghost" onClick={() => setReplyTo(null)}>✕</button>}<button className="lesser" type="submit">{replyTo ? t("Reply") : t("Post")}</button></div>
       </form>
       {roots.length === 0 && <p className="small muted" style={{ fontStyle: "italic" }}>{t("No comments yet.")}</p>}
-      {roots.map((c) => (<div key={c.id}><One c={c} />{replies(c.id).map((r) => <One key={r.id} c={r} reply />)}</div>))}
+      {roots.map((c) => (<div key={c.id}>{one(c)}{replies(c.id).map((r) => one(r, true))}</div>))}
     </div>
   );
 }

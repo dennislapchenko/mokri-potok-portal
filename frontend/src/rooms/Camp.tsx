@@ -26,10 +26,11 @@ export function Camp({ me }: { me: Me }) {
   const put = (id: number, body: any) => api(`/camp/${id}`, { method: "PUT", body }).then(reload);
 
   const live = items.filter((x) => x.state !== "handed"), log = items.filter((x) => x.state === "handed");
-  const Row = ({ x }: { x: any }) => {
+  // A render function, not a component — see Market.tsx. Lowercase on purpose.
+  const row = (x: any) => {
     const holder = x.held_by === me.id;
     return (
-      <div className={"card" + (x.state === "handed" ? " faded" : "")} style={{ borderLeftColor: x.state === "arrived" ? "var(--green)" : x.state === "held" ? "var(--brass)" : "var(--parch3)" }}>
+      <div key={x.id} className={"card" + (x.state === "handed" ? " faded" : "")} style={{ borderLeftColor: x.state === "arrived" ? "var(--green)" : x.state === "held" ? "var(--brass)" : "var(--parch3)" }}>
         <div className="head">
           <Crest crest={x.house_crest} color={x.house_color} /><span className="who">{x.house_name}</span>
           <span className={"tag " + (x.state === "arrived" ? "open" : x.state === "held" ? "taken" : "done")}>
@@ -65,9 +66,9 @@ export function Camp({ me }: { me: Me }) {
         <div className="submit"><button className="primary" type="submit">🏕️ {t("Camper arrived")}</button></div>
       </form>
       {live.length === 0 && log.length === 0 && <Empty text={t("Nothing yet. The first camper of the season will show up here.")} />}
-      {live.map((x) => <Row key={x.id} x={x} />)}
+      {live.map(row)}
       {log.length > 0 && <h3 style={{ marginTop: "1rem", color: "var(--ink2)" }}>📜 {t("Log of campers")}</h3>}
-      {log.map((x) => <Row key={x.id} x={x} />)}
+      {log.map(row)}
     </div>
   );
 }

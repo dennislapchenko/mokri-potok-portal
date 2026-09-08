@@ -32,11 +32,12 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
   const save = async () => { await api(`/events/${ev.id}`, { method: "PUT", body: f }); setEditing(false); reload(); };
 
   const anyStale = list.some((x) => x.stale);
-  const Group = ({ state, icon }: { state: string; icon: string }) => {
+  // A render function, not a component — see Market.tsx. Lowercase on purpose.
+  const group = ({ state, icon }: { state: string; icon: string }) => {
     const g = by(state);
     if (!g.length) return null;
     return (
-      <div className="small signers">
+      <div key={state} className="small signers">
         <span className="state" title={t(RSVP.find((r) => r.state === state)!.label)}>{icon}</span>
         <span className="who">{g.map((sgn, i) => (
           <span key={sgn.house_id} className={sgn.stale ? "stale" : ""}>
@@ -78,7 +79,7 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
         </>
       )}
 
-      {RSVP.map((r) => <Group key={r.state} state={r.state} icon={r.icon} />)}
+      {RSVP.map(group)}
       <div className="actions">
         {RSVP.map((r) => (
           <button key={r.state} className={mine === r.state ? "primary" : "lesser"} onClick={() => (mine === r.state ? clear() : answer(r.state))} title={mine === r.state ? t("tap again to take it back") : ""}>

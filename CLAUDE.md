@@ -472,8 +472,8 @@ skipped. The reviewer edits nothing.
   about people or tenure. Pointing at a file in that repo by path is fine, its
   content about people is not. Abstract it or leave it out. This applies to
   docs, commits, memory and agent files alike. Test fixtures use invented
-  house names; the real ones that sat in tests until 2026-09-09 stay in the
-  git history (owner's decision, same day) — no rewrite, no force-push.
+  house names. History is not rewritten for a name that slipped in (owner's
+  decision 2026-09-09): fix HEAD, no force-push.
 - Work on `main`. One person owns this repo; a side branch and a pull request
   only put a gate between a verified change and the village. Commit to `main`
   and push (owner's rule 2026-09-07).

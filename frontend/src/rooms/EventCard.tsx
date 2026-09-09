@@ -32,9 +32,8 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
   const save = async () => { await api(`/events/${ev.id}`, { method: "PUT", body: f }); setEditing(false); reload(); };
 
   const anyStale = list.some((x) => x.stale);
-  // An event that is over sinks the way a closed task and a handed camp row do:
-  // faded, its kind colour gone from the edge. It stays readable and stays
-  // answerable — the past is history, not an archive.
+  // Faded, kind colour off the edge, no answer buttons — the thread and the
+  // answers given stay. CLAUDE.md § An answer is not a headcount says why.
   const over = isOver(ev);
   // A render function, not a component — see Market.tsx. Lowercase on purpose.
   const group = ({ state, icon }: { state: string; icon: string }) => {
@@ -85,7 +84,7 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
 
       {RSVP.map(group)}
       <div className="actions">
-        {RSVP.map((r) => (
+        {!over && RSVP.map((r) => (
           <button key={r.state} className={mine === r.state ? "primary" : "lesser"} onClick={() => (mine === r.state ? clear() : answer(r.state))} title={mine === r.state ? t("tap again to take it back") : ""}>
             {r.icon} {t(r.label)}{r.state === "yes" && ev.signups > 0 ? ` (${ev.signups})` : ""}
           </button>

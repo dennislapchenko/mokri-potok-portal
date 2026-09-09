@@ -175,6 +175,15 @@ does not ship.
   POST without a valid state is a 400, never a yes.
   Moving an event's time bumps `events.time_version`, which marks every earlier
   answer stale — a headcount for a day that no longer exists is worse than none.
+  **An event that is over shows no answer buttons** (owner's decision
+  2026-09-09): the three go once `isOver`, because a headcount for a day that
+  already happened counts nobody and a faded card you can still click reads as
+  a room that did not notice. The answers already given stay listed with their
+  crests, and the **thread stays open** — what a work party was like is written
+  after it, not before. The backend still accepts a late POST, and must keep
+  doing so: `over` is read once when the card renders and no clock re-renders
+  it, so a page opened before the work party ended still carries the buttons
+  afterwards, and that answer was given in good faith.
 - **Any house may edit an event — provisional.** Owner's decision 2026-09-06:
   every account today is a villager. `events.edited_by` records who, and the
   room shows it. When a reduced "viewer" role arrives for volunteers, this

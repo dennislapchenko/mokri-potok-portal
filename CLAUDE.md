@@ -216,6 +216,19 @@ does not ship.
   closed or broken view on a slow phone.
 - **Wishlist names are not votes.** Never sort, badge or count by how many
   houses want a thing. A wish ends when the wisher marks it arrived.
+- **A project is planned, in progress or finished** (owner's ask 2026-09-09).
+  Its creator or a steward steps it forward or back, one step at a time in
+  the UI, any step in the API. The DB value for in progress stays `open`,
+  older than the planned state, so no row moved. **That a new project begins
+  planned is the assistant's default, not yet the owner's decision**: one more
+  tap before Saturday's work party counts on Home, against a plan that never
+  counted as work. The creation push says "plans", not "starts", and is
+  pinned in `banner_test.go`. Nothing pushes on a flip. **Only a project in
+  progress counts on the Home badge**, and only its free tasks; a planned
+  project's tasks may still be taken — the badge is what a plan stays off,
+  not the hands. The event form offers every project that is not finished, a
+  planned one included: the work party that starts a project is exactly the
+  event it needs.
 - **A task is taken by any house, or handed to one by its creator.** Any
   house takes a free task and lets it go. The task's creator, the project's
   creator or a steward may assign a house (agreed in real life first) or clear

@@ -158,9 +158,11 @@ export function Calendar({ me, houses }: { me: Me; houses: House[] }) {
               </select>
             </span>
           </div>
-          {projects.items.filter((p) => p.state === "open").length > 0 && (
+          {/* Every project not finished, planned ones included: the work
+              party that starts a project is exactly the event it needs. */}
+          {projects.items.filter((p) => p.state !== "done").length > 0 && (
             <div className="row">
-              <label>📋 {t("Belongs to a project")}<select value={f.project_id} onChange={(e) => setF({ ...f, project_id: e.target.value, task_id: "" })}><option value="">—</option>{projects.items.filter((p) => p.state === "open").map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
+              <label>📋 {t("Belongs to a project")}<select value={f.project_id} onChange={(e) => setF({ ...f, project_id: e.target.value, task_id: "" })}><option value="">—</option>{projects.items.filter((p) => p.state !== "done").map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
               {f.project_id && tasks.length > 0 && <label>{t("Task")}<select value={f.task_id} onChange={set("task_id")}><option value="">—</option>{tasks.map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}</select></label>}
             </div>
           )}

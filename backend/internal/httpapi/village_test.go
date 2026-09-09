@@ -639,13 +639,33 @@ func TestProjects(t *testing.T) {
 	if list[0]["tasks"].(float64) != 1 || list[0]["tasks_done"].(float64) != 1 {
 		t.Fatalf("list counts: %v", list[0])
 	}
-	// Done is a state; a stranger cannot set it, the creator can, and reopen.
+	// A project begins planned; the creator starts it, may put it back, and
+	// finishes it. A stranger sets no state. Done is a state, reopen exists.
+	if list[0]["state"] != "planned" {
+		t.Fatalf("a new project should be planned: %v", list[0]["state"])
+	}
+	code, _, _ = third.do("PUT", "/api/projects/"+pid, map[string]any{"state": "open"})
+	third.must(403, code, "stranger starts project")
+	code, _, _ = volk.do("PUT", "/api/projects/"+pid, map[string]any{"state": "open"})
+	volk.must(204, code, "start project")
+	code, _, _ = volk.do("PUT", "/api/projects/"+pid, map[string]any{"state": "planned"})
+	volk.must(204, code, "back to planned")
+	code, _, _ = volk.do("PUT", "/api/projects/"+pid, map[string]any{"state": "open"})
+	volk.must(204, code, "start again")
 	code, _, _ = third.do("PUT", "/api/projects/"+pid, map[string]any{"state": "done"})
 	third.must(403, code, "stranger finishes project")
 	code, _, _ = volk.do("PUT", "/api/projects/"+pid, map[string]any{"state": "done"})
 	volk.must(204, code, "finish project")
+	_, _, list = third.do("GET", "/api/projects", nil)
+	if list[0]["state"] != "done" || list[0]["done_at"] == nil {
+		t.Fatalf("finish did not land: %v", list[0])
+	}
 	code, _, _ = volk.do("PUT", "/api/projects/"+pid, map[string]any{"state": "open"})
 	volk.must(204, code, "reopen")
+	_, _, list = third.do("GET", "/api/projects", nil)
+	if list[0]["state"] != "open" || list[0]["done_at"] != nil {
+		t.Fatalf("reopen did not clear done_at: %v", list[0])
+	}
 	_, exp, _ := steward.do("GET", "/api/export", nil)
 	for _, k := range []string{"projects", "project_tasks", "camp_takings"} {
 		if _, ok := exp[k]; !ok {

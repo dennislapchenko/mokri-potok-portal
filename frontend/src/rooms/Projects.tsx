@@ -9,7 +9,10 @@ import { photoURL, uploadPhoto } from "../photo";
 
 // Projects: a long job split into tasks. A task is taken, never handed to a
 // house. Done is a state that stays visible. "3 of 5" is a project's progress,
-// never a house's score.
+// never a house's score. A project is planned, in progress or finished
+// (owner's decision 2026-09-09): it starts planned, one tap starts it, and
+// only a project in progress counts on the Home badge — a plan is not work
+// waiting for hands.
 
 export function Projects({ me }: { me: Me }) {
   const { t } = useT();
@@ -24,10 +27,10 @@ export function Projects({ me }: { me: Me }) {
     setF({ title: "", due_at: "", notes: "" }); setOpen(false); reload();
     nav(`/projects/${id}`);
   };
-  const live = items.filter((p) => p.state === "open"), done = items.filter((p) => p.state === "done");
+  const live = items.filter((p) => p.state === "open"), planned = items.filter((p) => p.state === "planned"), done = items.filter((p) => p.state === "done");
   // Render functions, not components — see Market.tsx. Lowercase on purpose.
   const card = (p: any) => (
-    <Link key={p.id} to={`/projects/${p.id}`} className={"card project" + (p.state === "done" ? " faded" : "")}>
+    <Link key={p.id} to={`/projects/${p.id}`} className={"card project" + (p.state === "done" ? " faded" : p.state === "planned" ? " planned" : "")}>
       <div className="head"><Crest crest={p.house_crest} color={p.house_color} /><strong>📋 {p.title}</strong>{p.due_at && <span className="when">{t("by")} <When iso={p.due_at} /></span>}</div>
       <div className="small">
         <span>
@@ -61,6 +64,7 @@ export function Projects({ me }: { me: Me }) {
       )}
       {items.length === 0 && <Empty text={t("No projects yet. Start one — a fence, a roof, a road.")} />}
       {live.map(card)}
+      {planned.length > 0 && <><h3 className="small" style={{ marginTop: "1rem" }}>🗓 {t("Planned")}</h3>{planned.map(card)}</>}
       {done.length > 0 && <details style={{ marginTop: "1rem" }}><summary className="small">✓ {t("Finished")} ({done.length})</summary>{done.map(card)}</details>}
     </div>
   );
@@ -153,11 +157,15 @@ export function Project({ me, houses: allHouses }: { me: Me; houses: { id: numbe
             <div className="submit"><button type="button" className="ghost" onClick={() => setEditing(false)}>✕</button><button className="primary" type="submit">{t("Save")}</button></div>
           </form>
         ) : (<>
-        <h2>📋 {p.title} {p.state === "done" && <span className="tag done">✓ {t("Finished")}</span>}
+        <h2>📋 {p.title} {p.state === "done" && <span className="tag done">✓ {t("Finished")}</span>}{p.state === "planned" && <span className="tag">🗓 {t("Planned")}</span>}
           <span className="sub"><Crest crest={p.house_crest} color={p.house_color} /> {p.house_name}{p.due_at ? <> · {t("by")} <When iso={p.due_at} /></> : null}</span>
           {editable && <span style={{ marginLeft: "auto", display: "flex", gap: ".4rem" }}>
             <button className="ghost" onClick={startEdit}>✎ {t("Edit")}</button>
-            <button onClick={() => put(`/projects/${p.id}`, { state: p.state === "done" ? "open" : "done" })}>{p.state === "done" ? t("Reopen") : "✓ " + t("Mark finished")}</button>
+            {/* Planned → in progress → finished, and each step back. */}
+            {p.state === "planned" && <button className="primary" onClick={() => put(`/projects/${p.id}`, { state: "open" })}>▶ {t("Start")}</button>}
+            {p.state === "open" && <button onClick={() => put(`/projects/${p.id}`, { state: "planned" })}>{t("Back to planned")}</button>}
+            {p.state === "open" && <button onClick={() => put(`/projects/${p.id}`, { state: "done" })}>✓ {t("Mark finished")}</button>}
+            {p.state === "done" && <button onClick={() => put(`/projects/${p.id}`, { state: "open" })}>{t("Reopen")}</button>}
           </span>}
         </h2>
         {p.notes && <p>{p.notes}</p>}

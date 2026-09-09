@@ -77,7 +77,10 @@ func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "title required")
 		return
 	}
-	id, err := s.st.Exec(r.Context(), `INSERT INTO projects(house_id, title, notes, due_at) VALUES (?,?,?,?)`, h.ID, str(m, "title"), str(m, "notes"), nullIfEmpty(str(m, "due_at")))
+	// A project begins planned (owner's decision 2026-09-09): the house that
+	// writes it down has not started it, and the Home badge counts only work
+	// in progress. One tap on the page starts it.
+	id, err := s.st.Exec(r.Context(), `INSERT INTO projects(house_id, title, notes, due_at, state) VALUES (?,?,?,?,'planned')`, h.ID, str(m, "title"), str(m, "notes"), nullIfEmpty(str(m, "due_at")))
 	if err != nil {
 		fail(w, err)
 		return
@@ -87,12 +90,14 @@ func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 		if d := str(m, "due_at"); d != "" {
 			body = join(" · ", tr(lang, "do ", "by ")+humanWhen(d, lang, s.now()), body)
 		}
-		return Payload{Title: "📋 " + h.Name + tr(lang, " začenja: ", " starts: ") + str(m, "title"), Body: body, URL: "#/projects/" + itoa64(id)}
+		return Payload{Title: "📋 " + h.Name + tr(lang, " načrtuje: ", " plans: ") + str(m, "title"), Body: body, URL: "#/projects/" + itoa64(id)}
 	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
 
-// updateProject: title, notes, due_at, and state open/done (canEdit).
+// updateProject: title, notes, due_at, and state planned/open/done (canEdit).
+// `open` is "in progress" — the value predates the planned state and stays,
+// so no row moves. Any step is allowed in either direction.
 func (s *Server) updateProject(w http.ResponseWriter, r *http.Request) {
 	id, _ := pathID(r)
 	if !s.ownerOrSteward(w, r, "projects", id) {
@@ -113,6 +118,8 @@ func (s *Server) updateProject(w http.ResponseWriter, r *http.Request) {
 		s.st.Exec(r.Context(), `UPDATE projects SET state='done', done_at=datetime('now') WHERE id=?`, id)
 	case "open":
 		s.st.Exec(r.Context(), `UPDATE projects SET state='open', done_at=NULL WHERE id=?`, id)
+	case "planned":
+		s.st.Exec(r.Context(), `UPDATE projects SET state='planned', done_at=NULL WHERE id=?`, id)
 	}
 	w.WriteHeader(204)
 }

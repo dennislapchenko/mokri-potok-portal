@@ -50,7 +50,7 @@ A project is a long job. Tasks are its parts, each with a due date and one house
 
 | Table | Fields | Notes |
 | --- | --- | --- |
-| `projects` | `id`, `house_id` (creator), `title`, `notes`, `due_at` (nullable), `state` open/done, `done_at`, `created_at` | A house edits its own rows, a steward any row (`canEdit`). |
+| `projects` | `id`, `house_id` (creator), `title`, `notes`, `due_at` (nullable), `state` planned/open/done, `done_at`, `created_at` | A house edits its own rows, a steward any row (`canEdit`). `open` is "in progress"; the value predates the planned state (added 2026-09-09) and stays so no row moves. |
 | `project_tasks` | `id`, `project_id` (cascade), `house_id` (creator), `title`, `notes`, `assigned_to` → `houses` (SET NULL), `due_at`, `state` open/done, `done_at`, `closing_note`, `created_at` | One house per task. Several houses on one task: make an event and use sign-ups. |
 | `events` + `project_id` → `projects` (SET NULL) | `ALTER TABLE events ADD COLUMN project_id` | Same shape as `needs.run_id`. |
 | `events` + `task_id` → `project_tasks` (SET NULL) | `ALTER TABLE events ADD COLUMN task_id` | The backend fills `project_id` from the task. `task_id` without a project is rejected. |
@@ -65,7 +65,7 @@ Deleting a project deletes its tasks. Its events stay in the calendar with the l
 | Create a project, add a task, add an event | Any house | Same as events today. |
 | Assign a task to a house | The house itself ("I take it"), the project creator, a steward | Self-take mirrors Market `taken_by`. Assigning a neighbour without asking is a social risk, see the question below. |
 | Close a task | The assigned house, the creator, a steward | The house that did the work says so. |
-| Mark a project done, or reopen it | The creator, a steward | Open tasks are not blocked. They stay listed under the done project as "left open". |
+| Start a project, put it back to planned, mark it done, or reopen it | The creator, a steward | A project begins planned. Open tasks are not blocked by finishing. They stay listed under the done project as "left open". |
 | Delete | `canEdit`, with the confirm dialog every room uses | |
 
 > QUESTION FOR THE OWNER: may a house assign a task to another house in the app, or only offer it? Recommendation: **offer only in v0** — a task without `assigned_to` shows "I take it". The creator assigns only in v1, after the houses say they want it.
@@ -74,13 +74,13 @@ Deleting a project deletes its tasks. Its events stay in the calendar with the l
 
 **Projects list (`#/projects`)**
 - Header, then "+ New project" opening an inline form: title, due date, notes.
-- Open projects as cards: crest, title, due date, "3 of 5 tasks done", next event date.
-- Below, a collapsed section "Finished" with done projects, same cards, faded like a done need.
-- Home badge: "N tasks due this week", built like the shed badge.
+- Projects in progress as cards: crest, title, due date, "3 of 5 tasks done", next event date.
+- Below, a "Planned" section with the same cards, dashed edge; then a collapsed section "Finished" with done projects, faded like a done need.
+- Home badge: projects in progress and their free tasks. A planned project counts nowhere — a plan is not work waiting for hands (owner's decision 2026-09-09).
 - No per-house count anywhere. "3 of 5" is a project's progress, not a house's.
 
 **Project page (`#/projects/:id`)**
-- Header: title, due date, state, creator crest. "Done" button for `canEdit`.
+- Header: title, due date, state, creator crest. For `canEdit`: "Start" on a planned project; "Back to planned" and "Mark finished" on one in progress; "Reopen" on a finished one.
 - Tasks: open first, each a card with due date, holder name or "I take it", "Done" button. Done tasks below, faded, showing `closing_note`.
 - "+ Add a task" inline form: title, due date, notes.
 - Events: "Ahead" then "Happened", cards reused from `Calendar.tsx` with sign-ups.
@@ -88,7 +88,7 @@ Deleting a project deletes its tasks. Its events stay in the calendar with the l
 - Closing a task asks for one optional line, stored as `closing_note`.
 
 **Tavern calendar**
-- The event form gets a "Project" select, like the run select in Market. Picking a project shows a "Task" select of that project's open tasks.
+- The event form gets a "Project" select, like the run select in Market — every project not finished, planned ones included. Picking a project shows a "Task" select of that project's open tasks.
 - `?project=ID` opens the form with the project preselected.
 - The event card shows a chip "📋 project title" that links to the project page.
 - The month grid does not change.

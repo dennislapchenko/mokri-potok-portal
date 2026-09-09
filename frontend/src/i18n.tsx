@@ -334,6 +334,10 @@ const sl: Record<string, string> = {
   "Built from the change of": "Zgrajeno iz spremembe z dne",
   "Could not load the changelog.": "Dnevnika sprememb ni bilo mogoče naložiti.",
   "Nothing in the last 90 days.": "V zadnjih 90 dneh nič.",
+  "Planned": "Načrtovano",
+  "in progress": "v teku",
+  "Start": "Začni",
+  "Back to planned": "Nazaj med načrtovane",
 };
 
 const Ctx = createContext<{ lang: Lang; t: (s: string) => string; setLang: (l: Lang) => void }>({ lang: "sl", t: (s) => s, setLang: () => {} });

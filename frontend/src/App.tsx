@@ -147,7 +147,9 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
           // The shed is two rooms in one door, so its badge says both: the tools
           // that exist, and the ones the village still lacks.
           "/shed": [num(tools.length - out, "in the shed"), num(out, "out"), num(wishes.length, "in the wishlist")].filter(Boolean).join(" · "),
-          "/projects": [num(projects.filter((x) => x.state === "open").length, "open"), num(projects.reduce((acc, x) => acc + (x.state === "open" ? x.tasks_free : 0), 0), "tasks free to take")].filter(Boolean).join(" · "),
+          // Only a project in progress counts, and only its free tasks: a
+          // planned project is not work waiting for hands yet.
+          "/projects": [num(projects.filter((x) => x.state === "open").length, "in progress"), num(projects.reduce((acc, x) => acc + (x.state === "open" ? x.tasks_free : 0), 0), "tasks free to take")].filter(Boolean).join(" · "),
           "/camp": [num(camp.filter((x) => x.state === "arrived").length, "arrived"), num(camp.filter((x) => x.state === "held").length, "held")].filter(Boolean).join(" · "),
         });
       }).catch(() => {});

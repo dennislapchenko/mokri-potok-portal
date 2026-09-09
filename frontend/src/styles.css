@@ -215,6 +215,8 @@ details.parchment[open] > summary { border-bottom: 2px solid var(--parch3); padd
 /* A project's summary line: progress on the left, what the project carries on
    the right. It wraps on a narrow phone instead of running off the panel. */
 .card.project .small { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .5rem; }
+/* A planned project has not started: its edge is drawn, not filled. */
+.card.project.planned { border-left-style: dashed; }
 .card.project .tally { margin-left: auto; display: flex; gap: .5rem; white-space: nowrap; }
 
 /* Tool shed: compact rows, photo in a rounded square on the right (~1/5). */

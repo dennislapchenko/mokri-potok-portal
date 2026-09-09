@@ -6,6 +6,7 @@ import "os"
 
 type Config struct {
 	Port            string // HTTP listen port
+	Bind            string // interface to listen on; empty = all. Dev sets 127.0.0.1 so the macOS firewall stops asking
 	DataDir         string // SQLite file + nightly backups live here
 	BootstrapCode   string // optional: fixed code for the first steward house; empty = generated and logged
 	PushSubject     string // VAPID subject: an https URL or mailto: that identifies this sender to push services
@@ -17,6 +18,7 @@ type Config struct {
 func Load() Config {
 	return Config{
 		Port:            envOr("PORT", "8788"),
+		Bind:            os.Getenv("BIND"),
 		DataDir:         envOr("DATA_DIR", "./data"),
 		BootstrapCode:   os.Getenv("POTOK_BOOTSTRAP_CODE"),
 		PushSubject:     envOr("PUSH_SUBJECT", "https://vas.mokri-potok.si/"),

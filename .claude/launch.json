@@ -2,6 +2,6 @@
   "version": "0.0.1",
   "configurations": [
     { "name": "frontend", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--prefix", "frontend"], "port": 5173 },
-    { "name": "backend", "runtimeExecutable": "go", "runtimeArgs": ["run", "-C", "backend", "."], "port": 8788 }
+    { "name": "backend", "runtimeExecutable": "env", "runtimeArgs": ["BIND=127.0.0.1", "go", "run", "-C", "backend", "."], "port": 8788 }
   ]
 }

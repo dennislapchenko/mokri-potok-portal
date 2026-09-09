@@ -75,14 +75,18 @@ func main() {
 	go st.RunNightlyBackups(ctx)
 	go srv.RunToolReminders(ctx)
 
-	hs := &http.Server{Addr: ":" + cfg.Port, Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
+	// BIND=127.0.0.1 in dev: a loopback listener never triggers the macOS
+	// "accept incoming connections?" prompt, which `go run` otherwise raises on
+	// every start because each build is a new unsigned binary in a temp path.
+	// The container leaves it empty and listens on every interface for Caddy.
+	hs := &http.Server{Addr: cfg.Bind + ":" + cfg.Port, Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
 		<-ctx.Done()
 		sh, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		hs.Shutdown(sh)
 	}()
-	log.Printf("listening on :%s, data in %s, timezone %s", cfg.Port, cfg.DataDir, time.Local)
+	log.Printf("listening on %s:%s, data in %s, timezone %s", cfg.Bind, cfg.Port, cfg.DataDir, time.Local)
 	if err := hs.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

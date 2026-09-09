@@ -7,5 +7,6 @@ import react from "@vitejs/plugin-react";
 // needs no CORS anywhere.
 export default defineConfig({
   plugins: [react()],
-  server: { port: 5173, proxy: { "/api": "http://localhost:8788" } },
+  // 127.0.0.1, not localhost: the dev backend binds loopback v4 only (BIND).
+  server: { port: 5173, proxy: { "/api": "http://127.0.0.1:8788" } },
 });

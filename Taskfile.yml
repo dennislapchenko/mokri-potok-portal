@@ -10,8 +10,9 @@ tasks:
     dir: backend
     cmds: [go vet ./..., go test ./...]
   be:run:
-    desc: run the backend locally on :8788 with ./data
+    desc: run the backend locally on 127.0.0.1:8788 with ./data
     dir: backend
+    env: { BIND: 127.0.0.1 } # loopback only, so the macOS firewall never asks
     cmds: [go run .]
   be:image:
     desc: build the backend image locally

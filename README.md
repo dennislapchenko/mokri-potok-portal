@@ -27,7 +27,7 @@ sends notifications.
 
 ```sh
 task check      # vet + test backend, typecheck + build frontend
-task be:run     # backend on :8788 (bootstrap code printed in the log)
+task be:run     # backend on 127.0.0.1:8788 (bootstrap code printed in the log); BIND unset = all interfaces, as in the container
 # CSP check against a real page: build, copy dist into the embed dir, run the
 # backend, open :8788 — then git checkout the placeholder index.html again.
 task fe:build && cp -R frontend/dist/. backend/internal/httpapi/web/

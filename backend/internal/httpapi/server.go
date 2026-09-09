@@ -134,6 +134,11 @@ func (s *Server) routes() {
 	m.HandleFunc("PUT /api/camp/{id}", s.requireHouse(s.updateCamp))
 	m.HandleFunc("DELETE /api/camp/{id}", s.requireHouse(s.deleteRow("camp_takings")))
 	// Exit path: everything as one JSON document (steward only).
+	m.HandleFunc("GET /api/codex", s.requireHouse(s.listCodex))
+	m.HandleFunc("POST /api/codex", s.requireHouse(s.createCodexSection))
+	m.HandleFunc("PUT /api/codex/{id}", s.requireHouse(s.updateCodexSection))
+	m.HandleFunc("DELETE /api/codex/{id}", s.requireSteward(s.deleteCodexSection))
+
 	m.HandleFunc("GET /api/export", s.requireSteward(s.export))
 	// Everything that is not /api/ is the frontend (static.go). An unknown /api
 	// path must stay a 404 — the SPA shell answering 200 hides a typo forever.
@@ -1220,7 +1225,7 @@ func (s *Server) updateAway(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 	out := map[string]any{"exported_at": time.Now().UTC().Format(time.RFC3339)}
-	for _, t := range []string{"houses", "house_parcels", "house_homes", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "wish_options", "comments", "projects", "project_tasks", "project_photos", "camp_takings"} {
+	for _, t := range []string{"houses", "house_parcels", "house_homes", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "wish_options", "comments", "projects", "project_tasks", "project_photos", "camp_takings", "codex_sections"} {
 		cols := "*"
 		switch t { // photos are bytes, not text — they stay in the SQLite backup
 		case "tools":

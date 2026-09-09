@@ -21,7 +21,7 @@ export function Crest({ crest, color }: { crest: string; color: string }) {
 // a space and seconds — and is always UTC, because datetime('now') ignores the
 // container's TZ. Mark that one with a Z so the browser shifts it; a bare
 // string reads as local and shows the village two hours early in summer.
-const parse = (iso: string) =>
+export const parse = (iso: string) =>
   new Date(iso.length <= 10 ? iso + "T00:00" : iso[10] === " " ? iso.replace(" ", "T") + "Z" : iso);
 
 export function When({ iso }: { iso?: string | null }) {

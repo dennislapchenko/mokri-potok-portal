@@ -162,6 +162,16 @@ func (s *Store) Exec(ctx context.Context, q string, args ...any) (int64, error) 
 	return id, nil
 }
 
+// ExecN runs a statement and returns how many rows it changed — for the one
+// write that must know whether its WHERE matched (a compare-and-set).
+func (s *Store) ExecN(ctx context.Context, q string, args ...any) (int64, error) {
+	res, err := s.db.ExecContext(ctx, q, args...)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
 // Backup writes a consistent copy with VACUUM INTO (safe on a live WAL db) to
 // ${dataDir}/backups/potok-YYYY-MM-DD.db and keeps the newest `keep` files.
 func (s *Store) Backup(ctx context.Context, keep int) (string, error) {

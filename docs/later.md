@@ -103,3 +103,6 @@ Tavern asking the houses what they miss, and then four weeks of listening.
 | The all-kinds-on push default once more houses join | Every house, after a week | `village.md` § Notifications |
 | A second steward | The village | `village.md` § People and roles |
 | What a household without land calls itself | The household, when the first one joins | `design-membership.md` |
+| Whether editing the Codex in the app *amends* the adopted text or *proposes* an amendment for the council. Today any house edits and the section names it; the first edit replaces the council's wording with no copy kept but the nightly backup. A proposal state, or a section history, waits for the village to say it wants one | The collective | `CLAUDE.md` § Codex |
+| Reordering codex sections in the app. New sections append; the order the import set is the document's | Any house, if a new section ever belongs in the middle | `Codex.tsx`, one `ord` field |
+| The two languages of the adopted text do not carry the same number of principles in one section. Which one is the text | The collective | The codex itself, in the app |

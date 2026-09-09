@@ -11,6 +11,8 @@ import { Houses } from "./rooms/Houses";
 import { ToolShed } from "./rooms/ToolShed";
 import { Projects, Project } from "./rooms/Projects";
 import { Camp } from "./rooms/Camp";
+import { Codex } from "./rooms/Codex";
+import { Changelog } from "./Changelog";
 import { InstallBanner } from "./Install";
 import { Weather } from "./Weather";
 import { isOver, When } from "./rooms/shared";
@@ -87,6 +89,8 @@ export default function App() {
             <Route path="/projects/:id" element={<Project me={me} houses={houses} />} />
             <Route path="/camp" element={<Camp me={me} />} />
             <Route path="/houses" element={<Houses me={me} houses={houses} refresh={refresh} logout={logout} />} />
+            {/* The codex is a chip on Home; this is its address, for pasting into the Tavern. */}
+            <Route path="/codex" element={<Codex me={me} />} />
             <Route path="/join/:code" element={<Home me={me} houses={houses} />} />
             <Route path="*" element={<Home me={me} houses={houses} />} />
           </Routes>
@@ -106,16 +110,23 @@ export default function App() {
 // the map impresses on a first open and is not needed daily, and two phones of
 // one house disagree about that. localStorage is already how a device differs.
 // A device that never chose gets the tavern: what is pinned and what is coming
-// is the reason a villager opens the portal at all.
-type Topper = "map" | "weather" | "tavern";
+// is the reason a villager opens the portal at all. The codex is the fourth
+// choice: a device that keeps it on top opens the portal on the village's
+// values every time.
+type Topper = "map" | "weather" | "tavern" | "codex";
 
 function Home({ me, houses }: { me: Me; houses: House[] }) {
   const { t } = useT();
   const [top, setTop] = useState<Topper>(() => {
-    try { const v = localStorage.getItem("potok.top"); if (v === "map" || v === "weather" || v === "tavern") return v; } catch { /* ignore */ }
+    try { const v = localStorage.getItem("potok.top"); if (v === "map" || v === "weather" || v === "tavern" || v === "codex") return v; } catch { /* ignore */ }
     return "tavern";
   });
   const pick = (v: Topper) => { setTop(v); try { localStorage.setItem("potok.top", v); } catch { /* ignore */ } };
+  // The row at the foot of Home mirrors the one at its head, with one chip so
+  // far: the changelog, shown under it when the chip is on. Off by default —
+  // a list of what the builder did is for whoever scrolls down to ask.
+  const [foot, setFoot] = useState<boolean>(() => { try { return localStorage.getItem("potok.foot") === "changelog"; } catch { return false; } });
+  const pickFoot = () => { setFoot(!foot); try { localStorage.setItem("potok.foot", foot ? "" : "changelog"); } catch { /* ignore */ } };
   // One badge per building, built as a finished sentence so a room can say two
   // things at once (the shed: how many are in it, how many are out).
   const [badges, setBadges] = useState<Record<string, string>>({});
@@ -145,7 +156,7 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
     <>
       <InstallBanner />
       <div className="topper-pick">
-        {([["map", "🗺️", "Map"], ["weather", "🌤️", "Weather"], ["tavern", "🍺", "Tavern"]] as [Topper, string, string][]).map(([v, icon, label]) => (
+        {([["map", "🗺️", "Map"], ["weather", "🌤️", "Weather"], ["tavern", "🍺", "Tavern"], ["codex", "📜", "Codex"]] as [Topper, string, string][]).map(([v, icon, label]) => (
           <button key={v} className={"chip" + (top === v ? " on" : "")} onClick={() => pick(v)} title={t("this device only")}>{icon} {t(label)}</button>
         ))}
       </div>
@@ -157,6 +168,7 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
       </>)}
       {top === "weather" && <Weather />}
       {top === "tavern" && <HallPeek />}
+      {top === "codex" && <Codex me={me} />}
       <div className="buildings">
         {ROOMS.map((r) => (
           <Link key={r.path} to={r.path} className="building">
@@ -167,6 +179,10 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
           </Link>
         ))}
       </div>
+      <div className="topper-pick foot">
+        <button className={"chip" + (foot ? " on" : "")} onClick={pickFoot} title={t("this device only")}>🔨 {t("Changelog")}</button>
+      </div>
+      {foot && <Changelog />}
     </>
   );
 }

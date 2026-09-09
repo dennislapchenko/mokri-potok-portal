@@ -52,8 +52,9 @@ func (s *Server) staticHandler() http.Handler {
 		case strings.HasPrefix(p, "assets/"):
 			// Vite puts a content hash in every asset name.
 			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
-		case p == "index.html" || p == "sw.js":
-			// The shell and the service worker decide what everything else is.
+		case p == "index.html" || p == "sw.js" || p == "changelog.json":
+			// The shell and the service worker decide what everything else is;
+			// the changelog is written at build time and read after a deploy.
 			w.Header().Set("Cache-Control", "no-cache")
 		default:
 			w.Header().Set("Cache-Control", "public, max-age=3600")

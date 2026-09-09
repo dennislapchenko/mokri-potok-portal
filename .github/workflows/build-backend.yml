@@ -23,6 +23,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The whole history: the changelog page is written from it.
+          fetch-depth: 0
+      - name: Changelog from the git log
+        # The Docker web stage has no git, so the file is written here and
+        # copied in with frontend/ (frontend/scripts/changelog.mjs).
+        run: node frontend/scripts/changelog.mjs
       - name: Test
         uses: actions/setup-go@v5
         with:

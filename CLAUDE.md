@@ -339,24 +339,70 @@ does not ship.
 - **The bottom bar fits five.** Village plus four rooms — Hall, Projects,
   Market, Shed (owner's pick 2026-09-05). A new room either replaces one, merges
   into one, or lives off the bar like Watchtower, Campground and Houses do —
-  tiles on the Home map, two taps from anywhere. Projects has a second door: the
+  tiles on the Home map, two taps from anywhere. The Codex and the Changelog
+  are not rooms: they are chips on Home, at its head and at its foot. Projects has a second door: the
   📋 chip on a calendar event. Rooms carry a `short` label for
   the bar because a phone gives each item about 60 px. Rationale and the
   options rejected: `docs/design-more-rooms.md`.
 - **Old notification links must keep working.** Payload URLs live in the
   database of no one — they are already on people's phones. `/bell` survives as
   a route alias after the merge; a post links to `#/tavern?at=board`.
+- **The Codex is the village's text, so it lives in the database, never in
+  the repo** (owner's decision 2026-09-09). `codex_sections` holds the founding
+  document — values and the agreements the council adopted — as ordered
+  bilingual sections (`title_sl/en`, `body_sl/en`); the page shows the reader's
+  language and borrows the other one when a field is empty, saying so. **Any
+  house edits a section or adds one**, on the same provisional footing as
+  editing an event, and every section names the house that last wrote it and
+  the day — a text anyone may change must show who did. `updated_by IS NULL`
+  reads as *"adopted by the village council"* with the section's date. **A
+  steward removes a section**, and the nightly backup is its undo. A section
+  outlives the house that edited it (`ON DELETE SET NULL`), like a project
+  picture. **Nothing pushes**: a changed codex is announced in the Tavern by
+  the house that changed it, in its own words. The adopted text enters once,
+  by `/server codex-import < codex.json` on the VM (`codex.go` has the shape;
+  `task vm:codex -- codex.json`), stamped with the adoption date and no house;
+  it refuses a codex that already has sections. The repo is public and the
+  document is the collective's, so the seed file stays off the repo. The
+  export carries the table. Bodies are plain text with two habits and no
+  markdown library (`Prose` in `Codex.tsx`): a blank line splits paragraphs, a
+  block of `- ` lines is a list, and a bullet's words before its first colon
+  are its lead, set in bold. **Two houses on one section**: the form sends the
+  `rev` it opened on and the update is one compare-and-set statement, so a PUT
+  with an older rev is a **409** and lands nothing; the page then shows their
+  text above the form and keeps this one, so the next save replaces theirs
+  knowingly. A counter, not the stamp: a stamp has seconds. A PUT without a
+  rev is taken as it is.
+  **Where it lives**: the fourth chip of the Home row — Map, Weather, Tavern,
+  Codex — so a device that keeps it on top opens the portal on the village's
+  values; `#/codex` is its address for pasting into the Tavern, not a door.
+- **The changelog is the git log, filtered, written at build time.**
+  `frontend/scripts/changelog.mjs` writes `public/changelog.json` before every
+  build and dev start — `built` is HEAD's date, `entries` are the last **90
+  days** of commit subjects minus deploy rolls, docs, tooling, reverts and
+  merges — and the panel groups them by day. A window, not a history: the
+  panel sits at the foot of Home and a list with no end is nobody's answer.
+  CI writes the file with the whole history (`fetch-depth: 0`) before the
+  Docker build, because the web stage copies `frontend/` without `.git`; a
+  build with no git keeps the file it finds, or writes an empty one so the
+  panel still loads. The file is gitignored and served `no-cache`. Commit
+  subjects are what a villager reads there, in English — write them for that
+  reader. **Where it lives**: a chip row mirrored at the foot of Home, under
+  the buildings, seen only by whoever scrolls down; its one chip toggles the
+  panel, per device, off by default.
 
 ## Layout
 
 ```
 backend/            Go: main.go, internal/{config,store,httpapi}; migrations embedded
 frontend/           Vite + React; src/rooms/* one file per room (Projects.tsx holds list + page). Hall.tsx = Calendar.tsx + Board.tsx
-                    stacked, because the tavern is one door; src/map/VillageMap.tsx
+                    stacked, because the tavern is one door; src/map/VillageMap.tsx; rooms/Codex.tsx = the founding text, from the DB;
+                    src/Changelog.tsx reads public/changelog.json, which scripts/changelog.mjs writes from the git log at build
 frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons, backdrop.jpg (aerial photo behind the gate), fonts/ (self-hosted, OFL)
                     icon.svg is hand-drawn paths, full-bleed, content inside the central 80 % safe circle
                     (an emoji glyph renders off-centre and monochrome — do not go back to one)
                     src/push.ts, src/Install.tsx, src/AddPhone.tsx, src/photo.ts (auth'd photo fetch + browser-side shrink)
+backend/internal/httpapi/codex.go  the codex: four routes and the one-time stdin import
 backend/internal/httpapi/shed.go   tool photo routes, wishlist; photos.go = how a photo is read and served (≤2 MB, auth) + project pictures; remind.go = return nudges
                     threads.go = comments on any subject + wish options; weather.go = ARSO, server-side; static.go = the embedded frontend
 docs/               design docs the owner and the assistant decide on together (navigation growth, Projects, Campground,

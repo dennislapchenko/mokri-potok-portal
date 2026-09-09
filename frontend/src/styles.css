@@ -152,7 +152,9 @@ main { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 1rem 1r
 .dp-foot { display: flex; gap: .4rem; justify-content: flex-end; margin-top: .5rem; }
 .crest-link { text-decoration: none; line-height: 0; }
 .crest-link:hover .crest { box-shadow: 0 0 0 2px var(--brass2); }
-.topper-pick { display: flex; gap: .3rem; justify-content: center; margin: .2rem 0 .6rem; }
+.topper-pick { display: flex; flex-wrap: wrap; gap: .3rem; justify-content: center; margin: .2rem 0 .6rem; }
+/* The same row mirrored at the foot of Home, after the buildings. */
+.topper-pick.foot { margin: 1.2rem 0 .6rem; }
 .peek h2 { margin-bottom: .4rem; }
 .peek-row { display: flex; align-items: center; gap: .5rem; text-decoration: none; color: var(--ink); padding: .3rem .2rem; border-bottom: 1px dashed var(--parch3); }
 .peek-row:last-child { border-bottom: 0; }
@@ -353,3 +355,32 @@ a.card:hover { background: #fff8e4; }
   .parchment h2 { font-size: 1.25rem; }
   .parchment h2 .sub { flex: 1 1 100%; margin-top: -.2rem; }
 }
+
+/* The Codex: a founding text, so it reads like one — a numbered section down
+   the left in the small-caps face, brass like the crests, and a stamp under
+   each section saying whether it stands as adopted or which house changed it. */
+.codex h2 { border-bottom: 4px double var(--brass); }
+.cx-head { justify-content: center; margin: -.3rem 0 .6rem; }
+.cx-sec { display: grid; grid-template-columns: 2.8rem 1fr; gap: .5rem; padding: .7rem 0 .5rem; border-top: 1px dashed var(--parch3); }
+.cx-sec:first-of-type { border-top: 0; }
+.cx-num { font-family: "IM Fell English SC", serif; font-size: 1.9rem; line-height: 1; color: var(--brass); text-shadow: 0 1px 0 #fff8e4; text-align: right; padding-top: .1rem; }
+.cx-text { min-width: 0; }
+.cx-sec h3 { font-size: 1.3rem; color: var(--wood2); margin-bottom: .2rem; }
+.cx-sec p { margin: .4rem 0; white-space: pre-wrap; }
+.cx-sec ul { margin: .4rem 0; padding-left: 1.2rem; }
+.cx-sec li { margin: .3rem 0; }
+.cx-sec li::marker { color: var(--brass); }
+.cx-stamp { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem .5rem; font-size: .85rem; color: var(--ink3); font-style: italic; margin-top: .4rem; }
+.cx-stamp .crest { width: 1.3rem; height: 1.3rem; font-size: .8rem; vertical-align: middle; }
+.cx-tools { margin-left: auto; display: flex; gap: .3rem; }
+.cx-tools button { padding: .1rem .5rem; font-size: .85rem; }
+.cx-add { display: flex; justify-content: center; margin-top: .6rem; }
+.cx-form { margin-bottom: .4rem; }
+.cx-conflict { background: #fff6e0; border: 1px solid var(--parch3); border-left: 5px solid var(--red); border-radius: 6px; padding: .5rem .8rem; margin-bottom: .5rem; }
+.cx-conflict h3 { font-size: 1.1rem; }
+@media (max-width: 560px) { .cx-sec { grid-template-columns: 2.2rem 1fr; } .cx-num { font-size: 1.5rem; } }
+
+/* The changelog: a day, then its lines. */
+.cl-day h3 { font-size: 1.05rem; color: var(--wood2); margin-top: .8rem; border-bottom: 1px dashed var(--parch3); }
+.cl-day ul { margin: .3rem 0; padding-left: 1.2rem; }
+.cl-day li::marker { color: var(--brass); }

@@ -52,6 +52,15 @@ func main() {
 		}
 		return
 	}
+	// `/server codex-import < codex.json` — the adopted text enters the database
+	// once, from a file, so the public repo never carries it (codex.go).
+	if len(os.Args) > 1 && os.Args[1] == "codex-import" {
+		if err := srv.ImportCodex(os.Stdin); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if row, _ := st.One(context.Background(), `SELECT count(*) AS n FROM houses`); row != nil && row["n"].(int64) == 0 {
 		code, err := srv.BootstrapCode()
 		if err != nil {

@@ -1,5 +1,7 @@
 node_modules/
 frontend/dist/
+# Written from the git log by frontend/scripts/changelog.mjs at build time.
+frontend/public/changelog.json
 backend/data/
 backups/
 .DS_Store

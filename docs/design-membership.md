@@ -24,7 +24,7 @@ same question. The sections below stay as the argument that got there.
   "Houses" reads fine — a household without land is still a house in the village
   metaphor. It is the door, not the field.
 - **The cheapest option is no new option at all**: a normal house row with zero
-  parcels, named "Hiša Vrba", one login, many phones. No new kind, and no place
+  parcels, named "Hiša Modri Ježek", one login, many phones. No new kind, and no place
   in the code where the app can quietly rank one sort of member below another.
 - **The real decision is the Watchtower, not the schema.** A part-time resident
   who posts an away-notice announces that a structure on somebody else's land is
@@ -253,6 +253,6 @@ steward's list can be generated from `kind`. That is the whole gain, and the
 | Steward eligibility | Not by default. No rule against it | The village | Not urgent |
 | The term of the arrangement | Written down with the collective's other agreements, not in the app | The two parties, and the village | Before the account exists |
 
-> QUESTION FOR DENIS: what does the village call such a household? "Hiša
+> QUESTION FOR THE OWNER: what does the village call such a household? "Hiša
 > <something>" was your own suggestion and it is the only thing here still
 > `TBD` — the households pick their own name when the first one joins.

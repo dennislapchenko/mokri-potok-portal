@@ -68,7 +68,7 @@ Deleting a project deletes its tasks. Its events stay in the calendar with the l
 | Mark a project done, or reopen it | The creator, a steward | Open tasks are not blocked. They stay listed under the done project as "left open". |
 | Delete | `canEdit`, with the confirm dialog every room uses | |
 
-> QUESTION FOR DENIS: may a house assign a task to another house in the app, or only offer it? Recommendation: **offer only in v0** — a task without `assigned_to` shows "I take it". The creator assigns only in v1, after the houses say they want it.
+> QUESTION FOR THE OWNER: may a house assign a task to another house in the app, or only offer it? Recommendation: **offer only in v0** — a task without `assigned_to` shows "I take it". The creator assigns only in v1, after the houses say they want it.
 
 ### UX sketch
 
@@ -158,7 +158,7 @@ Recommendation: **all houses**, rows and sums. Nobody, steward included, gets a 
 
 The plan's rule protects neighbour-to-neighbour reciprocity: counted favours turn into debt. Camp money is stranger-to-collective cash, held in trust by one house until handed over. Recording it answers "where is the collective's money", which a legal entity owes its members. So amounts are stored. The line the schema cannot hold and the rule must: **no sum per house, no "who collected most", no balance a house owes**. "Held" rows show as names on a list, never as a figure. With `amount_cents` in the table a per-house sum is one query away. That is honest to say, and it goes into CLAUDE.md as an invariant next to the tool-shed one.
 
-> QUESTION FOR DENIS: who is the treasurer, and is there a cash box or a bank account? "Handed over" needs a "to whom", or it is a state with no meaning. `TBD` until the collective answers.
+> QUESTION FOR THE OWNER: who is the treasurer, and is there a cash box or a bank account? "Handed over" needs a "to whom", or it is a state with no meaning. `TBD` until the collective answers.
 
 ## What changes elsewhere when this is built
 

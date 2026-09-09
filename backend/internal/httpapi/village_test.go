@@ -43,7 +43,7 @@ func newVillage(t *testing.T) (*Server, *fakeSender, *client, *client) {
 	steward := &client{t: t, h: h}
 	_, obj, _ := steward.do("POST", "/api/bootstrap", map[string]any{"code": "x", "name": "S"})
 	steward.token = obj["token"].(string)
-	_, o, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Žagar"})
+	_, o, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Zeleni Volk"})
 	other := &client{t: t, h: h}
 	_, j, _ := other.do("POST", "/api/join", map[string]any{"code": o["invite"].(map[string]any)["code"]})
 	other.token = j["token"].(string)
@@ -53,9 +53,9 @@ func newVillage(t *testing.T) (*Server, *fakeSender, *client, *client) {
 // TestPairingCode: a logged-in house makes a six-digit code, a second phone of
 // the same house uses it once, and the code then dies.
 func TestPairingCode(t *testing.T) {
-	srv, _, _, zagar := newVillage(t)
-	code, obj, _ := zagar.do("POST", "/api/pair", nil)
-	zagar.must(201, code, "pair")
+	srv, _, _, volk := newVillage(t)
+	code, obj, _ := volk.do("POST", "/api/pair", nil)
+	volk.must(201, code, "pair")
 	pin := obj["code"].(string)
 	if len(pin) != 6 {
 		t.Fatalf("want 6 digits, got %q", pin)
@@ -65,7 +65,7 @@ func TestPairingCode(t *testing.T) {
 	phone2.must(201, code, "join by pairing")
 	phone2.token = j["token"].(string)
 	_, me, _ := phone2.do("GET", "/api/me", nil)
-	if me["name"] != "Žagar" {
+	if me["name"] != "Zeleni Volk" {
 		t.Fatalf("paired into wrong house: %v", me)
 	}
 	// Single use.
@@ -73,7 +73,7 @@ func TestPairingCode(t *testing.T) {
 	code, _, _ = phone3.do("POST", "/api/join", map[string]any{"code": pin})
 	phone3.must(404, code, "reuse refused")
 	// Both phones belong to the house.
-	_, _, devs := zagar.do("GET", "/api/devices", nil)
+	_, _, devs := volk.do("GET", "/api/devices", nil)
 	if len(devs) != 2 {
 		t.Fatalf("want 2 devices got %d", len(devs))
 	}
@@ -82,8 +82,8 @@ func TestPairingCode(t *testing.T) {
 // TestGuessingCostsSomething: wrong codes are throttled per IP and five misses
 // drop every live pairing code.
 func TestGuessingCostsSomething(t *testing.T) {
-	srv, _, _, zagar := newVillage(t)
-	_, obj, _ := zagar.do("POST", "/api/pair", nil)
+	srv, _, _, volk := newVillage(t)
+	_, obj, _ := volk.do("POST", "/api/pair", nil)
 	pin := obj["code"].(string)
 	guess := &client{t: t, h: srv.Handler()}
 	seen429 := false
@@ -109,32 +109,32 @@ func TestGuessingCostsSomething(t *testing.T) {
 // phone call, not a notification. The one way through is a phone that asked
 // for it (TestQuietHoursOptOut).
 func TestQuietHours(t *testing.T) {
-	srv, fake, steward, zagar := newVillage(t)
+	srv, fake, steward, volk := newVillage(t)
 	srv.now = func() time.Time { return time.Date(2026, 9, 4, 23, 10, 0, 0, time.Local) }
 	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{
 		"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe")
 
-	zagar.do("POST", "/api/needs", map[string]any{"text": "mleko"})
-	zagar.do("POST", "/api/events", map[string]any{"title": "Nekaj", "kind": "work", "starts_at": "2026-09-05T09:00"})
+	volk.do("POST", "/api/needs", map[string]any{"text": "mleko"})
+	volk.do("POST", "/api/events", map[string]any{"title": "Nekaj", "kind": "work", "starts_at": "2026-09-05T09:00"})
 	waitFor(t, 0, fake)
 
 	// Daylight: the same event rings.
 	srv.now = func() time.Time { return time.Date(2026, 9, 4, 10, 0, 0, 0, time.Local) }
-	zagar.do("POST", "/api/events", map[string]any{"title": "Drugo", "kind": "work", "starts_at": "2026-09-05T09:00"})
+	volk.do("POST", "/api/events", map[string]any{"title": "Drugo", "kind": "work", "starts_at": "2026-09-05T09:00"})
 	waitFor(t, 1, fake)
 }
 
 // TestToolShed: a house shares a tool, another takes it, the owner is told,
 // and returning frees it.
 func TestToolShed(t *testing.T) {
-	_, fake, steward, zagar := newVillage(t)
-	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{
+	_, fake, steward, volk := newVillage(t)
+	code, _, _ := volk.do("POST", "/api/push/subscribe", map[string]any{
 		"endpoint": "https://push.example/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
-	zagar.must(204, code, "subscribe")
+	volk.must(204, code, "subscribe")
 
-	code, obj, _ := zagar.do("POST", "/api/tools", map[string]any{"name": "Motorna žaga", "notes": "gorivo svoje"})
-	zagar.must(201, code, "create tool")
+	code, obj, _ := volk.do("POST", "/api/tools", map[string]any{"name": "Motorna žaga", "notes": "gorivo svoje"})
+	volk.must(201, code, "create tool")
 	id := itoa(obj["id"].(float64))
 	waitFor(t, 0, fake) // the sharing house does not hear its own tool
 
@@ -144,16 +144,16 @@ func TestToolShed(t *testing.T) {
 	code, _, _ = steward.do("PUT", "/api/tools/"+id, map[string]any{"take": true})
 	steward.must(204, code, "take")
 	waitFor(t, 1, fake) // only the owner is told
-	code, _, _ = zagar.do("PUT", "/api/tools/"+id, map[string]any{"take": true})
-	zagar.must(409, code, "double take")
+	code, _, _ = volk.do("PUT", "/api/tools/"+id, map[string]any{"take": true})
+	volk.must(409, code, "double take")
 
-	_, _, tools := zagar.do("GET", "/api/tools", nil)
+	_, _, tools := volk.do("GET", "/api/tools", nil)
 	if tools[0]["held_by_name"] != "S" {
 		t.Fatalf("holder: %v", tools[0])
 	}
 	code, _, _ = steward.do("PUT", "/api/tools/"+id, map[string]any{"take": false})
 	steward.must(204, code, "return")
-	_, _, tools = zagar.do("GET", "/api/tools", nil)
+	_, _, tools = volk.do("GET", "/api/tools", nil)
 	if tools[0]["held_by"] != nil {
 		t.Fatalf("not returned: %v", tools[0])
 	}
@@ -167,16 +167,16 @@ func TestToolShed(t *testing.T) {
 // TestWorkBeeSignup: any house can sign up, the caller of the work bee hears
 // about it, and the count comes back on the event.
 func TestWorkBeeSignup(t *testing.T) {
-	_, fake, steward, zagar := newVillage(t)
-	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{
+	_, fake, steward, volk := newVillage(t)
+	code, _, _ := volk.do("POST", "/api/push/subscribe", map[string]any{
 		"endpoint": "https://push.example/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
-	zagar.must(204, code, "subscribe")
-	code, obj, _ := zagar.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-06T08:00"})
-	zagar.must(201, code, "event")
+	volk.must(204, code, "subscribe")
+	code, obj, _ := volk.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-06T08:00"})
+	volk.must(201, code, "event")
 	id := itoa(obj["id"].(float64))
 
 	// The house that calls a work bee is at it: no separate tap needed.
-	_, _, evs := zagar.do("GET", "/api/events", nil)
+	_, _, evs := volk.do("GET", "/api/events", nil)
 	if evs[0]["signups"].(float64) != 1 || evs[0]["mine"] != "yes" {
 		t.Fatalf("caller not signed up: %v", evs[0])
 	}
@@ -188,7 +188,7 @@ func TestWorkBeeSignup(t *testing.T) {
 	steward.must(204, code, "signup")
 	waitFor(t, 1, fake) // the house that called it hears
 
-	_, _, evs = zagar.do("GET", "/api/events", nil)
+	_, _, evs = volk.do("GET", "/api/events", nil)
 	if evs[0]["signups"].(float64) != 2 {
 		t.Fatalf("signups: %v", evs[0])
 	}
@@ -199,14 +199,14 @@ func TestWorkBeeSignup(t *testing.T) {
 	}
 	code, _, _ = steward.do("DELETE", "/api/events/"+id+"/signup", nil)
 	steward.must(204, code, "sign off")
-	_, _, evs = zagar.do("GET", "/api/events", nil)
+	_, _, evs = volk.do("GET", "/api/events", nil)
 	if evs[0]["signups"].(float64) != 1 {
 		t.Fatalf("still signed up: %v", evs[0])
 	}
 	// Signing off is an answer a caller may give too.
-	code, _, _ = zagar.do("DELETE", "/api/events/"+id+"/signup", nil)
-	zagar.must(204, code, "the caller signs off")
-	_, _, evs = zagar.do("GET", "/api/events", nil)
+	code, _, _ = volk.do("DELETE", "/api/events/"+id+"/signup", nil)
+	volk.must(204, code, "the caller signs off")
+	_, _, evs = volk.do("GET", "/api/events", nil)
 	if evs[0]["signups"].(float64) != 0 || evs[0]["mine"] != nil {
 		t.Fatalf("caller cannot take it back: %v", evs[0])
 	}
@@ -215,15 +215,15 @@ func TestWorkBeeSignup(t *testing.T) {
 // TestToolReminder: a tool out for two days nags its holder once a day, the
 // owner hears nothing, and returning it clears the clock.
 func TestToolReminder(t *testing.T) {
-	srv, fake, steward, zagar := newVillage(t)
+	srv, fake, steward, volk := newVillage(t)
 	for _, c := range []struct {
 		c  *client
 		ep string
-	}{{steward, "https://push.example/s"}, {zagar, "https://push.example/z"}} {
+	}{{steward, "https://push.example/s"}, {volk, "https://push.example/z"}} {
 		code, _, _ := c.c.do("POST", "/api/push/subscribe", map[string]any{"endpoint": c.ep, "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 		c.c.must(204, code, "subscribe")
 	}
-	_, obj, _ := zagar.do("POST", "/api/tools", map[string]any{"name": "Lestev"})
+	_, obj, _ := volk.do("POST", "/api/tools", map[string]any{"name": "Lestev"})
 	id := itoa(obj["id"].(float64))
 	waitFor(t, 1, fake) // the steward hears about the new tool
 	steward.do("PUT", "/api/tools/"+id, map[string]any{"take": true})
@@ -270,14 +270,14 @@ func TestToolReminder(t *testing.T) {
 // flag not the bytes, the photo comes back with its type, and the wishlist
 // collects house names, not a score.
 func TestShedPhotosWishes(t *testing.T) {
-	srv, _, steward, zagar := newVillage(t)
-	code, obj, _ := zagar.do("POST", "/api/tools", map[string]any{"name": "Kosilnica", "category": "garden"})
-	zagar.must(201, code, "tool")
+	srv, _, steward, volk := newVillage(t)
+	code, obj, _ := volk.do("POST", "/api/tools", map[string]any{"name": "Kosilnica", "category": "garden"})
+	volk.must(201, code, "tool")
 	id := itoa(obj["id"].(float64))
 
-	// Photo: raw bytes with a type; the steward may not upload to Žagar's tool? Stewards may.
+	// Photo: raw bytes with a type; the steward may not upload to Zeleni Volk's tool? Stewards may.
 	req := httptest.NewRequest("PUT", "/api/tools/"+id+"/photo", bytes.NewReader([]byte("\xff\xd8jpegbytes")))
-	req.Header.Set("Authorization", "Bearer "+zagar.token)
+	req.Header.Set("Authorization", "Bearer "+volk.token)
 	req.Header.Set("Content-Type", "image/jpeg")
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, req)
@@ -299,16 +299,16 @@ func TestShedPhotosWishes(t *testing.T) {
 		t.Fatalf("photo get: %d %s %d", rec.Code, rec.Header().Get("Content-Type"), rec.Body.Len())
 	}
 	// Unknown category falls back to other.
-	code, _, _ = zagar.do("PUT", "/api/tools/"+id, map[string]any{"category": "spaceships"})
-	zagar.must(204, code, "category")
-	_, _, tools = zagar.do("GET", "/api/tools", nil)
+	code, _, _ = volk.do("PUT", "/api/tools/"+id, map[string]any{"category": "spaceships"})
+	volk.must(204, code, "category")
+	_, _, tools = volk.do("GET", "/api/tools", nil)
 	if tools[0]["category"] != "other" {
 		t.Fatalf("category: %v", tools[0]["category"])
 	}
 
 	// Wishlist.
-	code, obj, _ = zagar.do("POST", "/api/wishes", map[string]any{"text": "Cepilec drv"})
-	zagar.must(201, code, "wish")
+	code, obj, _ = volk.do("POST", "/api/wishes", map[string]any{"text": "Cepilec drv"})
+	volk.must(201, code, "wish")
 	wid := itoa(obj["id"].(float64))
 	code, _, _ = steward.do("PUT", "/api/wishes/"+wid, map[string]any{"want": true})
 	steward.must(204, code, "want")
@@ -337,14 +337,14 @@ func TestShedPhotosWishes(t *testing.T) {
 // note (2026-09-06 — the comment thread does that job). A body without a state
 // is refused rather than read as a yes.
 func TestSignupIsAnAnswerOnly(t *testing.T) {
-	_, _, steward, zagar := newVillage(t)
-	_, obj, _ := zagar.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-06T08:00"})
+	_, _, steward, volk := newVillage(t)
+	_, obj, _ := volk.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-06T08:00"})
 	id := itoa(obj["id"].(float64))
 	code, _, _ := steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"note": "pridem s koso"})
 	steward.must(400, code, "a note is not an answer")
 	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "yes", "note": "pridem s koso"})
 	steward.must(204, code, "signup")
-	_, _, evs := zagar.do("GET", "/api/events", nil)
+	_, _, evs := volk.do("GET", "/api/events", nil)
 	var list []map[string]any
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
 	// Two answers: the house that called it, and the one that answered.
@@ -361,68 +361,68 @@ func TestSignupIsAnAnswerOnly(t *testing.T) {
 // that holds it, and it never joins the marker's own parcel list — a member
 // who rents a hut holds no land, and the map must not say otherwise.
 func TestLivesOnAnothersLand(t *testing.T) {
-	_, _, steward, zagar := newVillage(t)
+	_, _, steward, volk := newVillage(t)
 	_, _, hs := steward.do("GET", "/api/houses", nil)
-	var zagarID string
+	var volkID string
 	for _, h := range hs {
-		if h["name"] == "Žagar" {
-			zagarID = itoa(h["id"].(float64))
+		if h["name"] == "Zeleni Volk" {
+			volkID = itoa(h["id"].(float64))
 		}
 	}
-	code, _, _ := steward.do("PUT", "/api/houses/"+zagarID, map[string]any{"parcels": []string{"2494", "2496"}})
-	steward.must(204, code, "Žagar holds two parcels")
+	code, _, _ := steward.do("PUT", "/api/houses/"+volkID, map[string]any{"parcels": []string{"2494", "2496"}})
+	steward.must(204, code, "Zeleni Volk holds two parcels")
 
-	code, obj, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Hiša Vrba", "crest": "🌿"})
+	code, obj, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Hiša Modri Ježek", "crest": "🌿"})
 	steward.must(201, code, "a house with no land")
-	vrba := itoa(obj["id"].(float64))
-	code, _, _ = steward.do("PUT", "/api/houses/"+vrba, map[string]any{"parcels": []string{"2494", "2500"}})
+	jezek := itoa(obj["id"].(float64))
+	code, _, _ = steward.do("PUT", "/api/houses/"+jezek, map[string]any{"parcels": []string{"2494", "2500"}})
 	steward.must(204, code, "mark where it lives")
 
-	_, _, hs = zagar.do("GET", "/api/houses", nil)
+	_, _, hs = volk.do("GET", "/api/houses", nil)
 	byName := map[string]map[string]any{}
 	for _, h := range hs {
 		byName[h["name"].(string)] = h
 	}
-	// 2494 is Žagar's: marking it says Vrba lives there, nothing changes hands.
-	if p := byName["Žagar"]["parcels"].([]any); len(p) != 2 {
+	// 2494 is Zeleni Volk's: marking it says Modri Ježek lives there, nothing changes hands.
+	if p := byName["Zeleni Volk"]["parcels"].([]any); len(p) != 2 {
 		t.Fatalf("land taken from the house that holds it: %v", p)
 	}
-	// 2500 belongs to nobody, so it is Vrba's land like any other assignment.
-	if p := byName["Hiša Vrba"]["parcels"].([]any); len(p) != 1 || p[0] != "2500" {
+	// 2500 belongs to nobody, so it is Modri Ježek's land like any other assignment.
+	if p := byName["Hiša Modri Ježek"]["parcels"].([]any); len(p) != 1 || p[0] != "2500" {
 		t.Fatalf("free land not assigned, or a neighbour's counted as its own: %v", p)
 	}
-	if h := byName["Hiša Vrba"]["homes"].([]any); len(h) != 1 || h[0] != "2494" {
+	if h := byName["Hiša Modri Ježek"]["homes"].([]any); len(h) != 1 || h[0] != "2494" {
 		t.Fatalf("does not live anywhere: %v", h)
 	}
-	if h := byName["Žagar"]["homes"].([]any); len(h) != 0 {
+	if h := byName["Zeleni Volk"]["homes"].([]any); len(h) != 0 {
 		t.Fatalf("a landholder was given a home on its own land: %v", h)
 	}
 
 	// Clearing the marks leaves the neighbour's land untouched.
-	code, _, _ = steward.do("PUT", "/api/houses/"+vrba, map[string]any{"parcels": []string{}})
+	code, _, _ = steward.do("PUT", "/api/houses/"+jezek, map[string]any{"parcels": []string{}})
 	steward.must(204, code, "clear")
-	_, _, hs = zagar.do("GET", "/api/houses", nil)
+	_, _, hs = volk.do("GET", "/api/houses", nil)
 	for _, h := range hs {
-		if h["name"] == "Hiša Vrba" && len(h["homes"].([]any))+len(h["parcels"].([]any)) != 0 {
+		if h["name"] == "Hiša Modri Ježek" && len(h["homes"].([]any))+len(h["parcels"].([]any)) != 0 {
 			t.Fatalf("marks survived clearing: %v", h)
 		}
-		if h["name"] == "Žagar" && len(h["parcels"].([]any)) != 2 {
+		if h["name"] == "Zeleni Volk" && len(h["parcels"].([]any)) != 2 {
 			t.Fatalf("clearing one house took another's land: %v", h)
 		}
 	}
 
 	// A house marks where it lives itself — no steward, no waiting.
-	vrbaC := &client{t: t, h: steward.h}
-	_, j, _ := vrbaC.do("POST", "/api/join", map[string]any{"code": obj["invite"].(map[string]any)["code"], "device": "koča"})
-	vrbaC.token = j["token"].(string)
-	code, _, _ = vrbaC.do("PUT", "/api/houses/"+vrba, map[string]any{"homes": []string{"2496", "3193"}})
-	vrbaC.must(204, code, "a house says where it lives")
-	_, _, hs = vrbaC.do("GET", "/api/houses", nil)
+	jezekC := &client{t: t, h: steward.h}
+	_, j, _ := jezekC.do("POST", "/api/join", map[string]any{"code": obj["invite"].(map[string]any)["code"], "device": "koča"})
+	jezekC.token = j["token"].(string)
+	code, _, _ = jezekC.do("PUT", "/api/houses/"+jezek, map[string]any{"homes": []string{"2496", "3193"}})
+	jezekC.must(204, code, "a house says where it lives")
+	_, _, hs = jezekC.do("GET", "/api/houses", nil)
 	for _, h := range hs {
-		if h["name"] != "Hiša Vrba" {
+		if h["name"] != "Hiša Modri Ježek" {
 			continue
 		}
-		// 2496 is Žagar's, 3193 belongs to nobody yet — both are places to
+		// 2496 is Zeleni Volk's, 3193 belongs to nobody yet — both are places to
 		// live, and neither is land this house now holds.
 		if len(h["homes"].([]any)) != 2 {
 			t.Fatalf("marks not kept: %v", h["homes"])
@@ -432,8 +432,8 @@ func TestLivesOnAnothersLand(t *testing.T) {
 		}
 	}
 	// And only its own: another villager's house is not its to mark.
-	code, _, _ = zagar.do("PUT", "/api/houses/"+vrba, map[string]any{"homes": []string{"2494"}})
-	zagar.must(403, code, "a house marks another house's home")
+	code, _, _ = volk.do("PUT", "/api/houses/"+jezek, map[string]any{"homes": []string{"2494"}})
+	volk.must(403, code, "a house marks another house's home")
 
 	// The exit path carries the new table, or a stay ends with it dropped.
 	_, exp, _ := steward.do("GET", "/api/export", nil)
@@ -446,7 +446,7 @@ func TestLivesOnAnothersLand(t *testing.T) {
 // event that the rest of the village sleeps through, and its house-mates keep
 // sleeping — the flag is on the device, not on the house.
 func TestQuietHoursOptOut(t *testing.T) {
-	srv, fake, steward, zagar := newVillage(t)
+	srv, fake, steward, volk := newVillage(t)
 	// Two phones of the steward's house: the second one asks for night rings.
 	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{
 		"endpoint": "https://push.example/s1", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
@@ -462,7 +462,7 @@ func TestQuietHoursOptOut(t *testing.T) {
 	phone2.must(204, code, "opt out of quiet hours")
 
 	srv.now = func() time.Time { return time.Date(2026, 9, 4, 23, 10, 0, 0, time.Local) }
-	zagar.do("POST", "/api/events", map[string]any{"title": "Nekaj", "kind": "work", "starts_at": "2026-09-05T09:00"})
+	volk.do("POST", "/api/events", map[string]any{"title": "Nekaj", "kind": "work", "starts_at": "2026-09-05T09:00"})
 	waitFor(t, 1, fake)
 	fake.mu.Lock()
 	got := []string{}
@@ -489,7 +489,7 @@ func TestQuietHoursOptOut(t *testing.T) {
 // client still sending it is ignored, not refused.
 func TestHouseWithoutLand(t *testing.T) {
 	_, _, steward, _ := newVillage(t)
-	code, obj, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Hiša Vrba", "crest": "🌿"})
+	code, obj, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Hiša Modri Ježek", "crest": "🌿"})
 	steward.must(201, code, "create a house with no land")
 	id := itoa(obj["id"].(float64))
 
@@ -502,7 +502,7 @@ func TestHouseWithoutLand(t *testing.T) {
 	_, _, hs := guest.do("GET", "/api/houses", nil)
 	var row map[string]any
 	for _, h := range hs {
-		if h["name"] == "Hiša Vrba" {
+		if h["name"] == "Hiša Modri Ježek" {
 			row = h
 		}
 	}
@@ -520,7 +520,7 @@ func TestHouseWithoutLand(t *testing.T) {
 	code, _, _ = guest.do("POST", "/api/away", map[string]any{"from_date": "2026-10-01", "to_date": "2026-10-08"})
 	guest.must(201, code, "away notice from a house without land")
 	_, _, aw := steward.do("GET", "/api/away", nil)
-	if len(aw) != 1 || aw[0]["house_name"] != "Hiša Vrba" {
+	if len(aw) != 1 || aw[0]["house_name"] != "Hiša Modri Ježek" {
 		t.Fatalf("away notice: %v", aw)
 	}
 }
@@ -528,34 +528,34 @@ func TestHouseWithoutLand(t *testing.T) {
 // TestGlobalMute: a steward mutes a kind for the whole village; a villager
 // cannot; the house list still shows it as off.
 func TestGlobalMute(t *testing.T) {
-	_, fake, steward, zagar := newVillage(t)
+	_, fake, steward, volk := newVillage(t)
 	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe")
-	code, _, _ = zagar.do("PUT", "/api/prefs/global", map[string]any{"off": []string{"needs"}})
-	zagar.must(403, code, "villager mutes globally")
+	code, _, _ = volk.do("PUT", "/api/prefs/global", map[string]any{"off": []string{"needs"}})
+	volk.must(403, code, "villager mutes globally")
 	code, _, _ = steward.do("PUT", "/api/prefs/global", map[string]any{"off": []string{"needs"}})
 	steward.must(204, code, "steward mutes needs")
-	_, prefs, _ := zagar.do("GET", "/api/me/prefs", nil)
+	_, prefs, _ := volk.do("GET", "/api/me/prefs", nil)
 	if g := prefs["global_off"].([]any); len(g) != 1 || g[0] != "needs" {
 		t.Fatalf("global_off: %v", prefs)
 	}
-	zagar.do("POST", "/api/needs", map[string]any{"text": "sol"})
+	volk.do("POST", "/api/needs", map[string]any{"text": "sol"})
 	waitFor(t, 0, fake)
-	zagar.do("POST", "/api/offers", map[string]any{"text": "okna"})
+	volk.do("POST", "/api/offers", map[string]any{"text": "okna"})
 	waitFor(t, 1, fake)
 }
 
 // TestMuteReachesNobody: a village-wide mute silences a kind for every house,
 // and it records which steward set it and when.
 func TestMuteReachesNobody(t *testing.T) {
-	_, fake, steward, zagar := newVillage(t)
+	_, fake, steward, volk := newVillage(t)
 	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{
 		"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe")
 	steward.do("PUT", "/api/prefs/global", map[string]any{"off": []string{"events"}})
-	zagar.do("POST", "/api/events", map[string]any{"title": "Nekaj", "kind": "work", "starts_at": "2026-09-05T09:00"})
+	volk.do("POST", "/api/events", map[string]any{"title": "Nekaj", "kind": "work", "starts_at": "2026-09-05T09:00"})
 	waitFor(t, 0, fake)
-	_, prefs, _ := zagar.do("GET", "/api/me/prefs", nil)
+	_, prefs, _ := volk.do("GET", "/api/me/prefs", nil)
 	d := prefs["global_detail"].([]any)[0].(map[string]any)
 	if d["kind"] != "events" || d["set_by"] != "S" || d["set_at"] == nil {
 		t.Fatalf("global_detail: %v", d)
@@ -565,31 +565,31 @@ func TestMuteReachesNobody(t *testing.T) {
 // TestProjects: a project with a takable task, an event linked to it, the
 // creator told when a task is taken, done as a state, export complete.
 func TestProjects(t *testing.T) {
-	_, fake, steward, zagar := newVillage(t)
-	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
-	zagar.must(204, code, "subscribe")
+	_, fake, steward, volk := newVillage(t)
+	code, _, _ := volk.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	volk.must(204, code, "subscribe")
 
-	code, obj, _ := zagar.do("POST", "/api/projects", map[string]any{"title": "Ograja okoli travnika", "due_at": "2026-10-15", "notes": "300 m"})
-	zagar.must(201, code, "project")
+	code, obj, _ := volk.do("POST", "/api/projects", map[string]any{"title": "Ograja okoli travnika", "due_at": "2026-10-15", "notes": "300 m"})
+	volk.must(201, code, "project")
 	pid := itoa(obj["id"].(float64))
 	waitFor(t, 0, fake) // author does not hear its own project
-	code, obj, _ = zagar.do("POST", "/api/projects/"+pid+"/tasks", map[string]any{"title": "Kupiti stebre", "due_at": "2026-09-20"})
-	zagar.must(201, code, "task")
+	code, obj, _ = volk.do("POST", "/api/projects/"+pid+"/tasks", map[string]any{"title": "Kupiti stebre", "due_at": "2026-09-20"})
+	volk.must(201, code, "task")
 	tid := itoa(obj["id"].(float64))
 
-	// Steward takes the task; Žagar (project creator) hears.
+	// Steward takes the task; Zeleni Volk (project creator) hears.
 	fake.mu.Lock()
 	fake.sent, fake.payloads = nil, nil
 	fake.mu.Unlock()
 	code, _, _ = steward.do("PUT", "/api/tasks/"+tid, map[string]any{"take": true})
 	steward.must(204, code, "take")
 	waitFor(t, 1, fake)
-	code, _, _ = zagar.do("PUT", "/api/tasks/"+tid, map[string]any{"take": true})
-	zagar.must(409, code, "double take")
+	code, _, _ = volk.do("PUT", "/api/tasks/"+tid, map[string]any{"take": true})
+	volk.must(409, code, "double take")
 
 	// A third house cannot close it; the holder can, with a note.
 	_, o, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Tretja"})
-	third := &client{t: t, h: zagar.h}
+	third := &client{t: t, h: volk.h}
 	_, j, _ := third.do("POST", "/api/join", map[string]any{"code": o["invite"].(map[string]any)["code"]})
 	third.token = j["token"].(string)
 	code, _, _ = third.do("PUT", "/api/tasks/"+tid, map[string]any{"state": "done"})
@@ -597,7 +597,7 @@ func TestProjects(t *testing.T) {
 	// A stranger cannot clear the holder; the creator may (things get agreed
 	// in real life), and may assign — the assigned house hears.
 	_, o2, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Cetrta"})
-	fourth := &client{t: t, h: zagar.h}
+	fourth := &client{t: t, h: volk.h}
 	_, j2, _ := fourth.do("POST", "/api/join", map[string]any{"code": o2["invite"].(map[string]any)["code"]})
 	fourth.token = j2["token"].(string)
 	code, _, _ = fourth.do("PUT", "/api/tasks/"+tid, map[string]any{"take": false})
@@ -610,22 +610,22 @@ func TestProjects(t *testing.T) {
 	fake.sent, fake.payloads = nil, nil
 	fake.mu.Unlock()
 	_, me4, _ := fourth.do("GET", "/api/me", nil)
-	code, _, _ = zagar.do("PUT", "/api/tasks/"+tid, map[string]any{"assigned_to": me4["id"]})
-	zagar.must(204, code, "creator assigns")
+	code, _, _ = volk.do("PUT", "/api/tasks/"+tid, map[string]any{"assigned_to": me4["id"]})
+	volk.must(204, code, "creator assigns")
 	waitFor(t, 1, fake)
-	code, _, _ = zagar.do("PUT", "/api/tasks/"+tid, map[string]any{"take": false})
-	zagar.must(204, code, "creator clears")
+	code, _, _ = volk.do("PUT", "/api/tasks/"+tid, map[string]any{"take": false})
+	volk.must(204, code, "creator clears")
 	code, _, _ = steward.do("PUT", "/api/tasks/"+tid, map[string]any{"take": true})
 	steward.must(204, code, "steward takes again")
 	code, _, _ = steward.do("PUT", "/api/tasks/"+tid, map[string]any{"state": "done", "closing_note": "kupljeno pri Bauhausu"})
 	steward.must(204, code, "holder closes")
-	code, _, _ = zagar.do("PUT", "/api/tasks/"+tid, map[string]any{"take": true})
-	zagar.must(409, code, "take a done task")
+	code, _, _ = volk.do("PUT", "/api/tasks/"+tid, map[string]any{"take": true})
+	volk.must(409, code, "take a done task")
 
 	// Event linked to the task inherits the project.
-	code, _, _ = zagar.do("POST", "/api/events", map[string]any{"title": "Postavljanje", "kind": "work", "starts_at": "2026-09-27T09:00", "task_id": json.Number(tid)})
-	zagar.must(201, code, "event on task")
-	_, _, evs := zagar.do("GET", "/api/events", nil)
+	code, _, _ = volk.do("POST", "/api/events", map[string]any{"title": "Postavljanje", "kind": "work", "starts_at": "2026-09-27T09:00", "task_id": json.Number(tid)})
+	volk.must(201, code, "event on task")
+	_, _, evs := volk.do("GET", "/api/events", nil)
 	if evs[0]["project_title"] != "Ograja okoli travnika" || evs[0]["task_title"] != "Kupiti stebre" {
 		t.Fatalf("event link: %v", evs[0])
 	}
@@ -642,10 +642,10 @@ func TestProjects(t *testing.T) {
 	// Done is a state; a stranger cannot set it, the creator can, and reopen.
 	code, _, _ = third.do("PUT", "/api/projects/"+pid, map[string]any{"state": "done"})
 	third.must(403, code, "stranger finishes project")
-	code, _, _ = zagar.do("PUT", "/api/projects/"+pid, map[string]any{"state": "done"})
-	zagar.must(204, code, "finish project")
-	code, _, _ = zagar.do("PUT", "/api/projects/"+pid, map[string]any{"state": "open"})
-	zagar.must(204, code, "reopen")
+	code, _, _ = volk.do("PUT", "/api/projects/"+pid, map[string]any{"state": "done"})
+	volk.must(204, code, "finish project")
+	code, _, _ = volk.do("PUT", "/api/projects/"+pid, map[string]any{"state": "open"})
+	volk.must(204, code, "reopen")
 	_, exp, _ := steward.do("GET", "/api/export", nil)
 	for _, k := range []string{"projects", "project_tasks", "camp_takings"} {
 		if _, ok := exp[k]; !ok {
@@ -657,11 +657,11 @@ func TestProjects(t *testing.T) {
 // TestCamp: a camper arrives (village hears), a house claims the money
 // (village hears), hands it over; a tick on arrival lands straight in handed.
 func TestCamp(t *testing.T) {
-	_, fake, steward, zagar := newVillage(t)
+	_, fake, steward, volk := newVillage(t)
 	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe")
-	code, obj, _ := zagar.do("POST", "/api/camp", map[string]any{"notes": "siv kamper"})
-	zagar.must(201, code, "arrived")
+	code, obj, _ := volk.do("POST", "/api/camp", map[string]any{"notes": "siv kamper"})
+	volk.must(201, code, "arrived")
 	id := itoa(obj["id"].(float64))
 	waitFor(t, 1, fake)
 	fake.mu.Lock()
@@ -669,35 +669,35 @@ func TestCamp(t *testing.T) {
 	json.Unmarshal(fake.payloads[0], &p)
 	fake.sent, fake.payloads = nil, nil
 	fake.mu.Unlock()
-	if p.Kind != "camp" || p.Title != "🏕️ Žagar: kamper je prišel" || p.Body != "siv kamper" {
+	if p.Kind != "camp" || p.Title != "🏕️ Zeleni Volk: kamper je prišel" || p.Body != "siv kamper" {
 		t.Fatalf("arrival push: %+v", p)
 	}
-	// Steward cannot hand over what nobody holds; steward claims; Žagar hears... steward is the only phone here.
+	// Steward cannot hand over what nobody holds; steward claims; Zeleni Volk hears... steward is the only phone here.
 	code, _, _ = steward.do("PUT", "/api/camp/"+id, map[string]any{"state": "handed"})
 	steward.must(409, code, "hand over unclaimed")
 	code, _, _ = steward.do("PUT", "/api/camp/"+id, map[string]any{"claim": true, "notes": "2 noči"})
 	steward.must(204, code, "claim")
-	_, _, rows := zagar.do("GET", "/api/camp", nil)
+	_, _, rows := volk.do("GET", "/api/camp", nil)
 	if rows[0]["state"] != "held" || rows[0]["held_by_name"] != "S" || rows[0]["notes"] != "siv kamper" {
 		t.Fatalf("after claim (note must not overwrite): %v", rows[0])
 	}
-	code, _, _ = zagar.do("PUT", "/api/camp/"+id, map[string]any{"claim": true})
-	zagar.must(409, code, "double claim")
-	code, _, _ = zagar.do("PUT", "/api/camp/"+id, map[string]any{"state": "handed"})
-	zagar.must(403, code, "non-holder hands over")
+	code, _, _ = volk.do("PUT", "/api/camp/"+id, map[string]any{"claim": true})
+	volk.must(409, code, "double claim")
+	code, _, _ = volk.do("PUT", "/api/camp/"+id, map[string]any{"state": "handed"})
+	volk.must(403, code, "non-holder hands over")
 	code, _, _ = steward.do("PUT", "/api/camp/"+id, map[string]any{"state": "handed"})
 	steward.must(204, code, "holder hands over")
 	// Tick "I have the money": straight to handed, holder = noticer.
-	code, _, _ = zagar.do("POST", "/api/camp", map[string]any{"notes": "NL družina", "have_money": true})
-	zagar.must(201, code, "arrived with money")
-	_, _, rows = zagar.do("GET", "/api/camp", nil)
+	code, _, _ = volk.do("POST", "/api/camp", map[string]any{"notes": "NL družina", "have_money": true})
+	volk.must(201, code, "arrived with money")
+	_, _, rows = volk.do("GET", "/api/camp", nil)
 	var withMoney map[string]any
 	for _, r := range rows {
 		if r["notes"] == "NL družina" {
 			withMoney = r
 		}
 	}
-	if withMoney["state"] != "handed" || withMoney["held_by_name"] != "Žagar" || withMoney["handed_at"] == nil {
+	if withMoney["state"] != "handed" || withMoney["held_by_name"] != "Zeleni Volk" || withMoney["handed_at"] == nil {
 		t.Fatalf("have_money row: %v", withMoney)
 	}
 	if _, ok := rows[0]["amount_cents"]; ok {
@@ -708,17 +708,17 @@ func TestCamp(t *testing.T) {
 // TestRsvpAndComments: three answers not one, a moved date marks answers stale,
 // any house edits an event, comments thread one level and ring the caller.
 func TestRsvpAndComments(t *testing.T) {
-	_, fake, steward, zagar := newVillage(t)
-	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
-	zagar.must(204, code, "subscribe")
-	code, obj, _ := zagar.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-20T08:00"})
-	zagar.must(201, code, "event")
+	_, fake, steward, volk := newVillage(t)
+	code, _, _ := volk.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	volk.must(204, code, "subscribe")
+	code, obj, _ := volk.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-20T08:00"})
+	volk.must(201, code, "event")
 	id := itoa(obj["id"].(float64))
 
 	// "not coming" is an answer, not silence: it is stored and it is not a yes.
 	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "no"})
 	steward.must(204, code, "rsvp no")
-	_, _, evs := zagar.do("GET", "/api/events", nil)
+	_, _, evs := volk.do("GET", "/api/events", nil)
 	var list []map[string]any
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
 	// One yes stands: the house that called it. The steward's no is not one.
@@ -727,7 +727,7 @@ func TestRsvpAndComments(t *testing.T) {
 	}
 	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "maybe"})
 	steward.must(204, code, "rsvp maybe")
-	_, _, evs = zagar.do("GET", "/api/events", nil)
+	_, _, evs = volk.do("GET", "/api/events", nil)
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
 	if s := answerOf(t, list, "S"); evs[0]["signups"].(float64) != 1 || s["state"] != "maybe" || s["stale"].(float64) != 0 {
 		t.Fatalf("maybe folded into coming: %v %v", evs[0], list)
@@ -736,20 +736,23 @@ func TestRsvpAndComments(t *testing.T) {
 	// Any house edits; moving the time marks earlier answers stale.
 	code, _, _ = steward.do("PUT", "/api/events/"+id, map[string]any{"notes": "prinesite grablje"})
 	steward.must(204, code, "any house edits")
-	_, _, evs = zagar.do("GET", "/api/events", nil)
+	_, _, evs = volk.do("GET", "/api/events", nil)
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
 	if evs[0]["edited_by_name"] != "S" || answerOf(t, list, "S")["stale"].(float64) != 0 {
 		t.Fatalf("note edit made answers stale: %v", evs[0])
 	}
+	// The no and the maybe each rang the caller, in goroutines: let both land
+	// before the sender is cleared, or a late one is counted as the move's.
+	waitFor(t, 2, fake)
 	fake.mu.Lock()
 	fake.sent, fake.payloads = nil, nil
 	fake.mu.Unlock()
 	code, _, _ = steward.do("PUT", "/api/events/"+id, map[string]any{"starts_at": "2026-09-21T08:00"})
 	steward.must(204, code, "move the date")
 	waitFor(t, 1, fake) // the caller answered yes by calling it, so it hears too
-	_, _, evs = zagar.do("GET", "/api/events", nil)
+	_, _, evs = volk.do("GET", "/api/events", nil)
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
-	if answerOf(t, list, "S")["stale"].(float64) != 1 || answerOf(t, list, "Žagar")["stale"].(float64) != 1 {
+	if answerOf(t, list, "S")["stale"].(float64) != 1 || answerOf(t, list, "Zeleni Volk")["stale"].(float64) != 1 {
 		t.Fatalf("answer survived a moved date as current: %v", list)
 	}
 
@@ -761,9 +764,9 @@ func TestRsvpAndComments(t *testing.T) {
 	steward.must(201, code, "comment")
 	waitFor(t, 1, fake) // the house that called it hears
 	rootID := itoa(c1["id"].(float64))
-	_, c2, _ := zagar.do("POST", "/api/threads/event/"+id, map[string]any{"body": "Ob osmih", "parent_id": c1["id"]})
+	_, c2, _ := volk.do("POST", "/api/threads/event/"+id, map[string]any{"body": "Ob osmih", "parent_id": c1["id"]})
 	_, c3, _ := steward.do("POST", "/api/threads/event/"+id, map[string]any{"body": "Prav", "parent_id": c2["id"]})
-	_, _, cs := zagar.do("GET", "/api/threads/event/"+id, nil)
+	_, _, cs := volk.do("GET", "/api/threads/event/"+id, nil)
 	if len(cs) != 3 {
 		t.Fatalf("want 3 comments got %d", len(cs))
 	}
@@ -772,16 +775,16 @@ func TestRsvpAndComments(t *testing.T) {
 			t.Fatalf("reply to a reply did not flatten: %v", c)
 		}
 	}
-	_, _, evs = zagar.do("GET", "/api/events", nil)
+	_, _, evs = volk.do("GET", "/api/events", nil)
 	if evs[0]["comments"].(float64) != 3 {
 		t.Fatalf("comment count: %v", evs[0]["comments"])
 	}
 	// Only the author or a steward deletes a comment.
-	code, _, _ = zagar.do("DELETE", "/api/comments/"+rootID, nil)
-	zagar.must(403, code, "stranger deletes a comment")
+	code, _, _ = volk.do("DELETE", "/api/comments/"+rootID, nil)
+	volk.must(403, code, "stranger deletes a comment")
 	code, _, _ = steward.do("DELETE", "/api/comments/"+rootID, nil)
 	steward.must(204, code, "author deletes")
-	_, _, cs = zagar.do("GET", "/api/threads/event/"+id, nil)
+	_, _, cs = volk.do("GET", "/api/threads/event/"+id, nil)
 	if len(cs) != 0 {
 		t.Fatalf("cascade left %d comments", len(cs))
 	}
@@ -790,11 +793,11 @@ func TestRsvpAndComments(t *testing.T) {
 // TestWishOptionsAndThread: the same thread on a wish, plus options anyone can
 // add. An option is a finding, never a vote — nothing counts or ranks them.
 func TestWishOptionsAndThread(t *testing.T) {
-	_, fake, steward, zagar := newVillage(t)
-	code, _, _ := zagar.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
-	zagar.must(204, code, "subscribe")
-	code, obj, _ := zagar.do("POST", "/api/wishes", map[string]any{"text": "Cepilec drv"})
-	zagar.must(201, code, "wish")
+	_, fake, steward, volk := newVillage(t)
+	code, _, _ := volk.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/z", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	volk.must(204, code, "subscribe")
+	code, obj, _ := volk.do("POST", "/api/wishes", map[string]any{"text": "Cepilec drv"})
+	volk.must(201, code, "wish")
 	wid := itoa(obj["id"].(float64))
 
 	fake.mu.Lock()
@@ -806,7 +809,7 @@ func TestWishOptionsAndThread(t *testing.T) {
 	code, _, _ = steward.do("POST", "/api/wishes/"+wid+"/options", map[string]any{"text": ""})
 	steward.must(400, code, "empty option")
 
-	_, _, wishes := zagar.do("GET", "/api/wishes", nil)
+	_, _, wishes := volk.do("GET", "/api/wishes", nil)
 	var opts []map[string]any
 	json.Unmarshal([]byte(wishes[0]["options"].(string)), &opts)
 	if len(opts) != 1 || opts[0]["url"] != "https://example.com/vevor" || opts[0]["name"] != "S" {
@@ -814,9 +817,9 @@ func TestWishOptionsAndThread(t *testing.T) {
 	}
 	code, c1, _ := steward.do("POST", "/api/threads/wish/"+wid, map[string]any{"body": "Videl sem cenejšega"})
 	steward.must(201, code, "wish comment")
-	_, c2, _ := zagar.do("POST", "/api/threads/wish/"+wid, map[string]any{"body": "Kje?", "parent_id": c1["id"]})
+	_, c2, _ := volk.do("POST", "/api/threads/wish/"+wid, map[string]any{"body": "Kje?", "parent_id": c1["id"]})
 	_, c3, _ := steward.do("POST", "/api/threads/wish/"+wid, map[string]any{"body": "V Kočevju", "parent_id": c2["id"]})
-	_, _, cs := zagar.do("GET", "/api/threads/wish/"+wid, nil)
+	_, _, cs := volk.do("GET", "/api/threads/wish/"+wid, nil)
 	if len(cs) != 3 {
 		t.Fatalf("want 3 got %d", len(cs))
 	}
@@ -825,7 +828,7 @@ func TestWishOptionsAndThread(t *testing.T) {
 			t.Fatalf("reply to a reply did not flatten: %v", c)
 		}
 	}
-	_, _, wishes = zagar.do("GET", "/api/wishes", nil)
+	_, _, wishes = volk.do("GET", "/api/wishes", nil)
 	if wishes[0]["comments"].(float64) != 3 {
 		t.Fatalf("comment count: %v", wishes[0]["comments"])
 	}
@@ -833,16 +836,16 @@ func TestWishOptionsAndThread(t *testing.T) {
 	steward.must(404, code, "comment on a missing event")
 	code, _, _ = steward.do("POST", "/api/threads/nonsense/1", map[string]any{"body": "x"})
 	steward.must(400, code, "unknown subject")
-	code, _, _ = zagar.do("DELETE", "/api/options/"+itoa(opts[0]["id"].(float64)), nil)
-	zagar.must(403, code, "stranger removes an option")
+	code, _, _ = volk.do("DELETE", "/api/options/"+itoa(opts[0]["id"].(float64)), nil)
+	volk.must(403, code, "stranger removes an option")
 	code, _, _ = steward.do("DELETE", "/api/options/"+itoa(opts[0]["id"].(float64)), nil)
 	steward.must(204, code, "author removes")
 }
 
 // TestPairingCodeWithSpace: the code is shown as "883 559" and pasted with it.
 func TestPairingCodeWithSpace(t *testing.T) {
-	srv, _, _, zagar := newVillage(t)
-	_, obj, _ := zagar.do("POST", "/api/pair", nil)
+	srv, _, _, volk := newVillage(t)
+	_, obj, _ := volk.do("POST", "/api/pair", nil)
 	pin := obj["code"].(string)
 	phone := &client{t: t, h: srv.Handler()}
 	code, _, _ := phone.do("POST", "/api/join", map[string]any{"code": " " + pin[:3] + " " + pin[3:] + " "})
@@ -852,13 +855,16 @@ func TestPairingCodeWithSpace(t *testing.T) {
 // TestMovedTimeIsLoud: a moved date drops the answer out of the headcount,
 // tells the houses that answered, and a note-only update keeps their answer.
 func TestMovedTimeIsLoud(t *testing.T) {
-	_, fake, steward, zagar := newVillage(t)
+	_, fake, steward, volk := newVillage(t)
 	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe")
-	_, obj, _ := zagar.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-20T08:00"})
+	_, obj, _ := volk.do("POST", "/api/events", map[string]any{"title": "Košnja", "kind": "work", "starts_at": "2026-09-20T08:00"})
 	id := itoa(obj["id"].(float64))
+	// The creation push runs in a goroutine; let it land before the sender is
+	// cleared, or on a slow runner it arrives after and counts as the move's.
+	waitFor(t, 1, fake)
 	steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "yes"})
-	_, _, evs := zagar.do("GET", "/api/events", nil)
+	_, _, evs := volk.do("GET", "/api/events", nil)
 	if evs[0]["signups"].(float64) != 2 { // the caller, and the house that said yes
 		t.Fatalf("fresh yes not counted: %v", evs[0])
 	}
@@ -866,8 +872,8 @@ func TestMovedTimeIsLoud(t *testing.T) {
 	fake.mu.Lock()
 	fake.sent, fake.payloads = nil, nil
 	fake.mu.Unlock()
-	code, _, _ = zagar.do("PUT", "/api/events/"+id, map[string]any{"starts_at": "2026-09-27T08:00"})
-	zagar.must(204, code, "move")
+	code, _, _ = volk.do("PUT", "/api/events/"+id, map[string]any{"starts_at": "2026-09-27T08:00"})
+	volk.must(204, code, "move")
 	waitFor(t, 1, fake) // the house that said yes hears
 	fake.mu.Lock()
 	var p Payload
@@ -876,7 +882,7 @@ func TestMovedTimeIsLoud(t *testing.T) {
 	if !strings.Contains(p.Title, "Termin premaknjen") {
 		t.Fatalf("move push: %+v", p)
 	}
-	_, _, evs = zagar.do("GET", "/api/events", nil)
+	_, _, evs = volk.do("GET", "/api/events", nil)
 	if evs[0]["signups"].(float64) != 0 {
 		t.Fatalf("stale answer still counted: %v", evs[0])
 	}
@@ -885,7 +891,7 @@ func TestMovedTimeIsLoud(t *testing.T) {
 	steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"state": "no"})
 	code, _, _ = steward.do("POST", "/api/events/"+id+"/signup", map[string]any{"note": "morda pozneje"})
 	steward.must(400, code, "no answer in the body")
-	_, _, evs = zagar.do("GET", "/api/events", nil)
+	_, _, evs = volk.do("GET", "/api/events", nil)
 	var list []map[string]any
 	json.Unmarshal([]byte(evs[0]["signup_list"].(string)), &list)
 	if list[0]["state"] != "no" || evs[0]["signups"].(float64) != 0 {
@@ -910,11 +916,11 @@ func TestCodeCommand(t *testing.T) {
 	if err := srv.Code("nothing like this"); err == nil {
 		t.Fatal("unknown house accepted")
 	}
-	before, _ := srv.st.One(context.Background(), `SELECT code FROM invites WHERE house_id=(SELECT id FROM houses WHERE name='Žagar')`)
-	if err := srv.Code("žagar"); err != nil {
+	before, _ := srv.st.One(context.Background(), `SELECT code FROM invites WHERE house_id=(SELECT id FROM houses WHERE name='Zeleni Volk')`)
+	if err := srv.Code("zeleni volk"); err != nil {
 		t.Fatalf("code: %v", err)
 	}
-	after, _ := srv.st.One(context.Background(), `SELECT code FROM invites WHERE house_id=(SELECT id FROM houses WHERE name='Žagar')`)
+	after, _ := srv.st.One(context.Background(), `SELECT code FROM invites WHERE house_id=(SELECT id FROM houses WHERE name='Zeleni Volk')`)
 	if after == nil || (before != nil && before["code"] == after["code"]) {
 		t.Fatal("invite was not rotated")
 	}
@@ -936,21 +942,21 @@ func TestCodeCommand(t *testing.T) {
 // comparison read 'T' against ' ' and called every event today upcoming. The
 // project's next event is the one still running, not the one that ended.
 func TestNextEventIsToday(t *testing.T) {
-	_, _, _, zagar := newVillage(t)
+	_, _, _, volk := newVillage(t)
 	at := func(d time.Duration) string { return time.Now().Add(d).Format("2006-01-02T15:04") }
 
-	code, obj, _ := zagar.do("POST", "/api/projects", map[string]any{"title": "Beton"})
-	zagar.must(201, code, "project")
+	code, obj, _ := volk.do("POST", "/api/projects", map[string]any{"title": "Beton"})
+	volk.must(201, code, "project")
 	pid := obj["id"].(float64)
 
-	code, _, _ = zagar.do("POST", "/api/events", map[string]any{
+	code, _, _ = volk.do("POST", "/api/events", map[string]any{
 		"title": "over", "kind": "work", "starts_at": at(-4 * time.Hour), "ends_at": at(-2 * time.Hour), "project_id": pid})
-	zagar.must(201, code, "finished event")
-	code, _, _ = zagar.do("POST", "/api/events", map[string]any{
+	volk.must(201, code, "finished event")
+	code, _, _ = volk.do("POST", "/api/events", map[string]any{
 		"title": "running", "kind": "work", "starts_at": at(-time.Hour), "ends_at": at(2 * time.Hour), "project_id": pid})
-	zagar.must(201, code, "running event")
+	volk.must(201, code, "running event")
 
-	_, _, list := zagar.do("GET", "/api/projects", nil)
+	_, _, list := volk.do("GET", "/api/projects", nil)
 	if len(list) != 1 {
 		t.Fatalf("want 1 project got %d", len(list))
 	}
@@ -970,8 +976,8 @@ func TestNextEventIsToday(t *testing.T) {
 // the sweep almost always compares two stamps of the same day, where the shape
 // mismatch ('T' against ' ') is the whole comparison.
 func TestExpiredPairingIsSwept(t *testing.T) {
-	srv, _, steward, zagar := newVillage(t)
-	_, me, _ := zagar.do("GET", "/api/me", nil)
+	srv, _, steward, volk := newVillage(t)
+	_, me, _ := volk.do("GET", "/api/me", nil)
 	dead := time.Now().UTC().Add(-time.Minute).Format(time.RFC3339)
 	if _, err := srv.st.Exec(context.Background(),
 		`INSERT INTO pairings(code, house_id, expires_at) VALUES ('000000', ?, ?)`, int64(me["id"].(float64)), dead); err != nil {
@@ -1054,7 +1060,7 @@ func fmtID(f string, id int64) string { return fmt.Sprintf(f, id) }
 // house or a steward removes it; deleting the project takes its pictures with
 // it; the export never carries the blob.
 func TestProjectPhotos(t *testing.T) {
-	srv, _, steward, zagar := newVillage(t)
+	srv, _, steward, volk := newVillage(t)
 	_, pr, _ := steward.do("POST", "/api/projects", map[string]any{"title": "Ograja"})
 	pid := itoa(pr["id"].(float64))
 	upload := func(c *client, body string) (int, map[string]any) {
@@ -1067,7 +1073,7 @@ func TestProjectPhotos(t *testing.T) {
 		json.Unmarshal(rec.Body.Bytes(), &o)
 		return rec.Code, o
 	}
-	code, a := upload(zagar, "\xff\xd8one")
+	code, a := upload(volk, "\xff\xd8one")
 	if code != 201 {
 		t.Fatalf("upload by another house: %d", code)
 	}
@@ -1075,16 +1081,16 @@ func TestProjectPhotos(t *testing.T) {
 	if code != 201 {
 		t.Fatalf("upload by owner: %d", code)
 	}
-	_, p, _ := zagar.do("GET", "/api/projects/"+pid, nil)
+	_, p, _ := volk.do("GET", "/api/projects/"+pid, nil)
 	photos := p["photos"].([]any)
-	if len(photos) != 2 || photos[0].(map[string]any)["house_name"] != "Žagar" {
+	if len(photos) != 2 || photos[0].(map[string]any)["house_name"] != "Zeleni Volk" {
 		t.Fatalf("photos: %v", photos)
 	}
 	if _, ok := photos[0].(map[string]any)["photo"]; ok {
 		t.Fatal("project leaks the blob")
 	}
 	// The list counts the pictures without carrying them.
-	_, _, list := zagar.do("GET", "/api/projects", nil)
+	_, _, list := volk.do("GET", "/api/projects", nil)
 	if list[0]["photos"] != 2.0 {
 		t.Fatalf("photo tally: %v", list[0]["photos"])
 	}
@@ -1100,8 +1106,8 @@ func TestProjectPhotos(t *testing.T) {
 	if rec.Code != 401 {
 		t.Fatalf("photo without token: %d", rec.Code)
 	}
-	code, _, _ = zagar.do("DELETE", "/api/photos/"+itoa(b["id"].(float64)), nil)
-	zagar.must(403, code, "delete the owner's picture")
+	code, _, _ = volk.do("DELETE", "/api/photos/"+itoa(b["id"].(float64)), nil)
+	volk.must(403, code, "delete the owner's picture")
 	code, _, _ = steward.do("DELETE", "/api/photos/"+itoa(a["id"].(float64)), nil)
 	steward.must(204, code, "project house deletes a neighbour's picture")
 	code, exp, _ := steward.do("GET", "/api/export", nil)
@@ -1109,12 +1115,12 @@ func TestProjectPhotos(t *testing.T) {
 	if row := exp["project_photos"].([]any)[0].(map[string]any); row["photo"] != nil || row["photo_type"] != "image/jpeg" {
 		t.Fatalf("export: %v", row)
 	}
-	// A picture outlives the house that added it: Žagar adds one and leaves.
-	code, c := upload(zagar, "\xff\xd8three")
+	// A picture outlives the house that added it: Zeleni Volk adds one and leaves.
+	code, c := upload(volk, "\xff\xd8three")
 	if code != 201 {
 		t.Fatalf("upload: %d", code)
 	}
-	_, me, _ := zagar.do("GET", "/api/me", nil)
+	_, me, _ := volk.do("GET", "/api/me", nil)
 	code, _, _ = steward.do("DELETE", fmtID("/api/houses/%d", int64(me["id"].(float64))), nil)
 	steward.must(204, code, "delete house")
 	_, p, _ = steward.do("GET", "/api/projects/"+pid, nil)
@@ -1140,10 +1146,10 @@ func TestProjectPhotos(t *testing.T) {
 // whose need rides on the run hears when its place or time moves; a notes
 // edit rings nobody.
 func TestMarketEdits(t *testing.T) {
-	_, fake, steward, zagar := newVillage(t)
+	_, fake, steward, volk := newVillage(t)
 	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
 	steward.must(204, code, "subscribe")
-	_, run, _ := zagar.do("POST", "/api/runs", map[string]any{"destination": "Kočevje", "cutoff_at": "2026-09-10T09:00"})
+	_, run, _ := volk.do("POST", "/api/runs", map[string]any{"destination": "Kočevje", "cutoff_at": "2026-09-10T09:00"})
 	rid := itoa(run["id"].(float64))
 	waitFor(t, 1, fake) // the run itself
 	code, _, _ = steward.do("POST", "/api/needs", map[string]any{"text": "kvas", "run_id": run["id"]})
@@ -1151,15 +1157,15 @@ func TestMarketEdits(t *testing.T) {
 	fake.mu.Lock()
 	fake.sent, fake.payloads = nil, nil
 	fake.mu.Unlock()
-	code, _, _ = zagar.do("PUT", "/api/runs/"+rid, map[string]any{"notes": "only notes"})
-	zagar.must(204, code, "notes edit")
+	code, _, _ = volk.do("PUT", "/api/runs/"+rid, map[string]any{"notes": "only notes"})
+	volk.must(204, code, "notes edit")
 	waitFor(t, 0, fake)
-	code, _, _ = zagar.do("PUT", "/api/runs/"+rid, map[string]any{"destination": "Ribnica", "notes": "Merkur too"})
-	zagar.must(204, code, "edit own run")
+	code, _, _ = volk.do("PUT", "/api/runs/"+rid, map[string]any{"destination": "Ribnica", "notes": "Merkur too"})
+	volk.must(204, code, "edit own run")
 	waitFor(t, 1, fake)
 	var pl Payload
 	json.Unmarshal(fake.payloads[0], &pl)
-	if pl.Title != "🚗 Žagar spremeni vožnjo v Ribnica" || pl.Body != "odhod v četrtek ob 9:00 — tvoja potreba je na tej vožnji" || pl.URL != "#/market" {
+	if pl.Title != "🚗 Zeleni Volk spremeni vožnjo v Ribnica" || pl.Body != "odhod v četrtek ob 9:00 — tvoja potreba je na tej vožnji" || pl.URL != "#/market" {
 		t.Fatalf("rider push: %q / %q / %q", pl.Title, pl.Body, pl.URL)
 	}
 	// A steward moves the time: the banner still names the driver, and the
@@ -1172,7 +1178,7 @@ func TestMarketEdits(t *testing.T) {
 	third.must(204, code, "subscribe third")
 	code, _, _ = third.do("POST", "/api/needs", map[string]any{"text": "nails", "run_id": run["id"]})
 	third.must(201, code, "third's need")
-	waitFor(t, 2, fake) // the need rang steward and Žagar
+	waitFor(t, 2, fake) // the need rang steward and Zeleni Volk
 	fake.mu.Lock()
 	fake.sent, fake.payloads = nil, nil
 	fake.mu.Unlock()
@@ -1180,11 +1186,11 @@ func TestMarketEdits(t *testing.T) {
 	steward.must(204, code, "steward moves the time")
 	waitFor(t, 1, fake)
 	json.Unmarshal(fake.payloads[0], &pl)
-	if fake.sent[0].Endpoint != "https://push.example/3" || pl.Title != "🚗 Žagar changes the run to Ribnica" || pl.Body != "leaves Thursday at 14:00 — your need rides on it" {
+	if fake.sent[0].Endpoint != "https://push.example/3" || pl.Title != "🚗 Zeleni Volk changes the run to Ribnica" || pl.Body != "leaves Thursday at 14:00 — your need rides on it" {
 		t.Fatalf("steward edit: %s %q / %q", fake.sent[0].Endpoint, pl.Title, pl.Body)
 	}
-	code, _, _ = zagar.do("PUT", "/api/runs/"+rid, map[string]any{"destination": ""})
-	zagar.must(400, code, "blank destination")
+	code, _, _ = volk.do("PUT", "/api/runs/"+rid, map[string]any{"destination": ""})
+	volk.must(400, code, "blank destination")
 	_, _, runs := steward.do("GET", "/api/runs", nil)
 	if runs[0]["destination"] != "Ribnica" || runs[0]["notes"] != "Merkur too" {
 		t.Fatalf("run: %v", runs[0])
@@ -1199,8 +1205,8 @@ func TestMarketEdits(t *testing.T) {
 	fake.mu.Lock()
 	fake.sent, fake.payloads = nil, nil
 	fake.mu.Unlock()
-	code, _, _ = zagar.do("DELETE", "/api/runs/"+rid, nil)
-	zagar.must(204, code, "driver calls off the run")
+	code, _, _ = volk.do("DELETE", "/api/runs/"+rid, nil)
+	volk.must(204, code, "driver calls off the run")
 	waitFor(t, 2, fake)
 	said := map[string][2]string{}
 	fake.mu.Lock()
@@ -1210,10 +1216,10 @@ func TestMarketEdits(t *testing.T) {
 		said[sub.Endpoint] = [2]string{q.Title, q.Body}
 	}
 	fake.mu.Unlock()
-	if got := said["https://push.example/s"]; got[0] != "🚗 Odpade vožnja hiše Žagar v Ribnica" || got[1] != "tvoja potreba ostane na tržnici, brez vožnje" {
+	if got := said["https://push.example/s"]; got[0] != "🚗 Odpade vožnja hiše Zeleni Volk v Ribnica" || got[1] != "tvoja potreba ostane na tržnici, brez vožnje" {
 		t.Fatalf("rider in sl: %q / %q", got[0], got[1])
 	}
-	if got := said["https://push.example/3"]; got[0] != "🚗 Called off: the run to Ribnica by Žagar" || got[1] != "your need stays on the market, without a run" {
+	if got := said["https://push.example/3"]; got[0] != "🚗 Called off: the run to Ribnica by Zeleni Volk" || got[1] != "your need stays on the market, without a run" {
 		t.Fatalf("rider in en: %q / %q", got[0], got[1])
 	}
 	_, _, left := steward.do("GET", "/api/needs", nil)
@@ -1231,7 +1237,7 @@ func TestMarketEdits(t *testing.T) {
 	// A steward calls off somebody else's run: the driver and the rider are two
 	// houses now, so both exclusions are exercised. The driver hears nothing —
 	// the same rule as the edit, and the same open question with it.
-	_, run2, _ := zagar.do("POST", "/api/runs", map[string]any{"destination": "Trgovina", "cutoff_at": "2026-09-11T08:00"})
+	_, run2, _ := volk.do("POST", "/api/runs", map[string]any{"destination": "Trgovina", "cutoff_at": "2026-09-11T08:00"})
 	code, _, _ = third.do("POST", "/api/needs", map[string]any{"text": "sol", "run_id": run2["id"]})
 	third.must(201, code, "third rides again")
 	waitFor(t, 5, fake) // the two cancels above, the new run to both phones, the need to one
@@ -1242,17 +1248,17 @@ func TestMarketEdits(t *testing.T) {
 	steward.must(204, code, "steward calls off another house's run")
 	waitFor(t, 1, fake)
 	json.Unmarshal(fake.payloads[0], &pl)
-	if fake.sent[0].Endpoint != "https://push.example/3" || pl.Title != "🚗 Called off: the run to Trgovina by Žagar" {
+	if fake.sent[0].Endpoint != "https://push.example/3" || pl.Title != "🚗 Called off: the run to Trgovina by Zeleni Volk" {
 		t.Fatalf("steward cancel: %s %q", fake.sent[0].Endpoint, pl.Title)
 	}
 
 	_, off, _ := steward.do("POST", "/api/offers", map[string]any{"text": "Sadike", "tag": "seeds"})
 	oid := itoa(off["id"].(float64))
-	code, _, _ = zagar.do("PUT", "/api/offers/"+oid, map[string]any{"tag": "surplus"})
-	zagar.must(403, code, "another house edits the kind")
+	code, _, _ = volk.do("PUT", "/api/offers/"+oid, map[string]any{"tag": "surplus"})
+	volk.must(403, code, "another house edits the kind")
 	code, _, _ = steward.do("PUT", "/api/offers/"+oid, map[string]any{"text": "Sadike paradižnika", "tag": "spaceships"})
 	steward.must(204, code, "owner edits")
-	_, _, offers := zagar.do("GET", "/api/offers", nil)
+	_, _, offers := volk.do("GET", "/api/offers", nil)
 	if offers[0]["text"] != "Sadike paradižnika" || offers[0]["tag"] != "giveaway" {
 		t.Fatalf("offer: %v", offers[0])
 	}
@@ -1270,7 +1276,7 @@ func TestCodex(t *testing.T) {
 	other.must(201, code, "villager adds a section")
 	id := obj["id"].(float64)
 	_, _, list := steward.do("GET", "/api/codex", nil)
-	if len(list) != 1 || list[0]["house_name"] != "Žagar" || list[0]["ord"].(float64) != 1 {
+	if len(list) != 1 || list[0]["house_name"] != "Zeleni Volk" || list[0]["ord"].(float64) != 1 {
 		t.Fatalf("section not listed with its house: %v", list)
 	}
 	opened := list[0]["rev"].(float64)

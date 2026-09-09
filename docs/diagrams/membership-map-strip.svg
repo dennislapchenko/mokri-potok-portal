@@ -29,6 +29,6 @@
 
   <!-- the strip -->
   <rect class="panel" x="24" y="356" width="592" height="40"/>
-  <text class="ink" x="40" y="381">🏡 Hiše v vasi: 🗝️ A · 🌲 B · 🏠 C · 🌿 Vrba · 🕯️ Bukev</text>
+  <text class="ink" x="40" y="381">🏡 Hiše v vasi: 🗝️ A · 🌲 B · 🏠 C · 🌿 Ježek · 🕯️ Sova</text>
   <text class="small" x="24" y="414">not built: the legend already under the map lists every house, landed or not</text>
 </svg>

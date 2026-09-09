@@ -971,7 +971,7 @@ func (s *Server) deleteRun(w http.ResponseWriter, r *http.Request) {
 	for _, n := range riders {
 		s.notifyHouse("runs", n["house_id"].(int64), func(lang string) Payload {
 			// The driver is a label here, not the actor: a steward may be the
-			// one who removed the row, and "Žagar calls it off" would blame a
+			// one who removed the row, and "Zeleni Volk calls it off" would blame a
 			// house for something it did not do. The edit banner can name the
 			// driver as the actor because moving a run is neutral; cancelling
 			// one is not.

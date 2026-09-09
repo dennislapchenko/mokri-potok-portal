@@ -70,7 +70,7 @@ func TestVillageFlow(t *testing.T) {
 	steward.must(409, code, "second bootstrap refused")
 
 	// Steward creates a house and gets its invite.
-	code, obj, _ = steward.do("POST", "/api/houses", map[string]any{"name": "Pri Lipi", "crest": "🌳", "color": "#4a7c3f"})
+	code, obj, _ = steward.do("POST", "/api/houses", map[string]any{"name": "Pisani Petelin", "crest": "🌳", "color": "#4a7c3f"})
 	steward.must(201, code, "create house")
 	houseID := obj["id"].(float64)
 	inv := obj["invite"].(map[string]any)["code"].(string)
@@ -91,7 +91,7 @@ func TestVillageFlow(t *testing.T) {
 	}
 	code, obj, _ = villager.do("GET", "/api/me", nil)
 	villager.must(200, code, "me")
-	if obj["name"] != "Pri Lipi" || obj["is_steward"].(float64) != 0 {
+	if obj["name"] != "Pisani Petelin" || obj["is_steward"].(float64) != 0 {
 		t.Fatalf("me: %v", obj)
 	}
 
@@ -104,7 +104,7 @@ func TestVillageFlow(t *testing.T) {
 	villager.must(200, code, "list houses")
 	var found bool
 	for _, h := range houses {
-		if h["name"] == "Pri Lipi" && len(h["parcels"].([]any)) == 2 {
+		if h["name"] == "Pisani Petelin" && len(h["parcels"].([]any)) == 2 {
 			found = true
 		}
 	}

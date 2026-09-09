@@ -264,7 +264,7 @@ does not ship.
   it, and to nobody else — not the driver, not the editor; a notes edit rings
   nobody. Both banners name the driver, but a **cancellation names it as a
   label, not as an actor** — a steward may be the one who deleted the row, and
-  "Žagar calls it off" would blame a house for something it did not do; moving
+  "Zeleni Volk calls it off" would blame a house for something it did not do; moving
   a run is neutral enough to keep the active form. Deleting needs its own
   handler (`deleteRun`, not `deleteRow`) because the riders have to be read
   before the row goes: `needs.run_id` is `ON DELETE SET NULL`, so the need

@@ -33,7 +33,7 @@
   <text class="small" x="56" y="232">1147/2</text>
   <rect class="card" x="40" y="260" width="248" height="46"/>
   <rect x="40" y="260" width="4" height="46" fill="#8a8a8a"/>
-  <text class="ink" x="56" y="284">🌿 Hiša Vrba</text>
+  <text class="ink" x="56" y="284">🌿 Hiša Modri Ježek</text>
   <text class="bad" x="222" y="284">0 parcels</text>
   <text class="bad" x="40" y="330">a count beside a name, and the count is zero</text>
   <text class="bad" x="40" y="348">— the app says "less" without meaning to</text>
@@ -55,7 +55,7 @@
   <text class="small" x="376" y="232">1147/2</text>
   <rect class="card" x="360" y="260" width="248" height="60"/>
   <rect x="360" y="260" width="4" height="60" fill="#4a7fa5"/>
-  <text class="ink" x="376" y="282">🌿 Hiša Vrba</text>
+  <text class="ink" x="376" y="282">🌿 Hiša Modri Ježek</text>
   <text class="small" x="376" y="304">pri potoku, v sosedovi koči</text>
   <text class="good" x="360" y="346">same list, same order, no badge</text>
   <text class="good" x="360" y="364">the line under the name is theirs,</text>
@@ -80,7 +80,7 @@
   <text class="sub" x="680" y="284">brez zemlje</text>
   <rect class="card" x="680" y="294" width="240" height="46"/>
   <rect x="680" y="294" width="4" height="46" fill="#4a7fa5"/>
-  <text class="ink" x="696" y="318">🌿 Hiša Vrba</text>
+  <text class="ink" x="696" y="318">🌿 Hiša Modri Ježek</text>
   <text class="small" x="664" y="368">a steward can group and count them;</text>
   <text class="small" x="664" y="386">so can everybody else</text>
   <text class="bad" x="664" y="418">the line under the heading is a rank</text>

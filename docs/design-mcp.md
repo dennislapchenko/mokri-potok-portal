@@ -369,7 +369,12 @@ key last acted).
   /api/devices/agent`, `PUT /api/houses/{id}`, push, `DELETE /api/events`,
   `/api/export`; `GET /api/mcp` is 405; a steward's key is 403 on the steward
   routes and "not yours" on another house's project in-process; a forged
-  mark header changes nothing.
+  mark header changes nothing. And the other way through the door: a phone's
+  own session token — a steward's and an ordinary house's — is 403 at
+  `POST /api/mcp`; an `id` of `..`, `.`, `1/2`, `1?x=1` or empty is a
+  JSON-RPC `-32602` `bad id` (invalid params, not `isError`: the argument
+  never formed a request, so no tool ran); and `whoami` reports the request's
+  `is_steward`, so a steward's key reads 0 while that house's phone reads 1.
 - `TestMCPSurface`: no tool deletes, none reaches devices, pairing, push,
   `/api/me/*`, export, a house write or a steward route; every tool lands on
   a registered handler; the count is pinned at 43; unknown tool, unknown

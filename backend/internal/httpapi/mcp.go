@@ -306,6 +306,9 @@ func (s *Server) mcp(w http.ResponseWriter, r *http.Request) {
 			"content": []map[string]any{{"type": "text", "text": body}},
 			// A 3xx is not a landed write: Go's mux answers an unclean path
 			// with a bodiless 301, which would otherwise read as {"ok":true}.
+			// Belt with no test on it — the path filter in dispatch refuses
+			// `.` and `..` first, so nothing here can currently reach a 301.
+			// Keep both: the filter is what a new tool's path could slip past.
 			"isError": status >= 300,
 		}, nil)
 	default:

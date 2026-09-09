@@ -9,7 +9,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, writeFileSync } from "node:fs";
 
 const out = new URL("../public/changelog.json", import.meta.url);
-const skip = /^(deploy|docs|ci|chore|test|refactor|taskfile)\b|^revert\b|\[skip ci\]|^merge\b/i;
+const skip = /^(deploy|docs|ci|chore|tests?|refactor|taskfile)\b|^revert\b|\[skip ci\]|^merge\b/i;
 
 try {
   // A window, not the whole history: the page sits at the foot of Home and a

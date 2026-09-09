@@ -25,7 +25,7 @@ the shop, when the work party is — with a game-like village map as the door.
 | Room | Job it does better than the chat |
 | --- | --- |
 | Village map (home) | Who lives where. Parcels coloured by house crest; the event ground is a house of kind `common`. The legend under it names **every** house, including one with no land at all — a member who rents a hut or uses a vacant house is a normal house with an empty parcel list, and marks on the map whose land it lives on instead. |
-| Watchtower | "We are away from … to …, please watch the land." Dates, care notes, one watcher. The room that justifies the app. |
+| Watchtower | "We are away from … to …, please watch the land." Dates, care notes, one watcher, and a thread for "I fed them, key is back under the step". The room that justifies the app. |
 | Market | "Going to the shop, anyone need anything?" Needs with states, give-aways, shop runs with a cut-off. |
 | Tavern (the hall) | One room, three parts stacked: pinned notices on top, then the month calendar (kinds: event and work party, with sign-ups), then the message board. Merged 2026-09-04 — two doors to one gathering place crowded the bottom bar, and the board alone was never worth a door. `/bell` stays a route alias because notifications already sent point at it. |
 | Tool shed | Who lends what, and who holds it now, with a photo, a category (power, garden, other) and a filter by owner house. A tool comes back; a give-away does not. The holder gets a nudge after a day, then at doubling gaps — a reminder, not a ledger. A folded **wishlist** underneath: tools the village lacks, with the names of houses that would love one — names, never a count. |

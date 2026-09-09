@@ -139,6 +139,7 @@ const sl: Record<string, string> = {
   "open needs": "odprtih potreb",
   "events ahead": "dogodkov",
   "away now": "odsotnih",
+  "away soon": "napovedanih",
   "pinned": "pripetih",
   "You are inside WhatsApp's browser.": "Ste v WhatsAppovem brskalniku.",
   "Open this page in Chrome or Safari (menu ⋮ → open in browser), then add it to your home screen. Otherwise the device forgets you.": "Odprite to stran v Chromu ali Safariju (meni ⋮ → odpri v brskalniku), nato jo dodajte na začetni zaslon. Sicer vas naprava pozabi.",

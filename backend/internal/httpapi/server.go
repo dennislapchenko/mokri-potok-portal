@@ -1135,7 +1135,9 @@ func (s *Server) updateClaimable(w http.ResponseWriter, r *http.Request, table, 
 // ---- watchtower ----------------------------------------------------------
 
 func (s *Server) listAway(w http.ResponseWriter, r *http.Request) {
-	rows, err := s.st.Rows(r.Context(), `SELECT x.*,`+houseJoin+`, t.name AS watcher_name FROM away x JOIN houses h ON h.id=x.house_id
+	rows, err := s.st.Rows(r.Context(), `SELECT x.*,`+houseJoin+`, t.name AS watcher_name,
+		(SELECT count(*) FROM comments c WHERE c.subject='away' AND c.subject_id=x.id) AS comments
+		FROM away x JOIN houses h ON h.id=x.house_id
 		LEFT JOIN houses t ON t.id=x.watcher WHERE x.to_date >= date('now','-3 days') ORDER BY x.from_date`)
 	if err != nil {
 		fail(w, err)

@@ -142,7 +142,9 @@ function Home({ me, houses }: { me: Me; houses: House[] }) {
         const out = tools.filter((x) => x.held_by).length;
         setBadges({
           "/market": num(n.filter((x) => x.state === "open").length, "open needs"),
-          "/watch": num(a.filter((x) => x.from_date <= today && x.to_date >= today).length, "away now"),
+          // Two counts, never blended: a house that is out now and a house that
+          // told us it will be are different answers to "who is away".
+          "/watch": [num(a.filter((x) => x.from_date <= today && x.to_date >= today).length, "away now"), num(a.filter((x) => x.from_date > today).length, "away soon")].filter(Boolean).join(" · "),
           "/tavern": [num(e.filter((x) => !isOver(x)).length, "events ahead"), num(p.filter((x) => x.pinned).length, "pinned")].filter(Boolean).join(" · "),
           // The shed is two rooms in one door, so its badge says both: the tools
           // that exist, and the ones the village still lacks.
@@ -274,7 +276,7 @@ function HallPeek() {
   const tally = (e: any) => {
     const list = JSON.parse(e.signup_list || "[]") as any[];
     const n = (state: string) => list.filter((x) => x.state === state && !x.stale).length;
-    return [e.signups > 0 ? `🙋 ${e.signups}` : "", n("no") ? `🚫 ${n("no")}` : "", n("maybe") ? `🤔 ${n("maybe")}` : ""].filter(Boolean).join(" ");
+    return [e.signups > 0 ? `🙋 ${e.signups}` : "", n("no") ? `❌ ${n("no")}` : "", n("maybe") ? `🤔 ${n("maybe")}` : ""].filter(Boolean).join(" ");
   };
   return (
     <div className="parchment peek">
@@ -284,7 +286,11 @@ function HallPeek() {
           <span className="tag alarm">📌</span> <span className="peek-text">{p.body}</span></Link>
       ))}
       {events.map((e, i) => (
-        <Link key={e.id} to={`/tavern?day=${e.starts_at.slice(0, 10)}`} className="peek-row"><span className="crest" style={{ backgroundColor: e.house_color }}>{e.house_crest}</span>
+        // The crest of whoever called it stays on a work bee, where "who is
+        // asking for hands" is half the line, and goes on an ordinary event,
+        // where the room is what matters and the title needs the width. A
+        // phone gives this row about 20 characters.
+        <Link key={e.id} to={`/tavern?day=${e.starts_at.slice(0, 10)}`} className="peek-row">{e.kind === "work" ? <span className="crest" style={{ backgroundColor: e.house_color }}>{e.house_crest}</span> : null}
           <span className="peek-text" ref={(el) => { rows.current[i] = el; }}>{ICON[e.kind]} {e.title}</span>
           <span className="when"><When iso={e.starts_at} /></span>
           {tally(e) && <span className="small tally">{tally(e)}</span>}</Link>

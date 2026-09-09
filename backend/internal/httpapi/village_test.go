@@ -1345,3 +1345,50 @@ func TestCodex(t *testing.T) {
 		t.Fatalf("export lacks the codex: %v", exp["codex_sections"])
 	}
 }
+
+// TestAwayThread: an away notice carries a comment thread like an event or a
+// wish, and it is read by the house that is away and by its watcher. The push
+// is the anonymous one the watchtower already uses — a lock screen must not
+// name an empty house, its dates or its notes.
+func TestAwayThread(t *testing.T) {
+	_, fake, steward, volk := newVillage(t)
+	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	steward.must(204, code, "subscribe")
+	code, away, _ := volk.do("POST", "/api/away", map[string]any{"from_date": "2026-09-10", "to_date": "2026-09-14", "notes": "kokoši"})
+	volk.must(201, code, "away")
+	aid := itoa(away["id"].(float64))
+	waitFor(t, 1, fake) // the notice itself
+	code, _, _ = steward.do("PUT", "/api/away/"+aid, map[string]any{"watch": true})
+	steward.must(204, code, "watch")
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+
+	code, _, _ = volk.do("POST", "/api/threads/away/"+aid, map[string]any{"body": "ključ je pri sosedu", "author": "Ana"})
+	volk.must(201, code, "comment on an away notice")
+	waitFor(t, 1, fake)
+	var pl Payload
+	json.Unmarshal(fake.payloads[0], &pl)
+	if pl.Title != "🕯️ Stražnica" || pl.URL != "#/watch" {
+		t.Fatalf("watcher push: %q / %q / %q", pl.Title, pl.Body, pl.URL)
+	}
+	for _, leak := range []string{"2026-09-10", "2026-09-14", "kokoši", "Zeleni Volk", "ključ", "Ana"} {
+		if contains([]string{pl.Title, pl.Body}, leak) {
+			t.Errorf("away comment push leaks %q: %q / %q", leak, pl.Title, pl.Body)
+		}
+	}
+
+	code, _, thread := volk.do("GET", "/api/threads/away/"+aid, nil)
+	volk.must(200, code, "thread")
+	if len(thread) != 1 || thread[0]["body"] != "ključ je pri sosedu" {
+		t.Fatalf("thread: %v", thread)
+	}
+	code, _, aways := volk.do("GET", "/api/away", nil)
+	volk.must(200, code, "aways")
+	if aways[0]["comments"] != float64(1) {
+		t.Fatalf("comment count: %v", aways[0])
+	}
+	// A comment on a notice that is not there is a 404, not a silent 201.
+	code, _, _ = volk.do("POST", "/api/threads/away/9999", map[string]any{"body": "x"})
+	volk.must(404, code, "comment on no such notice")
+}

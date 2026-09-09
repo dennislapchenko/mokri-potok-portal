@@ -100,7 +100,16 @@ does not ship.
   else** (owner's decision 2026-09-08, when the dropped `houses.about` left the
   card a line short): the map mark was considered for that line and refused —
   the room answers who is away and until when, and a house's address is not
-  part of the answer.
+  part of the answer. It also carries a **thread**, like an event or a wish
+  (owner's decision 2026-09-09) — "I fed them, key is back under the step" is a
+  conversation and belongs where the notice is. **A card with no watcher says
+  nothing** rather than printing an em dash: an empty line reads as a fault.
+  **The Home tile counts who is away** (owner's decision 2026-09-09: every
+  account is a villager, so a count on a logged-in page is not the leak a lock
+  screen would be; narrow it when a reduced role arrives). It is two numbers,
+  not one — out now, and told us they will be — because a house leaving in a
+  fortnight is not away, and a tile that adds them together answers neither
+  question. That split is the assistant's, not the owner's.
 - **No tallies of favours.** "Taken by", "claimed by", "watched by" are
   acknowledgments. No counts, points, leaderboards, streaks. Ever.
 - **Water on the map is one file and one component.** `map/Water.tsx` draws
@@ -139,10 +148,16 @@ does not ship.
   GURS data: `TBD`, required before the portal moves to the collective's domain.
 - **One thread implementation.** Comments live in `comments`, keyed by
   `(subject, subject_id)`, and are rendered by `Thread.tsx` everywhere: an
-  event, a wish. One reply level. A new room that wants comments adds a subject,
-  never a table. The push kind stays the room's own so no opt-out changes
-  meaning. The name field starts filled from the device label this phone joined
-  under, and stays optional.
+  event, a wish, an away notice. One reply level. A new room that wants comments
+  adds a subject, never a table. The push kind stays the room's own so no
+  opt-out changes meaning. Who hears is the subject's own answer, in
+  `tellThread`: an event tells the caller and everyone who answered yes or
+  maybe, a wish tells the wisher and everyone who wants one, **an away notice
+  tells only the house that is away and its watcher, and tells them nothing** —
+  the banner is the anonymous watchtower one, because a comment's snippet on a
+  lock screen would say what the notice itself is not allowed to. The name
+  field starts filled from the device label this phone joined under, and stays
+  optional.
 - **Wish options are findings, not votes.** Anyone may add "this model, this
   price, this link" to a wish. Never count, rank or mark a winner.
 - **A past event leaves the list, never the calendar.** The list under the month
@@ -288,7 +303,8 @@ does not ship.
 - **What a lock screen may say about an empty house.** Anyone holding a phone
   can read a notification. The line: a **multi-day absence is anonymous** — an
   away push names no house, no dates, no notes, only "new notice, open the
-  Watchtower". A **scheduled short trip is named** — a shop run says who drives
+  Watchtower", and a comment on that notice rings the same way, with no author
+  and no snippet. A **scheduled short trip is named** — a shop run says who drives
   and when, because the house is coming back the same day and the whole point
   is to answer it. Classify a new kind against that line; do not guess.
   The one other exception is the optional author name on a tavern post, which
@@ -356,6 +372,15 @@ does not ship.
   📋 chip on a calendar event. Rooms carry a `short` label for
   the bar because a phone gives each item about 60 px. Rationale and the
   options rejected: `docs/design-more-rooms.md`.
+- **A tavern peek row spends its width on the title — provisional.** A phone
+  gives that row about 20 characters before `HallPeek` cuts the title to dots,
+  so what shares the line has to answer a villager's question: **a work bee
+  keeps the crest of the house that called it** — who is asking for hands is
+  half the line — **and an ordinary event drops it** (owner's decision
+  2026-09-09), because the room, not the caller, is why anyone reads that row.
+  The crest may leave the work bee too; the owner kept it for now. The time and
+  the answer tally shrink a step under 560 px and sit closer to the title, for
+  the same reason. How the cut itself is measured: the comment in `HallPeek`.
 - **Old notification links must keep working.** Payload URLs live in the
   database of no one — they are already on people's phones. `/bell` survives as
   a route alias after the merge; a post links to `#/tavern?at=board`.

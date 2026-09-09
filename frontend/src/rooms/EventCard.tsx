@@ -10,7 +10,7 @@ import { DatePicker } from "../DatePicker";
 export const ICON: Record<string, string> = { event: "🔔", work: "🤝", alarm: "🚨" };
 const RSVP: { state: string; icon: string; label: string }[] = [
   { state: "yes", icon: "🙋", label: "I am coming" },
-  { state: "no", icon: "🚫", label: "I cannot come" },
+  { state: "no", icon: "❌", label: "I cannot come" },
   { state: "maybe", icon: "🤔", label: "Maybe" },
 ];
 

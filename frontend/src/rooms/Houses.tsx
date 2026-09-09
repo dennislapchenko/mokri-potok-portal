@@ -30,6 +30,13 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   const [copied, setCopied] = useState<number | null>(null);
   const [newOpen, setNewOpen] = useState(false);
 
+  // The picker opens at the top of the room and every button that opens it
+  // sits far below, so on a phone the map appears off-screen and the tap reads
+  // as nothing happening. The panel is the first thing in the room, so the top
+  // of the page is where it is — scrolling to the panel itself would only hide
+  // its heading under the sticky bar.
+  useEffect(() => { if (assign) window.scrollTo({ top: 0, behavior: "smooth" }); }, [assign]);
+
   useEffect(() => { api<any[]>("/devices").then(setDevices).catch(() => {}); }, []);
   useEffect(() => {
     if (!steward) return;

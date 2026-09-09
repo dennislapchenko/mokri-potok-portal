@@ -7,12 +7,13 @@ import (
 )
 
 // Comment threads, one implementation for every room that wants them: an event
-// in the calendar, a wish in the tool shed. One reply level, like the board.
+// in the calendar, a wish in the tool shed, an away notice in the watchtower.
+// One reply level, like the board.
 //
 // Who hears about a new comment depends on the subject, and only on that — the
 // push kind stays the room's own, so nobody's opt-out changes meaning.
 
-var commentSubjects = []string{"event", "wish"}
+var commentSubjects = []string{"event", "wish", "away"}
 
 func subjectOf(r *http.Request) (string, int64, bool) {
 	s := r.PathValue("subject")
@@ -50,8 +51,11 @@ func (s *Server) createThreadComment(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "body required")
 		return
 	}
-	table := map[string]string{"event": "events", "wish": "wishes"}[subject]
-	owner, err := s.st.One(r.Context(), `SELECT house_id, `+map[string]string{"event": "title", "wish": "text"}[subject]+` AS label FROM `+table+` WHERE id=?`, id)
+	table := map[string]string{"event": "events", "wish": "wishes", "away": "away"}[subject]
+	// An away notice has no title, and must not grow one: what it says is
+	// burglary information, so nothing about it reaches a push.
+	label := map[string]string{"event": "title", "wish": "text", "away": "''"}[subject]
+	owner, err := s.st.One(r.Context(), `SELECT house_id, `+label+` AS label FROM `+table+` WHERE id=?`, id)
 	if err != nil {
 		fail(w, err)
 		return
@@ -87,8 +91,32 @@ func (s *Server) createThreadComment(w http.ResponseWriter, r *http.Request) {
 
 // tellThread pushes to the people the comment concerns: for an event, the house
 // that called it plus everyone who answered yes or maybe; for a wish, the
-// wisher plus every house that wants one.
+// wisher plus every house that wants one; for an away notice, the house that is
+// away plus its watcher.
 func (s *Server) tellThread(r *http.Request, subject string, id int64, from *House, ownerHouse int64, label, body string) {
+	// The watchtower is the exception, and stays the one it already was: the
+	// thread is read by the house that is away and by whoever watches for it,
+	// and the push says only that something was said. A lock screen anyone can
+	// read must not name an empty house, its dates or its notes.
+	if subject == "away" {
+		told := map[int64]bool{from.ID: true}
+		row, _ := s.st.One(r.Context(), `SELECT watcher FROM away WHERE id=?`, id)
+		for _, to := range []any{ownerHouse, row["watcher"]} {
+			w, ok := to.(int64)
+			if !ok || told[w] {
+				continue
+			}
+			told[w] = true
+			s.notifyHouse("away", w, func(lang string) Payload {
+				return Payload{
+					Title: tr(lang, "🕯️ Stražnica", "🕯️ Watchtower"),
+					Body:  tr(lang, "nekdo je pripisal k odsotnosti — odpri portal", "someone wrote on an absence — open the portal"),
+					URL:   "#/watch",
+				}
+			})
+		}
+		return
+	}
 	kind, icon, url := "events", "💬", "#/tavern"
 	q := `SELECT DISTINCT house_id FROM event_signups WHERE event_id=? AND state IN ('yes','maybe')`
 	if subject == "wish" {

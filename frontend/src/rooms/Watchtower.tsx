@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
 import { Crest, Empty, When, canEdit, useList } from "./shared";
+import { Thread } from "./Thread";
 import { DatePicker } from "../DatePicker";
 
 export function Watchtower({ me }: { me: Me }) {
@@ -17,6 +18,7 @@ export function Watchtower({ me }: { me: Me }) {
   const [editing, setEditing] = useState<number | null>(null);
   const [ef, setEf] = useState({ from_date: "", to_date: "", notes: "" });
   const startEdit = (a: any) => { setEf({ from_date: a.from_date, to_date: a.to_date, notes: a.notes || "" }); setEditing(a.id); };
+  const [openThread, setOpenThread] = useState<number | null>(null);
   const saveEdit = async (id: number) => { await api(`/away/${id}`, { method: "PUT", body: ef }); setEditing(null); reload(); };
   return (
     <div className="parchment">
@@ -48,13 +50,15 @@ export function Watchtower({ me }: { me: Me }) {
             <div className="head"><Crest crest={a.house_crest} color={a.house_color} /><span className="who">{a.house_name}</span>{now && <span className="tag alarm">{t("away now")}</span>}<span className="when"><When iso={a.from_date} /> → <When iso={a.to_date} /></span></div>
             {a.notes && <div className="body">{a.notes}</div>}
             </>)}
-            <div className="small">{a.watcher ? <>👁 {t("Watched by")}: <strong>{a.watcher_name}</strong></> : <span className="muted">—</span>}</div>
+            {a.watcher ? <div className="small">👁 {t("Watched by")}: <strong>{a.watcher_name}</strong></div> : null}
             <div className="actions">
               {!a.watcher && a.house_id !== me.id && <button className="primary" onClick={() => api(`/away/${a.id}`, { method: "PUT", body: { watch: true } }).then(reload)}>👁 {t("I will watch")}</button>}
               {a.watcher === me.id && <button onClick={() => api(`/away/${a.id}`, { method: "PUT", body: { watch: false } }).then(reload)}>{t("Step back")}</button>}
+              <button className="ghost" onClick={() => setOpenThread(openThread === a.id ? null : a.id)}>💬 {t("Comments")} ({a.comments || 0})</button>
               {canEdit(me, a) && editing !== a.id && <button className="ghost" onClick={() => startEdit(a)}>✎ {t("Edit")}</button>}
               {canEdit(me, a) && <button className="ghost" onClick={() => confirm("?") && api(`/away/${a.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button>}
             </div>
+            {openThread === a.id && <Thread subject="away" id={a.id} me={me} onChanged={reload} />}
           </div>
         );
       })}

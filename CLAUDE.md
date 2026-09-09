@@ -216,14 +216,13 @@ does not ship.
   closed or broken view on a slow phone.
 - **Wishlist names are not votes.** Never sort, badge or count by how many
   houses want a thing. A wish ends when the wisher marks it arrived.
-- **A project is planned, in progress or finished** (owner's ask 2026-09-09).
-  Its creator or a steward steps it forward or back, one step at a time in
-  the UI, any step in the API. The DB value for in progress stays `open`,
-  older than the planned state, so no row moved. **That a new project begins
-  planned is the assistant's default, not yet the owner's decision**: one more
-  tap before Saturday's work party counts on Home, against a plan that never
-  counted as work. The creation push says "plans", not "starts", and is
-  pinned in `banner_test.go`. Nothing pushes on a flip. **Only a project in
+- **A project is planned, in progress or finished, and a new one begins
+  planned** (owner's decision 2026-09-09). Its creator or a steward steps it
+  forward or back, one step at a time in the UI, any step in the API. The DB
+  value for in progress stays `open`, older than the planned state, so no row
+  moved. The cost, paid knowingly: one more tap before Saturday's work party
+  counts on Home. The creation push says "plans", not "starts", and is pinned
+  in `banner_test.go`. Nothing pushes on a flip. **Only a project in
   progress counts on the Home badge**, and only its free tasks; a planned
   project's tasks may still be taken — the badge is what a plan stays off,
   not the hands. The event form offers every project that is not finished, a
@@ -472,7 +471,9 @@ skipped. The reviewer edits nothing.
   no house-by-house facts, no quotes from the owner's private homestead notes
   about people or tenure. Pointing at a file in that repo by path is fine, its
   content about people is not. Abstract it or leave it out. This applies to
-  docs, commits, memory and agent files alike.
+  docs, commits, memory and agent files alike. Test fixtures use invented
+  house names; the real ones that sat in tests until 2026-09-09 stay in the
+  git history (owner's decision, same day) — no rewrite, no force-push.
 - Work on `main`. One person owns this repo; a side branch and a pull request
   only put a gate between a verified change and the village. Commit to `main`
   and push (owner's rule 2026-09-07).

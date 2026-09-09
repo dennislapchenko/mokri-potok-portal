@@ -29,6 +29,24 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
   const [myColor, setMyColor] = useState(me.color);
   const [copied, setCopied] = useState<number | null>(null);
   const [newOpen, setNewOpen] = useState(false);
+  // An MCP key: a device row an agent holds (mcp.go). The portal keeps its
+  // hash and cannot show it twice, so the answer stays on screen until the
+  // house leaves the room, and the devices list gains a 🤖 row.
+  const [keyOpen, setKeyOpen] = useState(false);
+  const [keyLabel, setKeyLabel] = useState("");
+  const [key, setKey] = useState<string>("");
+  const [keyCopied, setKeyCopied] = useState<"key" | "url" | null>(null);
+  const mcpURL = `${location.origin}/api/mcp`;
+  const makeKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Only a new key replaces the one on screen: the toggle below never
+    // clears it, because the text beside it says it cannot be shown again.
+    setKey("");
+    const r = await api<{ id: number; token: string }>("/devices/agent", { method: "POST", body: { label: keyLabel } });
+    setKey(r.token); setKeyOpen(false); setKeyLabel("");
+    api<any[]>("/devices").then(setDevices);
+  };
+  const copyKey = (what: "key" | "url") => { navigator.clipboard?.writeText(what === "key" ? key : mcpURL); setKeyCopied(what); setTimeout(() => setKeyCopied(null), 1800); };
 
   // The picker opens at the top of the room and every button that opens it
   // sits far below, so on a phone the map appears off-screen and the tap reads
@@ -187,14 +205,31 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
         <h3>{t("Your devices")}</h3>
         <p><AddPhone /></p>
         {devices.map((d) => (
-          <div key={d.id} className="card"><div className="head"><span>📱 {d.label || "—"}{d.id === me.device_id ? ` (${t("This device")})` : ""}</span><span className="when">{d.last_seen?.slice(0, 16)}</span></div>
+          <div key={d.id} className="card"><div className="head"><span>{d.agent === 1 ? "🤖" : "📱"} {d.label || "—"}{d.id === me.device_id ? ` (${t("This device")})` : ""}</span>{d.agent === 1 && <span className="tag">{t("agent")}</span>}<span className="when">{d.last_seen?.slice(0, 16)}</span></div>
             {d.id !== me.device_id && <div className="actions"><button className="ghost" onClick={() => api(`/devices/${d.id}`, { method: "DELETE" }).then(() => api<any[]>("/devices").then(setDevices))}>{t("Remove")}</button></div>}
           </div>
         ))}
         <div className="actions" style={{ marginTop: "1rem", display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
           {steward && <button type="button" onClick={async () => { const r = await fetch(`${API}/export`, { headers: { Authorization: "Bearer " + (localStorage.getItem("potok.token") || "") } }); const b = await r.blob(); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = "potok-export.json"; a.click(); URL.revokeObjectURL(u); }}>📦 {t("Export everything")}</button>}
           <button className="danger" onClick={logout}>{t("Log out on this device")}</button>
+          <button type="button" onClick={() => setKeyOpen(!keyOpen)}>{t("+ MCP key")}</button>
         </div>
+        {keyOpen && <form className="inline" onSubmit={makeKey}>
+          <div className="row">
+            <label>{t("What runs it")}<input value={keyLabel} onChange={(e) => setKeyLabel(e.target.value)} maxLength={60} placeholder={t("e.g. Claude on Ana's laptop")} /></label>
+          </div>
+          <div className="submit"><button className="primary" type="submit">{t("Create key")}</button></div>
+        </form>}
+        {key && <div>
+          {/* Not .pin: 70 characters at 2.1 rem with letter-spacing pan a phone sideways. */}
+          <div className="mcp-key">{key}</div>
+          <div style={{ display: "flex", gap: ".5rem", justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap" }}>
+            <span className="small" style={{ wordBreak: "break-all" }}>{mcpURL}</span>
+            <button className="lesser" type="button" onClick={() => copyKey("url")}>📋 {keyCopied === "url" ? t("Copied") : t("Copy")}</button>
+            <button className="primary" type="button" onClick={() => copyKey("key")}>📋 {keyCopied === "key" ? t("Copied") : t("Copy the key")}</button>
+          </div>
+          <p className="small">{t("Copy the key now — the portal keeps only its fingerprint and cannot show it again.")} {t("It acts as your house in every room it reaches. Remove it above, like a phone.")}</p>
+        </div>}
       </div>
     </>
   );

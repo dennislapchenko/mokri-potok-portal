@@ -19,6 +19,7 @@ type House struct {
 	Name      string
 	IsSteward bool
 	DeviceID  int64
+	Agent     bool // the token is an MCP key, not a phone (mcp.go)
 }
 
 type ctxKey struct{}
@@ -65,6 +66,15 @@ func hashToken(t string) string {
 }
 
 // requireHouse resolves the bearer token to a house or answers 401.
+//
+// An agent key (devices.agent = 1) is a house login with one door: it opens
+// POST /api/mcp, and reaches every other handler only through the dispatcher
+// in mcp.go, which marks its sub-requests with viaMCP in the context. Without
+// that fence a key would be a full login with a menu in front of it — curl with
+// the same bearer could delete the house's phones or read the Watchtower raw.
+// The mark is a context value, so no header from outside can forge it. An
+// agent is never a steward, whatever its house is: the steward routes are the
+// ones the UI guards with a confirm dialog, and an agent has none.
 func (s *Server) requireHouse(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
@@ -72,7 +82,7 @@ func (s *Server) requireHouse(next http.HandlerFunc) http.HandlerFunc {
 			writeErr(w, http.StatusUnauthorized, "no token")
 			return
 		}
-		row, err := s.st.One(r.Context(), `SELECT d.id AS device_id, h.id, h.name, h.is_steward
+		row, err := s.st.One(r.Context(), `SELECT d.id AS device_id, d.agent, h.id, h.name, h.is_steward
 			FROM devices d JOIN houses h ON h.id=d.house_id WHERE d.token_hash=?`, hashToken(strings.TrimPrefix(auth, "Bearer ")))
 		if err != nil {
 			writeErr(w, 500, err.Error())
@@ -82,7 +92,12 @@ func (s *Server) requireHouse(next http.HandlerFunc) http.HandlerFunc {
 			writeErr(w, http.StatusUnauthorized, "unknown device")
 			return
 		}
-		h := &House{ID: row["id"].(int64), Name: row["name"].(string), IsSteward: row["is_steward"].(int64) == 1, DeviceID: row["device_id"].(int64)}
+		agent := row["agent"].(int64) == 1
+		if agent && !(r.Method == "POST" && r.URL.Path == "/api/mcp") && r.Context().Value(viaMCP{}) == nil {
+			writeErr(w, http.StatusForbidden, "this key speaks MCP only")
+			return
+		}
+		h := &House{ID: row["id"].(int64), Name: row["name"].(string), IsSteward: row["is_steward"].(int64) == 1 && !agent, DeviceID: row["device_id"].(int64), Agent: agent}
 		go s.st.Exec(context.Background(), `UPDATE devices SET last_seen=datetime('now') WHERE id=?`, h.DeviceID)
 		next(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, h)))
 	}

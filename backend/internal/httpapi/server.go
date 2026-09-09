@@ -52,6 +52,11 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/me", s.requireHouse(s.me))
 	m.HandleFunc("GET /api/devices", s.requireHouse(s.listDevices))
 	m.HandleFunc("DELETE /api/devices/{id}", s.requireHouse(s.deleteDevice))
+	// A door for agents (mcp.go): a key is a device with agent=1, and it opens
+	// this one route. The tools behind it run the handlers below in-process.
+	m.HandleFunc("POST /api/devices/agent", s.requireHouse(s.createAgentDevice))
+	m.HandleFunc("POST /api/mcp", s.requireHouse(s.mcp))
+	m.HandleFunc("GET /api/mcp", func(w http.ResponseWriter, r *http.Request) { writeErr(w, 405, "POST only: no server stream") })
 
 	m.HandleFunc("GET /api/houses", s.requireHouse(s.listHouses))
 	m.HandleFunc("POST /api/houses", s.requireSteward(s.createHouse))
@@ -384,6 +389,15 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	row["device_id"] = h.DeviceID
+	// Report the authority the request actually carries, not the row's. For a
+	// phone the two are the same; for an agent key on a steward house they are
+	// not — `requireHouse` already forced it to false, and the tool
+	// instructions tell an agent to call whoami first, so a 1 here would have
+	// it believe it may do what it will then be refused.
+	row["is_steward"] = int64(0)
+	if h.IsSteward {
+		row["is_steward"] = int64(1)
+	}
 	// The label typed when this phone joined ("Ana's phone") is the best guess
 	// at who is holding it, so the board can pre-fill the name.
 	if d, _ := s.st.One(r.Context(), `SELECT label FROM devices WHERE id=?`, h.DeviceID); d != nil {
@@ -393,7 +407,7 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listDevices(w http.ResponseWriter, r *http.Request) {
-	rows, err := s.st.Rows(r.Context(), `SELECT id, label, created_at, last_seen FROM devices WHERE house_id=? ORDER BY last_seen DESC`, houseFrom(r).ID)
+	rows, err := s.st.Rows(r.Context(), `SELECT id, label, agent, created_at, last_seen FROM devices WHERE house_id=? ORDER BY last_seen DESC`, houseFrom(r).ID)
 	if err != nil {
 		fail(w, err)
 		return

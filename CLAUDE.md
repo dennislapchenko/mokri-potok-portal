@@ -96,6 +96,18 @@ does not ship.
   is `backdrop.jpg` behind the gate — the owner chose it knowing the repo is
   public; provenance `TBD`. Away-notices are
   burglary information: they never leave the logged-in app (no digests, no feeds).
+  **An MCP key is the logged-in house** (owner's decision 2026-09-09): the
+  model provider is a third party that house chose, the same argument that
+  lets an away-notice sit in a WhatsApp group — so `list_away`, `create_away`,
+  `update_away` and the `away` thread are on the agent surface (`mcp.go`).
+  Say it the way the neighbour would hear it: **a neighbour's assistant may
+  read your notice, as a neighbour's phone may.** The house that chose the
+  provider is the reader, not the house that is away, so the village is owed
+  the sentence — it belongs in the privacy note (`docs/later.md`), not only
+  here. The
+  "no digests, no feeds" half stands: nothing pushes or publishes an
+  away-notice, an agent reads one only when its house asks, and the tool
+  description tells it to keep what it read inside the conversation.
   **The away card carries the dates and the note its house wrote, and nothing
   else** (owner's decision 2026-09-08, when the dropped `houses.about` left the
   card a line short): the map mark was considered for that line and refused —
@@ -265,7 +277,10 @@ does not ship.
   `docs/design-more-rooms.md`. Retention of `from_who` (a steward clears labels
   older than 12 months, by a button) is `TBD` and not built; a privacy note
   decides it. The `camp` push carries the house and the camper label, never
-  the note.
+  the note. **The Campground is on the agent surface** (owner's decision
+  2026-09-09): `list_camp`, `create_camp`, `update_camp` run the same handlers,
+  and because the handler refuses no label, the tool description carries the
+  rule — one row is one stay, no amount, no total, no plate or nationality.
 - **Done is a state, never a deletion.** Finished projects and closed tasks
   stay readable with their closing notes. Nothing archives itself.
 - **Exit is designed.** `GET /api/export` (steward) dumps everything as JSON;
@@ -324,6 +339,43 @@ does not ship.
   VM rotates that house's invite and prints the link (`cli.go`, `task vm:code`).
   SSH to the machine is the credential; there is no in-app password to reset
   and no email to send. Keep it that way.
+- **A door for agents: `POST /api/mcp`, and a key that is a device.** The
+  portal's API as MCP tools (`mcp.go`), so a house tells its assistant and it
+  is in the portal — the owner's agent and a villager's alike. JSON-RPC by
+  hand, no dependency, same origin, tools only (no OAuth, so claude.ai's web
+  connectors cannot connect; Claude Code and any client that takes a header
+  can). **A key is a device row with `agent = 1`**, minted by
+  `POST /api/devices/agent` from the Houses room (`+ MCP key`), `potok_` + 64
+  hex, hashed like a phone's token, listed in Your devices with 🤖, revoked
+  with the same Remove button, gone with the house. **Shown once**: the portal
+  keeps the hash and cannot show it again. **A key opens `/api/mcp` and
+  nothing else**: `requireHouse` answers 403 to an agent device on every other
+  route unless the request carries the `viaMCP` context mark the dispatcher
+  sets — so the tool table in `mcp.go` is the whole surface (43 tools, pinned
+  by `TestMCPSurface`: reads and writes in every room, a project picture in,
+  **no deletes**, no devices, pairing, push, house row or steward route), and
+  the raw REST API is closed to a key on purpose. **And the door takes a key
+  and nothing else**: a phone's own session token is answered 403 at
+  `/api/mcp`, which is the other half of the same fence — without it a steward
+  could paste what its browser holds into an agent and edit every house's rows
+  through `ownerOrSteward`, and "a key carries no stewardship" would have a
+  side door nobody wrote down. **A tool argument that lands in a path may not
+  be `.`, `..` or carry `/?#%`**, and a status of 300 or more is a tool error:
+  Go's mux answers an unclean path with a bodiless 301, which would otherwise
+  read back to the model as a write that landed. **A key carries no
+  stewardship for now** — `IsSteward` is false for an agent, whatever its
+  house; the owner said a key might carry it later, so that is an open
+  possibility, not a closed question. **A tool call is the existing handler
+  run in-process**: every check and every push as for a phone, no second
+  write path, and the handler's own error text is the tool's. Nothing marks a
+  row as written by an agent — the house answers for its key as for its
+  phones. `author` stays empty unless the person dictated the words; the tool
+  descriptions and the `initialize` instructions say so. The MCP body cap is
+  3 MiB, because a picture rides in as base64, and `readPhoto` still caps the
+  decoded bytes at 2 MB. No rate limit: an agent in a loop is a house in a
+  loop, and Remove is the brake. No expiry. Tool descriptions are English —
+  a model reads them, not a villager — the one place `t()` does not apply.
+  Rationale and the options rejected: `docs/design-mcp.md`.
 - **Codes.** A steward's invite is 10 characters and multi-use for 14 days — it
   travels through WhatsApp and lets a whole house in. A pairing code is 6
   digits, single use, 15 minutes, and only ever adds one more phone to a house
@@ -440,10 +492,13 @@ frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons, 
                     (an emoji glyph renders off-centre and monochrome — do not go back to one)
                     src/push.ts, src/Install.tsx, src/AddPhone.tsx, src/photo.ts (auth'd photo fetch + browser-side shrink)
 backend/internal/httpapi/codex.go  the codex: four routes and the one-time stdin import
+backend/internal/httpapi/mcp.go    the door for agents: the tool table (the whole surface), the JSON-RPC endpoint, the in-process
+                    dispatcher and the key route; the fence that keeps a key on /api/mcp is in auth.go
 backend/internal/httpapi/shed.go   tool photo routes, wishlist; photos.go = how a photo is read and served (≤2 MB, auth) + project pictures; remind.go = return nudges
                     threads.go = comments on any subject + wish options; weather.go = ARSO, server-side; static.go = the embedded frontend
 docs/               design docs the owner and the assistant decide on together (navigation growth, Projects, Campground,
-                    and `design-membership.md` — accounts for people who live here without land, options only, nothing built);
+                    `design-membership.md` — accounts for people who live here without land, options only, nothing built;
+                    and `design-mcp.md` — the API as MCP tools for agents: built, with the options rejected and their costs);
                     `later.md` = the one home for what is brainstormed, designed-and-set-aside, or still undecided
 docs/diagrams/      hand-drawn SVG sketches belonging to those docs
 frontend/public/data/  parcels.geojson (cadastre), water.json (the modelled watercourses, drawn by map/Water.tsx)

@@ -37,5 +37,45 @@ task vm:code -- "<house>"  # fresh invite link for a house, when nobody is logge
 task vm:codex -- codex.json  # import the adopted codex once (shape in backend/internal/httpapi/codex.go)
 ```
 
+## For agents (MCP)
+
+The portal's API as MCP tools: an agent acts **as your house** — same rows,
+same pushes, same rules as a phone. For the owner's agent and for any
+villager who runs one.
+
+Get a key: Houses room → Your house → `+ MCP key`. It is shown once; the
+portal keeps only its fingerprint. Then:
+
+```sh
+claude mcp add --transport http potok https://<the portal's domain>/api/mcp \
+  --header "Authorization: Bearer potok_…"
+```
+
+Other clients, `.mcp.json` shape:
+
+```json
+{"mcpServers":{"potok":{"type":"http","url":"https://<the portal's domain>/api/mcp",
+  "headers":{"Authorization":"Bearer potok_…"}}}}
+```
+
+What the agent can do: read and write in every room — board, calendar and
+answers, threads, shop runs and needs, give-aways, the Watchtower, the shed
+and its wishlist, projects, tasks and a picture on a project, the campground,
+the codex, the weather. What it cannot: delete anything, mint keys or touch
+devices, edit the house itself, or do a steward's work. **The key opens
+`/api/mcp` and nothing else** — `curl` with it gets a 403 — so the tool list
+is the whole surface.
+
+Two clocks: send local wall clock `YYYY-MM-DDTHH:MM` (a date alone is
+`YYYY-MM-DD`); what you read as `created_at` is UTC with a space. Leave
+`author` empty unless the person dictated the words — a post with no name
+reads as the house, which is true. claude.ai's web connectors need OAuth and
+will not connect. Claude Code takes the header as above; another client whose
+config takes a header should work the same, but none was tried.
+
+Revoke: Your devices → Remove on the 🤖 row. The key is your house's login in
+plain text in a config file on a laptop — treat it like the invite link.
+Dev: `http://127.0.0.1:8788/api/mcp` against `task be:run`.
+
 Design plan and decisions live in the owner's homestead repo
 (`70-collective/village-app/plan.md`). Read `CLAUDE.md` before changing anything.

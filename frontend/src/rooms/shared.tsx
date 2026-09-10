@@ -55,4 +55,6 @@ export function isOver(ev: { starts_at: string; ends_at?: string | null }): bool
   return (end.length <= 10 ? end + "T23:59" : end) < stamp();
 }
 
-export const canEdit = (me: { id: number; is_steward: number }, row: { house_id: number }) => row.house_id === me.id || me.is_steward === 1;
+// house_id is nullable because a contact outlives the house that added it:
+// nobody but a steward then matches, which is the intent.
+export const canEdit = (me: { id: number; is_steward: number }, row: { house_id: number | null }) => row.house_id === me.id || me.is_steward === 1;

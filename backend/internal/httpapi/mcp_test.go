@@ -227,7 +227,7 @@ func TestMCPFence(t *testing.T) {
 func TestMCPSurface(t *testing.T) {
 	srv, _, _, volk := newVillage(t)
 	key, _ := mintKey(t, volk, "agent")
-	want := map[string]bool{"list_away": true, "create_away": true, "update_away": true, "list_camp": true, "create_camp": true, "update_camp": true, "add_project_photo": true, "whoami": true, "weather": true}
+	want := map[string]bool{"list_away": true, "create_away": true, "update_away": true, "list_camp": true, "create_camp": true, "update_camp": true, "list_contacts": true, "create_contact": true, "update_contact": true, "add_project_photo": true, "whoami": true, "weather": true}
 	seen := map[string]bool{}
 	for _, tl := range mcpTools {
 		seen[tl.Name] = true
@@ -257,7 +257,7 @@ func TestMCPSurface(t *testing.T) {
 			t.Fatalf("tool missing from the table: %s", name)
 		}
 	}
-	if len(mcpTools) != 43 {
+	if len(mcpTools) != 46 {
 		t.Fatalf("the surface moved: %d tools — a visible decision, update this pin and docs/design-mcp.md", len(mcpTools))
 	}
 	// Unknown tool, unknown method, a batch, garbage.

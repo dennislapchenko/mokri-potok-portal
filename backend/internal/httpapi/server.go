@@ -138,6 +138,12 @@ func (s *Server) routes() {
 	m.HandleFunc("POST /api/camp", s.requireHouse(s.createCamp))
 	m.HandleFunc("PUT /api/camp/{id}", s.requireHouse(s.updateCamp))
 	m.HandleFunc("DELETE /api/camp/{id}", s.requireHouse(s.deleteRow("camp_takings")))
+	// Contacts (contacts.go): the village's phone book. Any house corrects a
+	// number; the house that added it, or a steward, takes one away.
+	m.HandleFunc("GET /api/contacts", s.requireHouse(s.listContacts))
+	m.HandleFunc("POST /api/contacts", s.requireHouse(s.createContact))
+	m.HandleFunc("PUT /api/contacts/{id}", s.requireHouse(s.updateContact))
+	m.HandleFunc("DELETE /api/contacts/{id}", s.requireHouse(s.deleteContact))
 	// Exit path: everything as one JSON document (steward only).
 	m.HandleFunc("GET /api/codex", s.requireHouse(s.listCodex))
 	m.HandleFunc("POST /api/codex", s.requireHouse(s.createCodexSection))
@@ -1241,7 +1247,7 @@ func (s *Server) updateAway(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 	out := map[string]any{"exported_at": time.Now().UTC().Format(time.RFC3339)}
-	for _, t := range []string{"houses", "house_parcels", "house_homes", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "wish_options", "comments", "projects", "project_tasks", "project_photos", "camp_takings", "codex_sections"} {
+	for _, t := range []string{"houses", "house_parcels", "house_homes", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "wish_options", "comments", "projects", "project_tasks", "project_photos", "camp_takings", "codex_sections", "contacts"} {
 		cols := "*"
 		switch t { // photos are bytes, not text — they stay in the SQLite backup
 		case "tools":

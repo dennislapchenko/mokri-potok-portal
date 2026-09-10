@@ -12,6 +12,7 @@ import { ToolShed } from "./rooms/ToolShed";
 import { Projects, Project } from "./rooms/Projects";
 import { Camp } from "./rooms/Camp";
 import { Codex } from "./rooms/Codex";
+import { Contacts } from "./rooms/Contacts";
 import { Changelog } from "./Changelog";
 import { InstallBanner } from "./Install";
 import { Weather } from "./Weather";
@@ -30,6 +31,7 @@ export const ROOMS = [
   { path: "/watch", icon: "🕯️", name: "Watchtower", short: "Watch", sub: "who is away", nav: false },
   { path: "/camp", icon: "🏕️", name: "Campground", short: "Camp", sub: "who noticed, who has the money", nav: false },
   { path: "/houses", icon: "🏘️", name: "Houses", short: "Houses", sub: "who lives here", nav: false },
+  { path: "/contacts", icon: "📇", name: "Contacts", short: "Contacts", sub: "the numbers the village keeps", nav: false },
 ];
 
 export default function App() {
@@ -89,6 +91,7 @@ export default function App() {
             <Route path="/projects/:id" element={<Project me={me} houses={houses} />} />
             <Route path="/camp" element={<Camp me={me} />} />
             <Route path="/houses" element={<Houses me={me} houses={houses} refresh={refresh} logout={logout} />} />
+            <Route path="/contacts" element={<Contacts me={me} />} />
             {/* The codex is a chip on Home; this is its address, for pasting into the Tavern. */}
             <Route path="/codex" element={<Codex me={me} />} />
             <Route path="/join/:code" element={<Home me={me} houses={houses} />} />

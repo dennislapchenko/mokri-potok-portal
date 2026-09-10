@@ -160,12 +160,14 @@ does not ship.
   GURS data: `TBD`, required before the portal moves to the collective's domain.
 - **One thread implementation.** Comments live in `comments`, keyed by
   `(subject, subject_id)`, and are rendered by `Thread.tsx` everywhere: an
-  event, a wish, an away notice. One reply level. A new room that wants comments
+  event, a wish, an away notice, a contact. One reply level. A new room that wants comments
   adds a subject, never a table. The push kind stays the room's own so no
   opt-out changes meaning. Who hears is the subject's own answer, in
   `tellThread`: an event tells the caller and everyone who answered yes or
-  maybe, a wish tells the wisher and everyone who wants one, **an away notice
-  tells only the house that is away and its watcher, and tells them nothing** —
+  maybe, a wish tells the wisher and everyone who wants one, **a contact tells
+  nobody at all, because the phone book has no push kind of its own; **an away
+  notice tells only the house that is away and its watcher, and tells them
+  nothing** —
   the banner is the anonymous watchtower one, because a comment's snippet on a
   lock screen would say what the notice itself is not allowed to. The name
   field starts filled from the device label this phone joined under, and stays
@@ -281,6 +283,30 @@ does not ship.
   2026-09-09): `list_camp`, `create_camp`, `update_camp` run the same handlers,
   and because the handler refuses no label, the tool description carries the
   rule — one row is one stay, no amount, no total, no plate or nationality.
+- **The phone book keeps a number, not a file on a person.** Contacts is a
+  name, a phone, a note and a type. **Any house writes one down and any house
+  corrects it** — the same provisional footing as editing an event — and the
+  card says which house wrote it down and which last changed it. Removing one
+  is the adder's or a steward's, and a contact **outlives the house that added
+  it** (`ON DELETE SET NULL`, like a project picture), so an orphaned number is
+  a steward's to take away. **The type is one free word and there is no table
+  of types**: the picker offers the words the rows already carry, narrowed the
+  way fzf narrows — the letters in order, a run of them and the start of a word
+  worth more — and a word nobody has used *is* a new type the moment it is
+  written. A type therefore exists exactly as long as a row wears it. The
+  backend folds a spelling that differs only in case into the one already in
+  use, because two spellings of one word split the group with nobody deciding
+  it. **Nothing in the room pushes** (owner's decision 2026-09-10): a number is
+  looked up when the pipe bursts, not announced, and a tenth kind in every
+  house's list buys nobody anything. Its thread is silent for the same reason —
+  borrowing another room's kind would make somebody's opt-out mean what they
+  did not choose. The cost, paid knowingly: "this number is dead" waits in the
+  room until somebody opens it. **The thread is for the number, not for the
+  person**: whether it still works, who came last, what to ask for. The
+  tradesman is not in the room to answer, so a room that collected "overcharged
+  us" would be a ratings board about somebody who never joined — the invariant
+  and the tool description say so, and nothing enforces it. The Home tile carries **no count**: how many
+  numbers the village keeps is not a question anybody has.
 - **Done is a state, never a deletion.** Finished projects and closed tasks
   stay readable with their closing notes. Nothing archives itself.
 - **Exit is designed.** `GET /api/export` (steward) dumps everything as JSON;
@@ -351,7 +377,7 @@ does not ship.
   keeps the hash and cannot show it again. **A key opens `/api/mcp` and
   nothing else**: `requireHouse` answers 403 to an agent device on every other
   route unless the request carries the `viaMCP` context mark the dispatcher
-  sets — so the tool table in `mcp.go` is the whole surface (43 tools, pinned
+  sets — so the tool table in `mcp.go` is the whole surface (46 tools, pinned
   by `TestMCPSurface`: reads and writes in every room, a project picture in,
   **no deletes**, no devices, pairing, push, house row or steward route), and
   the raw REST API is closed to a key on purpose. **And the door takes a key
@@ -418,8 +444,8 @@ does not ship.
   `frontend/src/i18n.tsx` with a Slovenian entry. English is the fallback key.
 - **The bottom bar fits five.** Village plus four rooms — Hall, Projects,
   Market, Shed (owner's pick 2026-09-05). A new room either replaces one, merges
-  into one, or lives off the bar like Watchtower, Campground and Houses do —
-  tiles on the Home map, two taps from anywhere. The Codex and the Changelog
+  into one, or lives off the bar like Watchtower, Campground, Houses and
+  Contacts do — tiles on the Home map, two taps from anywhere. The Codex and the Changelog
   are not rooms: they are chips on Home, at its head and at its foot. Projects has a second door: the
   📋 chip on a calendar event. Rooms carry a `short` label for
   the bar because a phone gives each item about 60 px. Rationale and the
@@ -484,7 +510,8 @@ does not ship.
 
 ```
 backend/            Go: main.go, internal/{config,store,httpapi}; migrations embedded
-frontend/           Vite + React; src/rooms/* one file per room (Projects.tsx holds list + page). Hall.tsx = Calendar.tsx + Board.tsx
+frontend/           Vite + React; src/rooms/* one file per room (Projects.tsx holds list + page; Contacts.tsx holds the room, the
+                    fzf-style match and the type picker that is its only user). Hall.tsx = Calendar.tsx + Board.tsx
                     stacked, because the tavern is one door; src/map/VillageMap.tsx; rooms/Codex.tsx = the founding text, from the DB;
                     src/Changelog.tsx reads public/changelog.json, which scripts/changelog.mjs writes from the git log at build
 frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons, backdrop.jpg (aerial photo behind the gate), fonts/ (self-hosted, OFL)
@@ -492,6 +519,7 @@ frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons, 
                     (an emoji glyph renders off-centre and monochrome — do not go back to one)
                     src/push.ts, src/Install.tsx, src/AddPhone.tsx, src/photo.ts (auth'd photo fetch + browser-side shrink)
 backend/internal/httpapi/codex.go  the codex: four routes and the one-time stdin import
+backend/internal/httpapi/contacts.go  the phone book: four routes, and the one place a type's spelling is settled
 backend/internal/httpapi/mcp.go    the door for agents: the tool table (the whole surface), the JSON-RPC endpoint, the in-process
                     dispatcher and the key route; the fence that keeps a key on /api/mcp is in auth.go
 backend/internal/httpapi/shed.go   tool photo routes, wishlist; photos.go = how a photo is read and served (≤2 MB, auth) + project pictures; remind.go = return nudges

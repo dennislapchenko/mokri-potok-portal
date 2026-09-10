@@ -7,13 +7,13 @@ import (
 )
 
 // Comment threads, one implementation for every room that wants them: an event
-// in the calendar, a wish in the tool shed, an away notice in the watchtower.
-// One reply level, like the board.
+// in the calendar, a wish in the tool shed, an away notice in the watchtower,
+// a number in the phone book. One reply level, like the board.
 //
 // Who hears about a new comment depends on the subject, and only on that — the
 // push kind stays the room's own, so nobody's opt-out changes meaning.
 
-var commentSubjects = []string{"event", "wish", "away"}
+var commentSubjects = []string{"event", "wish", "away", "contact"}
 
 func subjectOf(r *http.Request) (string, int64, bool) {
 	s := r.PathValue("subject")
@@ -51,10 +51,10 @@ func (s *Server) createThreadComment(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "body required")
 		return
 	}
-	table := map[string]string{"event": "events", "wish": "wishes", "away": "away"}[subject]
+	table := map[string]string{"event": "events", "wish": "wishes", "away": "away", "contact": "contacts"}[subject]
 	// An away notice has no title, and must not grow one: what it says is
 	// burglary information, so nothing about it reaches a push.
-	label := map[string]string{"event": "title", "wish": "text", "away": "''"}[subject]
+	label := map[string]string{"event": "title", "wish": "text", "away": "''", "contact": "name"}[subject]
 	owner, err := s.st.One(r.Context(), `SELECT house_id, `+label+` AS label FROM `+table+` WHERE id=?`, id)
 	if err != nil {
 		fail(w, err)
@@ -85,7 +85,10 @@ func (s *Server) createThreadComment(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	s.tellThread(r, subject, id, h, owner["house_id"].(int64), owner["label"].(string), snippet(str(m, "body"), 100))
+	// A contact outlives the house that added it, so this one column may be
+	// NULL where every other subject's is not.
+	ownerHouse, _ := owner["house_id"].(int64)
+	s.tellThread(r, subject, id, h, ownerHouse, owner["label"].(string), snippet(str(m, "body"), 100))
 	writeJSON(w, 201, map[string]any{"id": cid})
 }
 
@@ -94,6 +97,12 @@ func (s *Server) createThreadComment(w http.ResponseWriter, r *http.Request) {
 // wisher plus every house that wants one; for an away notice, the house that is
 // away plus its watcher.
 func (s *Server) tellThread(r *http.Request, subject string, id int64, from *House, ownerHouse int64, label, body string) {
+	// The phone book rings nobody: it has no push kind of its own, and
+	// borrowing another room's would make somebody's opt-out mean something
+	// they did not choose. A note on a number is read when the number is.
+	if subject == "contact" {
+		return
+	}
 	// The watchtower is the exception, and stays the one it already was: the
 	// thread is read by the house that is away and by whoever watches for it,
 	// and the push says only that something was said. A lock screen anyone can

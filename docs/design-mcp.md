@@ -39,7 +39,8 @@ portal."*
 - **A key carries no stewardship for now**, whatever house made it. The owner
   left the door open: a key might carry it later. Not a closed question.
 - **The surface: every room.** Tavern, Market, Watchtower, Shed, Projects with
-  pictures, Campground, Codex, weather. Reads and writes, **no deletes**.
+  pictures, Campground, Codex, Contacts, weather. Reads and writes, **no
+  deletes**.
 - The button sits at the foot of the Houses room, right of *Log out on this
   device*: **`+ MCP key`**. Plain weight.
 
@@ -136,7 +137,7 @@ a state, and an agent that deletes has no confirm), no devices, pairing or
 push (a key must not mint keys), no `PUT /api/houses/{id}` (rename, crest,
 colour, the map mark: a house does that itself, once), no steward route. With
 the fence, this table is not a menu: **what is not here, a key cannot do**.
-43 tools; `TestMCPSurface` pins the count so a change is a visible decision.
+46 tools; `TestMCPSurface` pins the count so a change is a visible decision.
 
 | Tool | Route | Notes the description carries |
 | --- | --- | --- |
@@ -146,7 +147,7 @@ the fence, this table is not a menu: **what is not here, a key cannot do**.
 | `list_posts` · `post` | `GET`/`POST /api/posts` | `body`, optional `author`, optional `parent_id` |
 | `list_events` · `create_event` · `update_event` | `GET`/`POST /api/events`, `PUT /api/events/{id}` | `kind` is `event` or `work`; `starts_at` wall clock `YYYY-MM-DDTHH:MM`; creating answers `yes` for your house; moving the time marks every answer stale |
 | `answer_event` | `POST /api/events/{id}/signup` | `state`: `yes` / `no` / `maybe`; silence is the fourth thing, and there is no tool to speak it |
-| `get_thread` · `comment` | `GET`/`POST /api/threads/{subject}/{id}` | `subject`: `event`, `wish` or `away`; one reply level. The away thread is on the surface with the Watchtower, and `TestMCPWatchtowerAndCamp` pins that an agent reads and writes it |
+| `get_thread` · `comment` | `GET`/`POST /api/threads/{subject}/{id}` | `subject`: `event`, `wish`, `away` or `contact`; one reply level. A contact's thread pushes to nobody, because the phone book has no push kind. The away thread is on the surface with the Watchtower, and `TestMCPWatchtowerAndCamp` pins that an agent reads and writes it |
 | `list_runs` · `create_run` · `update_run` | `/api/runs` | `destination`, `cutoff_at`; moving a run pushes to its riders |
 | `list_needs` · `create_need` · `update_need` | `/api/needs` | `text`, optional `run_id`; `state` open / taken / done |
 | `list_offers` · `create_offer` · `update_offer` | `/api/offers` | `tag`: giveaway / seeds / surplus / joint |
@@ -158,6 +159,7 @@ the fence, this table is not a menu: **what is not here, a key cannot do**.
 | `add_project_photo` | `POST /api/projects/{project_id}/photos` | `data` base64 + `content_type`; the handler's own 2 MB cap and 415/413 pass through; no browser-side shrink on this path, so send something small; **no delete** — a house or a steward takes a picture down in the app |
 | `list_camp` · `create_camp` · `update_camp` | `/api/camp` | One row is one camper's stay; no amount, no total, no plate or nationality in the label — the handler refuses nothing here, so the description carries the rule |
 | `list_codex` · `create_codex_section` · `update_codex_section` | `/api/codex` | Send the `rev` you read; a 409 means another house wrote first |
+| `list_contacts` · `create_contact` · `update_contact` | `/api/contacts` | The village phone book. `type` is a free word, not a fixed list; a spelling differing only in case folds into the one in use. The numbers belong to people outside the village who never agreed to this portal, so the description says to keep them in the conversation, as `list_away`'s does. Nothing here pushes |
 
 Off the surface, each with its argument:
 
@@ -260,6 +262,7 @@ others in `later.md`:
 | Stewardship on a key | **None for now.** "Later key might carry stewardship" — a possibility left open, not a closed question |
 | Watchtower on the surface | **On.** A key is the logged-in house; the provider is a third party the house chose. No digests, no feeds still. Said as the neighbour hears it: a neighbour's assistant may read your notice, as a neighbour's phone may — which is why the privacy note owes the village a line (`later.md`) |
 | Campground on the surface | **On.** The rule rides in the tool description. `from_who` retention stays `TBD` |
+| Contacts on the surface (2026-09-10, when the room was built) | **On, reads and writes.** Same line as the Watchtower: a key is the logged-in house, the provider a third party that house chose. The numbers are of people who never joined the portal, so the description carries the Watchtower's sentence about keeping what it read in the conversation |
 | Project pictures through MCP | **Add one, no delete.** The existing handler and its cap |
 | Deletes for agents | **None** |
 | What an agent puts in `author` | **Nothing**, unless the person dictated the words |
@@ -377,7 +380,7 @@ key last acted).
   `is_steward`, so a steward's key reads 0 while that house's phone reads 1.
 - `TestMCPSurface`: no tool deletes, none reaches devices, pairing, push,
   `/api/me/*`, export, a house write or a steward route; every tool lands on
-  a registered handler; the count is pinned at 43; unknown tool, unknown
+  a registered handler; the count is pinned at 46; unknown tool, unknown
   method, a batch and garbage are refused.
 - `TestMCPKeyLifecycle`: a common place cannot mint, a key cannot mint,
   Remove turns the key into a 401.

@@ -1392,3 +1392,126 @@ func TestAwayThread(t *testing.T) {
 	code, _, _ = volk.do("POST", "/api/threads/away/9999", map[string]any{"body": "x"})
 	volk.must(404, code, "comment on no such notice")
 }
+
+// TestContacts: the village phone book. Any house corrects any number and the
+// row says who did; a type that differs only in case folds into the one
+// already in use, so the picker never offers the same word twice; only the
+// house that added a number (or a steward) removes it, and the thread goes
+// with it. Nothing in the room rings a phone.
+func TestContacts(t *testing.T) {
+	srv, fake, steward, volk := newVillage(t)
+	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{
+		"endpoint": "https://push.example/s", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
+	steward.must(204, code, "subscribe")
+
+	code, made, _ := volk.do("POST", "/api/contacts", map[string]any{
+		"name": "Vodovodar Ban", "phone": "041 000 000", "type": "čebelar", "notes": "govori nemško"})
+	volk.must(201, code, "add a contact")
+	id := made["id"].(float64)
+	code, _, _ = volk.do("POST", "/api/contacts", map[string]any{"phone": "041 111 111"})
+	volk.must(400, code, "a contact needs a name")
+
+	// A second house writes the same type in another case: one word, not two.
+	// The word carries a Č, which SQLite's COLLATE NOCASE does not fold — the
+	// fold is Go's, so it holds in the language the village writes in.
+	code, _, _ = steward.do("POST", "/api/contacts", map[string]any{"name": "Dimnikar", "type": "ČEBELAR"})
+	steward.must(201, code, "add a second contact")
+	_, _, list := volk.do("GET", "/api/contacts", nil)
+	if len(list) != 2 {
+		t.Fatalf("want 2 contacts got %d", len(list))
+	}
+	types := map[string]bool{}
+	for _, c := range list {
+		types[c["type"].(string)] = true
+	}
+	if len(types) != 1 || !types["čebelar"] {
+		t.Fatalf("the type split in two: %v", types)
+	}
+
+	row := func(want float64) map[string]any {
+		_, _, all := volk.do("GET", "/api/contacts", nil)
+		for _, c := range all {
+			if c["id"].(float64) == want {
+				return c
+			}
+		}
+		t.Fatalf("contact %v is gone", want)
+		return nil
+	}
+	typeOf := func(want float64) string { return row(want)["type"].(string) }
+	// Another row still carries the word, so re-spelling one of them would
+	// split the group: the spelling in use wins, as on create.
+	code, _, _ = volk.do("PUT", "/api/contacts/"+itoa(id), map[string]any{"type": "Čebelar"})
+	volk.must(204, code, "re-spell a type two rows share")
+	if got := typeOf(id); got != "čebelar" {
+		t.Fatalf("the group split: %q", got)
+	}
+	// A type nothing else carries is that row's to rename, and the row is left
+	// out of its own comparison so the word the house typed is the word that
+	// lands — a save that hands back the old spelling is a silent clamp.
+	code, alone, _ := volk.do("POST", "/api/contacts", map[string]any{"name": "Urad Divača", "type": "urad"})
+	volk.must(201, code, "add a contact with a type of its own")
+	only := alone["id"].(float64)
+	code, _, _ = volk.do("PUT", "/api/contacts/"+itoa(only), map[string]any{"type": "Urad"})
+	volk.must(204, code, "rename a type only this row carries")
+	if got := typeOf(only); got != "Urad" {
+		t.Fatalf("the save handed back the old spelling: %q", got)
+	}
+
+	// Any house corrects any number, and the row then names that house.
+	code, _, _ = steward.do("PUT", "/api/contacts/"+itoa(id), map[string]any{"phone": "041 222 222"})
+	steward.must(204, code, "another house corrects a number")
+	code, _, _ = steward.do("PUT", "/api/contacts/"+itoa(id), map[string]any{"name": ""})
+	steward.must(400, code, "a name cannot be emptied")
+	if fixed := row(id); fixed["phone"] != "041 222 222" || fixed["edited_by_name"] != "S" || fixed["house_name"] != "Zeleni Volk" {
+		t.Fatalf("correction not recorded: %v", fixed)
+	}
+
+	// A thread hangs on a contact like on an event, and tells nobody.
+	code, _, _ = steward.do("POST", "/api/threads/contact/"+itoa(id), map[string]any{"body": "ne dviguje več"})
+	steward.must(201, code, "comment on a contact")
+	_, _, thread := volk.do("GET", "/api/threads/contact/"+itoa(id), nil)
+	if len(thread) != 1 {
+		t.Fatalf("want 1 comment got %d", len(thread))
+	}
+	// A post does ring, so the count that follows proves the phone book did not.
+	volk.do("POST", "/api/posts", map[string]any{"body": "hello"})
+	waitFor(t, 1, fake)
+
+	// Removing is the adder's or a steward's, and the thread goes along.
+	code, _, _ = steward.do("DELETE", "/api/contacts/"+itoa(id), nil)
+	steward.must(204, code, "a steward removes a contact")
+	code, _, _ = volk.do("DELETE", "/api/contacts/"+itoa(id), nil)
+	volk.must(404, code, "gone")
+	rows, err := srv.st.Rows(context.Background(), `SELECT id FROM comments WHERE subject='contact' AND subject_id=?`, id)
+	if err != nil || len(rows) != 0 {
+		t.Fatalf("orphan comments left behind: %v %v", rows, err)
+	}
+
+	// A number the village keeps outlives the house that wrote it down.
+	code, third, _ := volk.do("POST", "/api/contacts", map[string]any{"name": "Veterinar", "type": "vet"})
+	volk.must(201, code, "add a third contact")
+	orphan := itoa(third["id"].(float64))
+	_, whoami, _ := volk.do("GET", "/api/me", nil)
+	code, _, _ = steward.do("DELETE", "/api/houses/"+itoa(whoami["id"].(float64)), nil)
+	steward.must(204, code, "the adding house leaves")
+	_, _, list = steward.do("GET", "/api/contacts", nil)
+	var kept map[string]any
+	for _, c := range list {
+		if c["name"] == "Veterinar" {
+			kept = c
+		}
+	}
+	if kept == nil || kept["house_id"] != nil {
+		t.Fatalf("the contact went with the house: %v", list)
+	}
+	// With nobody to own it, only a steward may take it away.
+	_, o, _ := steward.do("POST", "/api/houses", map[string]any{"name": "Sova"})
+	sova := &client{t: t, h: srv.Handler()}
+	_, j, _ := sova.do("POST", "/api/join", map[string]any{"code": o["invite"].(map[string]any)["code"]})
+	sova.token = j["token"].(string)
+	code, _, _ = sova.do("PUT", "/api/contacts/"+orphan, map[string]any{"phone": "051 000 000"})
+	sova.must(204, code, "any house still corrects it")
+	code, _, _ = sova.do("DELETE", "/api/contacts/"+orphan, nil)
+	sova.must(403, code, "an ordinary house cannot remove an orphaned contact")
+}

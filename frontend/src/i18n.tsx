@@ -347,6 +347,21 @@ const sl: Record<string, string> = {
   "in progress": "v teku",
   "Start": "Začni",
   "Back to planned": "Nazaj med načrtovane",
+  "Contacts": "Imenik",
+  "the numbers the village keeps": "številke, ki jih vas hrani",
+  "Nothing here rings a phone: a number is looked up, not announced.": "Tu nič ne zvoni: številko poiščeš, ne oznanjaš.",
+  "A number to keep": "Številka za v imenik",
+  "Write it down": "Zapiši",
+  "e.g. the well-driller, the vet": "npr. vrtalec vodnjakov, veterinar",
+  "Phone": "Telefon",
+  "Type": "Vrsta",
+  "vet, craftsman, office…": "veterinar, obrtnik, urad…",
+  "new type": "nova vrsta",
+  "Untyped": "Brez vrste",
+  "speaks German, comes on Tuesdays": "govori nemško, pride ob torkih",
+  "written down by": "zapisala",
+  "the number and everything written under it": "številka in vse, kar je pripisano pod njo",
+  "No numbers yet. Write the first one down — the chat will lose it.": "Še ni številk. Zapišite prvo — klepet jo bo izgubil.",
 };
 
 const Ctx = createContext<{ lang: Lang; t: (s: string) => string; setLang: (l: Lang) => void }>({ lang: "sl", t: (s) => s, setLang: () => {} });

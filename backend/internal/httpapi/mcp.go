@@ -93,10 +93,10 @@ var mcpTools = []mcpTool{
 		Schema: schema([]string{"id"}, map[string]any{"id": idProp, "title": prop("string", ""), "kind": prop("string", "event or work"), "starts_at": prop("string", "YYYY-MM-DDTHH:MM"), "ends_at": prop("string", "YYYY-MM-DDTHH:MM, or empty for none"), "place": prop("string", ""), "notes": prop("string", "")})},
 	{Name: "answer_event", Desc: "Answer for your house: yes, no or maybe. Silence is the fourth answer and there is no tool to speak it. Only yes is counted, and it is a headcount for one day, never a score.", Method: "POST", Path: "/api/events/{id}/signup",
 		Schema: schema([]string{"id", "state"}, map[string]any{"id": prop("integer", "Event id"), "state": prop("string", "yes, no or maybe")})},
-	{Name: "get_thread", Desc: "The comments under an event, a wish or an away notice, oldest first.", Method: "GET", Path: "/api/threads/{subject}/{id}",
-		Schema: schema([]string{"subject", "id"}, map[string]any{"subject": prop("string", "event, wish or away"), "id": prop("integer", "The event, wish or away notice id")})},
-	{Name: "comment", Desc: "Write in a thread as your house. One reply level. The houses the thread concerns are told; on an away notice the push says only that something was said.", Method: "POST", Path: "/api/threads/{subject}/{id}",
-		Schema: schema([]string{"subject", "id", "body"}, map[string]any{"subject": prop("string", "event, wish or away"), "id": prop("integer", "The event, wish or away notice id"), "body": prop("string", "The text"), "author": authorProp, "parent_id": prop("integer", "Optional. Reply to this comment")})},
+	{Name: "get_thread", Desc: "The comments under an event, a wish, an away notice or a contact, oldest first.", Method: "GET", Path: "/api/threads/{subject}/{id}",
+		Schema: schema([]string{"subject", "id"}, map[string]any{"subject": prop("string", "event, wish, away or contact"), "id": prop("integer", "The event, wish, away notice or contact id")})},
+	{Name: "comment", Desc: "Write in a thread as your house. One reply level. The houses the thread concerns are told; on an away notice the push says only that something was said, and on a contact nothing is pushed at all. A contact's thread is about the number — whether it still works, who came last, what to ask for — never about the person, who is not in the village and cannot answer.", Method: "POST", Path: "/api/threads/{subject}/{id}",
+		Schema: schema([]string{"subject", "id", "body"}, map[string]any{"subject": prop("string", "event, wish, away or contact"), "id": prop("integer", "The event, wish, away notice or contact id"), "body": prop("string", "The text"), "author": authorProp, "parent_id": prop("integer", "Optional. Reply to this comment")})},
 
 	// Market
 	{Name: "list_runs", Desc: "Shop runs whose cut-off is not more than a day past: who drives where, and until when a need can ride along. " + clocks, Method: "GET", Path: "/api/runs", Schema: schema(nil, map[string]any{})},
@@ -159,6 +159,16 @@ var mcpTools = []mcpTool{
 		Schema: schema(nil, map[string]any{"from_who": prop("string", "Optional label for the camper, e.g. grey camper — no plate, no nationality"), "notes": prop("string", "Optional"), "taken_on": prop("string", "Optional, YYYY-MM-DD; default today"), "have_money": prop("boolean", "Your house already holds the cash")})},
 	{Name: "update_camp", Desc: "claim=true: your house has the money (from arrived; the others hear, so nobody collects twice). state=handed: it reached the box (the holder). state=held: back from handed (the holder). notes: the noticer or the holder edits.", Method: "PUT", Path: "/api/camp/{id}",
 		Schema: schema([]string{"id"}, map[string]any{"id": idProp, "claim": prop("boolean", ""), "state": prop("string", "handed or held"), "notes": prop("string", "")})},
+
+	// Contacts: the village phone book. Owner's decision 2026-09-10, the same
+	// line the Watchtower is on — a key is the logged-in house, and the model
+	// provider is a third party that house chose. The numbers belong to people
+	// who never joined the portal, so the descriptions say to keep them here.
+	{Name: "list_contacts", Desc: "The village phone book: name, phone, notes and a type (vet, craftsman, office — a free word, not a fixed list), with the house that added each number and the house that last corrected it. These are the numbers of people outside the village who never agreed to this portal: read them when your house asks, keep them inside this conversation, and never repeat them anywhere else.", Method: "GET", Path: "/api/contacts", Schema: schema(nil, map[string]any{})},
+	{Name: "create_contact", Desc: "Add a number to the phone book. Nothing is pushed — a phone book is looked up, not announced. type is one word: reuse one that list_contacts already shows, or write a new one and it exists from then on (a spelling that differs only in case is folded into the one already there).", Method: "POST", Path: "/api/contacts",
+		Schema: schema([]string{"name"}, map[string]any{"name": prop("string", "Who or what it is, e.g. the well-driller's name or a workshop"), "phone": prop("string", "Optional. The number, as a person would write it down"), "notes": prop("string", "Optional, e.g. speaks German, comes on Tuesdays"), "type": prop("string", "Optional. One word: vet, craftsman, office …")})},
+	{Name: "update_contact", Desc: "Correct a contact. Any house may correct any number — a wrong one helps nobody — and the row then names your house as the one that last wrote it. There is no tool to remove a contact: the house that added it, or a steward, does that in the app.", Method: "PUT", Path: "/api/contacts/{id}",
+		Schema: schema([]string{"id"}, map[string]any{"id": idProp, "name": prop("string", ""), "phone": prop("string", ""), "notes": prop("string", ""), "type": prop("string", "One word; empty leaves it untyped")})},
 
 	// Codex
 	{Name: "list_codex", Desc: "The village's founding text as ordered bilingual sections (title_sl/en, body_sl/en), each with its rev and the house that last wrote it; updated_by null means the text stands as the council adopted it. Bodies are plain text: a blank line splits paragraphs, lines starting with \"- \" are a list.", Method: "GET", Path: "/api/codex", Schema: schema(nil, map[string]any{})},

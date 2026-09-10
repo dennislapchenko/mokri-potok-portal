@@ -8,7 +8,7 @@ import { Crest, When } from "./shared";
 // with the label this phone joined under, so most people never type it.
 //
 // The button that opens one is "💬 Comments" and carries the count only when
-// there is one to carry: "(0)" is two characters saying nothing, in every room.
+// there is one to carry — the same in every room that has a thread.
 export function Thread({ subject, id, me, onChanged }: { subject: "event" | "wish" | "away" | "contact"; id: number; me: Me; onChanged?: () => void }) {
   const { t } = useT();
   const [items, setItems] = useState<any[]>([]);

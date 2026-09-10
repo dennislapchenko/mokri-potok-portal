@@ -351,7 +351,6 @@ const sl: Record<string, string> = {
   "who to call": "koga poklicati",
   "a name or a type": "ime ali vrsta",
   "No number matches that.": "Nobena številka se ne ujema.",
-  "Write it down": "Zapiši",
   "e.g. the well-driller, the vet": "npr. vrtalec vodnjakov, veterinar",
   "Phone": "Telefon",
   "Type": "Vrsta",

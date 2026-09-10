@@ -383,10 +383,20 @@ a.card:hover { background: #fff8e4; }
   .topbar .inner { gap: .35rem; padding: .4rem .45rem; }
   .topbar h1 { font-size: .95rem; }
   .topbar .house { font-size: .82rem; }
-  /* The same giving-a-little, one card lower: only here do the three actions
-     need the smaller face to hold their row. */
+}
+
+/* The three actions hold one row at every width, in both languages, with a
+   two-digit count on the first: "💬 Komentarji (12) ✎ Uredi 🗑 Izbriši" is the
+   longest the row ever gets, and it is what these two steps are measured
+   against. They give up padding and a little face, never a word — an icon
+   alone is a guess. */
+@media (max-width: 560px) {
+  .card.contact .actions { gap: .1rem; }
+  .card.contact .actions button { padding: .15rem .25rem; font-size: .8rem; }
+}
+@media (max-width: 360px) {
   .card.contact .actions { gap: 0; }
-  .card.contact .actions button { padding: .15rem .18rem; font-size: .76rem; }
+  .card.contact .actions button { padding: .12rem .15rem; font-size: .74rem; }
 }
 
 /* The Codex: a founding text, so it reads like one — a numbered section down
@@ -421,10 +431,8 @@ a.card:hover { background: #fff8e4; }
 /* Contacts. The number is what the card is for, so it wears the primary
    weight — and it is a link, not a button, because a tap on a phone dials. */
 .card.contact .head strong { font-size: 1.05rem; }
-/* Comments, Edit and Delete stay one row at every width: three ghost buttons
-   that wrap read as two groups of actions, and the third looks like it
-   belongs to something else. They give up padding before they give up the
-   line, and the labels stay — an icon alone is a guess. */
+/* Comments, Edit and Delete stay one row: CLAUDE.md § the phone book says why,
+   the two media steps further down say what it costs. */
 .card.contact .actions { flex-wrap: nowrap; }
 .card.contact .actions button { white-space: nowrap; }
 .find { display: block; width: 100%; margin: .2rem 0 .6rem; }
@@ -433,4 +441,6 @@ a.card:hover { background: #fff8e4; }
 .tp-pop { display: flex; flex-direction: column; gap: .15rem; max-height: 14rem; overflow-y: auto; padding: .4rem; }
 .tp-hit { text-align: left; background: #fbf3dc; border: 1px solid var(--parch3); box-shadow: none; padding: .25rem .5rem; border-radius: 4px; }
 .tp-hit.on { background: #f0d9a8; }
-.tp-new { padding: .3rem .5rem; }
+/* The last row makes a type rather than choosing one, so it is set apart and
+   in the smaller face — a button all the same, because it acts. */
+.tp-new { margin-top: .15rem; border-top: 1px dashed var(--parch3); border-radius: 0 0 4px 4px; font-size: .9rem; color: var(--ink2); }

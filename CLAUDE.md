@@ -161,8 +161,8 @@ does not ship.
 - **One thread implementation.** Comments live in `comments`, keyed by
   `(subject, subject_id)`, and are rendered by `Thread.tsx` everywhere: an
   event, a wish, an away notice, a contact. One reply level. The button that
-  opens one says 💬 Comments and shows the count **only when there is one** —
-  "(0)" is two characters saying nothing, in every room. A new room that wants comments
+  opens one says 💬 Comments and carries the count **only when there is one**,
+  in every room. A new room that wants comments
   adds a subject, never a table. The push kind stays the room's own so no
   opt-out changes meaning. Who hears is the subject's own answer, in
   `tellThread`: an event tells the caller and everyone who answered yes or
@@ -317,9 +317,10 @@ does not ship.
   us" would be a ratings board about somebody who never joined — the invariant
   and the tool description say so, and nothing enforces it. The Home tile
   carries **no count**: how many numbers the village keeps is not a question
-  anybody has. Comments, Edit and Delete **stay on one row at every width** —
-  three actions that wrap read as two groups, and the third looks like it
-  belongs to something else.
+  anybody has. Comments, Edit and Delete **stay on one row at every width a
+  phone has**: three actions that wrap read as two groups, and the third looks
+  like it belongs to something else. What that costs in padding and face, and
+  the longest row it was measured against, is in `styles.css`.
 - **Done is a state, never a deletion.** Finished projects and closed tasks
   stay readable with their closing notes. Nothing archives itself.
 - **Exit is designed.** `GET /api/export` (steward) dumps everything as JSON;

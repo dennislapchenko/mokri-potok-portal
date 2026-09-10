@@ -71,9 +71,11 @@ export function Contacts({ me }: { me: Me }) {
       <h2>📇 {t("Contacts")} <span className="sub">{t("who to call")}</span></h2>
       <p><button onClick={() => setAdding(!adding)}>+ {t("Add")}</button></p>
       {adding && <form className="inline" onSubmit={add}>{fields(f, setF)}
-        <div className="submit"><button className="primary" type="submit">📇 {t("Write it down")}</button></div>
+        <div className="submit"><button className="primary" type="submit">📇 {t("Save")}</button></div>
       </form>}
-      {items.length > 1 && <input className="find" value={q} onChange={(e) => setQ(e.target.value)} placeholder={"🔍 " + t("a name or a type")} aria-label={t("a name or a type")} />}
+      {/* Always here, even over an empty book: a box that comes and goes with
+          the number of rows is a box nobody trusts is there. */}
+      <input className="find" value={q} onChange={(e) => setQ(e.target.value)} placeholder={"🔍 " + t("a name or a type")} aria-label={t("a name or a type")} />
       {items.length === 0 && <Empty text={t("No numbers yet. Write the first one down — the chat will lose it.")} />}
       {items.length > 0 && shown.length === 0 && <Empty text={t("No number matches that.")} />}
       {shown.map((c) => (
@@ -188,7 +190,11 @@ function TypePicker({ value, onChange, types }: { value: string; onChange: (v: s
           {hits.map((x, i) => (
             <button type="button" key={x} className={"tp-hit" + (i === hi ? " on" : "")} onMouseEnter={() => setHi(i)} onClick={() => pick(x)}>{x}</button>
           ))}
-          {q !== "" && !known && <div className="small muted tp-new">＋ {t("new type")}: <strong>{q}</strong></div>}
+          {/* A row that says a new type is about to be made has to be
+              pressable, or the popup looks stuck: pressing it is the same act
+              as pressing Enter on a word nobody has used — the word stands and
+              the list gets out of the way. */}
+          {q !== "" && !known && <button type="button" className="tp-hit tp-new" onClick={() => pick(q)}>＋ {t("new type")}: <strong>{q}</strong></button>}
         </div>
       )}
     </span>

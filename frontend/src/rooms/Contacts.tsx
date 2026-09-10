@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type Me } from "../api";
 import { useT } from "../i18n";
-import { Crest, Empty, canEdit, useList } from "./shared";
+import { Empty, canEdit, useList } from "./shared";
 import { Thread } from "./Thread";
 
 // Contacts: the village's phone book — the well-driller, the vet, the man with
@@ -16,7 +16,6 @@ import { Thread } from "./Thread";
 
 type Contact = {
   id: number; house_id: number | null; name: string; phone: string; notes: string; type: string;
-  house_name: string | null; house_crest: string | null; house_color: string | null;
   edited_by_name: string | null; comments: number;
 };
 
@@ -26,6 +25,7 @@ export function Contacts({ me }: { me: Me }) {
   const { t } = useT();
   const { items, reload } = useList<Contact>("/contacts");
   const [f, setF] = useState(blank);
+  const [q, setQ] = useState("");
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
   const [ef, setEf] = useState(blank);
@@ -34,6 +34,15 @@ export function Contacts({ me }: { me: Me }) {
   // The types the book already carries. There is no table of types: a type
   // exists exactly as long as a contact wears it.
   const types = useMemo(() => [...new Set(items.map((c) => c.type).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [items]);
+  // One box over both fields, because a villager looking for the vet may
+  // remember the trade and not the name, or the name and not the trade. The
+  // order is left alone: a phone book that reshuffles as you type is harder
+  // to read than one that only gets shorter.
+  const shown = useMemo(() => {
+    const needle = q.trim();
+    if (!needle) return items;
+    return items.filter((c) => fuzzy(needle, c.name) !== null || (c.type && fuzzy(needle, c.type) !== null));
+  }, [items, q]);
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,46 +68,39 @@ export function Contacts({ me }: { me: Me }) {
 
   return (
     <div className="parchment">
-      <h2>📇 {t("Contacts")} <span className="sub">{t("the numbers the village keeps")}</span></h2>
-      <p className="small">{t("Nothing here rings a phone: a number is looked up, not announced.")}</p>
-      <p><button onClick={() => setAdding(!adding)}>+ {t("A number to keep")}</button></p>
+      <h2>📇 {t("Contacts")} <span className="sub">{t("who to call")}</span></h2>
+      <p><button onClick={() => setAdding(!adding)}>+ {t("Add")}</button></p>
       {adding && <form className="inline" onSubmit={add}>{fields(f, setF)}
         <div className="submit"><button className="primary" type="submit">📇 {t("Write it down")}</button></div>
       </form>}
+      {items.length > 1 && <input className="find" value={q} onChange={(e) => setQ(e.target.value)} placeholder={"🔍 " + t("a name or a type")} aria-label={t("a name or a type")} />}
       {items.length === 0 && <Empty text={t("No numbers yet. Write the first one down — the chat will lose it.")} />}
-      {items.map((c, i) => (
-        <div key={c.id}>
-          {/* The list arrives grouped by type, untyped last; the heading changes where the group
-              does — and stays away entirely while nothing is typed, because one heading over the
-              whole room names nothing. */}
-          {(i === 0 || items[i - 1].type !== c.type) && (c.type || items.some((x) => x.type)) && <h3 className="contact-group">{c.type || t("Untyped")}</h3>}
-          <div className="card contact">
-            {editing === c.id ? (
-              <form className="inline" onSubmit={(e) => { e.preventDefault(); saveEdit(c.id); }}>{fields(ef, setEf)}
-                <div className="submit"><button type="button" className="ghost" onClick={() => setEditing(null)}>✕</button><button className="primary" type="submit">{t("Save")}</button></div>
-              </form>
-            ) : (<>
-              <div className="head">
-                <strong>{c.name}</strong>
-                {/* A number on a phone is there to be pressed. */}
-                {c.phone && <a className="btn primary tel" href={"tel:" + c.phone.replace(/[^+0-9]/g, "")}>☎ {c.phone}</a>}
-              </div>
-              {c.notes && <div className="body small">{c.notes}</div>}
-              {/* A house that has left says nothing rather than an em dash. */}
-              {(c.house_name || c.edited_by_name) && (
-                <div className="small muted">
-                  {c.house_name && <>{t("written down by")}: <Crest crest={c.house_crest!} color={c.house_color!} /> {c.house_name}</>}
-                  {c.edited_by_name && <> ✎ {t("last edited by")} {c.edited_by_name}</>}
-                </div>
-              )}
-            </>)}
-            <div className="actions">
-              <button className="ghost" onClick={() => setOpenThread(openThread === c.id ? null : c.id)}>💬 {t("Comments")} ({c.comments || 0})</button>
-              {editing !== c.id && <button className="ghost" onClick={() => startEdit(c)}>✎ {t("Edit")}</button>}
-              {canEdit(me, c) && <button className="ghost" onClick={() => del(c)}>🗑 {t("Delete")}</button>}
+      {items.length > 0 && shown.length === 0 && <Empty text={t("No number matches that.")} />}
+      {shown.map((c) => (
+        <div key={c.id} className="card contact">
+          {editing === c.id ? (
+            <form className="inline" onSubmit={(e) => { e.preventDefault(); saveEdit(c.id); }}>{fields(ef, setEf)}
+              <div className="submit"><button type="button" className="ghost" onClick={() => setEditing(null)}>✕</button><button className="primary" type="submit">{t("Save")}</button></div>
+            </form>
+          ) : (<>
+            <div className="head">
+              <strong>{c.name}</strong>
+              {c.type && <span className="tag">{c.type}</span>}
+              {/* A number on a phone is there to be pressed. */}
+              {c.phone && <a className="btn primary tel" href={"tel:" + c.phone.replace(/[^+0-9]/g, "")}>☎ {c.phone}</a>}
             </div>
-            {openThread === c.id && <Thread subject="contact" id={c.id} me={me} onChanged={reload} />}
+            {c.notes && <div className="body small">{c.notes}</div>}
+            {/* Who wrote a number down is not worth a line — a number is the
+                village's, not a house's. Who changed one is, because anyone
+                may, and a text anyone may change shows who did. */}
+            {c.edited_by_name && <div className="small muted">✎ {t("last edited by")} {c.edited_by_name}</div>}
+          </>)}
+          <div className="actions">
+            <button className="ghost" onClick={() => setOpenThread(openThread === c.id ? null : c.id)}>💬 {t("Comments")}{c.comments ? ` (${c.comments})` : ""}</button>
+            {editing !== c.id && <button className="ghost" onClick={() => startEdit(c)}>✎ {t("Edit")}</button>}
+            {canEdit(me, c) && <button className="ghost" onClick={() => del(c)}>🗑 {t("Delete")}</button>}
           </div>
+          {openThread === c.id && <Thread subject="contact" id={c.id} me={me} onChanged={reload} />}
         </div>
       ))}
     </div>
@@ -110,8 +112,14 @@ export function Contacts({ me }: { me: Me }) {
 // a letter that begins a word — so "vt" finds "veterinar" over "vodovodar
 // traktorist". null means no match at all. The last term breaks ties towards
 // the shorter word, which is the one you were more likely reaching for.
+//
+// Both sides lose their accents first: a villager typing fast, or on a phone
+// keyboard set to English, writes "cebelar" and means Čebelar. Slovenian is
+// the language of this room, so it may not be the one that fails to match.
+const plain = (v: string) => v.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 export function fuzzy(q: string, s: string): number | null {
-  const a = q.toLowerCase(), b = s.toLowerCase();
+  const a = plain(q), b = plain(s);
   let i = 0, score = 0, prev = -2;
   for (let j = 0; j < b.length && i < a.length; j++) {
     if (b[j] !== a[i]) continue;

@@ -176,7 +176,7 @@ export function ToolShed({ me, houses }: { me: Me; houses: House[] }) {
               <div className="actions">
                 <button className={w.mine ? "" : "primary"} onClick={() => api(`/wishes/${w.id}`, { method: "PUT", body: { want: !w.mine } }).then(wishes.reload)}>{w.mine ? t("Not any more") : "🙋 " + t("I would love that too")}</button>
                 {optFor !== w.id && <button className="lesser" onClick={() => setOptFor(w.id)}>🔎 {t("I found one")}</button>}
-                <button className="ghost" onClick={() => setThreadFor(threadFor === w.id ? null : w.id)}>💬 {t("Comments")} ({w.comments || 0})</button>
+                <button className="ghost" onClick={() => setThreadFor(threadFor === w.id ? null : w.id)}>💬 {t("Comments")}{w.comments ? ` (${w.comments})` : ""}</button>
                 {canEdit(me, w) && <button className="ghost" onClick={() => confirm(w.text + "?") && api(`/wishes/${w.id}`, { method: "DELETE" }).then(wishes.reload)}>✓ {t("It arrived")}</button>}
               </div>
               {threadFor === w.id && <Thread subject="wish" id={w.id} me={me} onChanged={wishes.reload} />}

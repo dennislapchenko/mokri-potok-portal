@@ -160,7 +160,9 @@ does not ship.
   GURS data: `TBD`, required before the portal moves to the collective's domain.
 - **One thread implementation.** Comments live in `comments`, keyed by
   `(subject, subject_id)`, and are rendered by `Thread.tsx` everywhere: an
-  event, a wish, an away notice, a contact. One reply level. A new room that wants comments
+  event, a wish, an away notice, a contact. One reply level. The button that
+  opens one says 💬 Comments and shows the count **only when there is one** —
+  "(0)" is two characters saying nothing, in every room. A new room that wants comments
   adds a subject, never a table. The push kind stays the room's own so no
   opt-out changes meaning. Who hears is the subject's own answer, in
   `tellThread`: an event tells the caller and everyone who answered yes or
@@ -286,14 +288,22 @@ does not ship.
 - **The phone book keeps a number, not a file on a person.** Contacts is a
   name, a phone, a note and a type. **Any house writes one down and any house
   corrects it** — the same provisional footing as editing an event — and the
-  card says which house wrote it down and which last changed it. Removing one
+  card **names only the house that last changed it** (owner's decision
+  2026-09-10): who wrote a number down is in the row for the delete check and
+  nowhere on the card, because the number is the village's and not that
+  house's. Removing one
   is the adder's or a steward's, and a contact **outlives the house that added
   it** (`ON DELETE SET NULL`, like a project picture), so an orphaned number is
   a steward's to take away. **The type is one free word and there is no table
   of types**: the picker offers the words the rows already carry, narrowed the
   way fzf narrows — the letters in order, a run of them and the start of a word
   worth more — and a word nobody has used *is* a new type the moment it is
-  written. A type therefore exists exactly as long as a row wears it. The
+  written. A type therefore exists exactly as long as a row wears it. On the
+  card the type is **a pill beside the name**, not a heading over a group
+  (owner's decision 2026-09-10): the list still arrives ordered by type, so
+  like still sits with like, and **one search box narrows it over name and
+  type at once** the same fzf way, because a villager remembers the trade or
+  the name and rarely both. The
   backend folds a spelling that differs only in case into the one already in
   use, because two spellings of one word split the group with nobody deciding
   it. **Nothing in the room pushes** (owner's decision 2026-09-10): a number is
@@ -305,8 +315,11 @@ does not ship.
   person**: whether it still works, who came last, what to ask for. The
   tradesman is not in the room to answer, so a room that collected "overcharged
   us" would be a ratings board about somebody who never joined — the invariant
-  and the tool description say so, and nothing enforces it. The Home tile carries **no count**: how many
-  numbers the village keeps is not a question anybody has.
+  and the tool description say so, and nothing enforces it. The Home tile
+  carries **no count**: how many numbers the village keeps is not a question
+  anybody has. Comments, Edit and Delete **stay on one row at every width** —
+  three actions that wrap read as two groups, and the third looks like it
+  belongs to something else.
 - **Done is a state, never a deletion.** Finished projects and closed tasks
   stay readable with their closing notes. Nothing archives itself.
 - **Exit is designed.** `GET /api/export` (steward) dumps everything as JSON;

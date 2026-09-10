@@ -54,7 +54,7 @@ export function Watchtower({ me }: { me: Me }) {
             <div className="actions">
               {!a.watcher && a.house_id !== me.id && <button className="primary" onClick={() => api(`/away/${a.id}`, { method: "PUT", body: { watch: true } }).then(reload)}>👁 {t("I will watch")}</button>}
               {a.watcher === me.id && <button onClick={() => api(`/away/${a.id}`, { method: "PUT", body: { watch: false } }).then(reload)}>{t("Step back")}</button>}
-              <button className="ghost" onClick={() => setOpenThread(openThread === a.id ? null : a.id)}>💬 {t("Comments")} ({a.comments || 0})</button>
+              <button className="ghost" onClick={() => setOpenThread(openThread === a.id ? null : a.id)}>💬 {t("Comments")}{a.comments ? ` (${a.comments})` : ""}</button>
               {canEdit(me, a) && editing !== a.id && <button className="ghost" onClick={() => startEdit(a)}>✎ {t("Edit")}</button>}
               {canEdit(me, a) && <button className="ghost" onClick={() => confirm("?") && api(`/away/${a.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button>}
             </div>

@@ -89,7 +89,7 @@ export function EventCard({ ev, me, reload, linkToTavern }: { ev: any; me: Me; r
             {r.icon} {t(r.label)}{r.state === "yes" && ev.signups > 0 ? ` (${ev.signups})` : ""}
           </button>
         ))}
-        <button className="ghost" onClick={() => setShowComments(!showComments)}>💬 {t("Comments")} ({ev.comments || 0})</button>
+        <button className="ghost" onClick={() => setShowComments(!showComments)}>💬 {t("Comments")}{ev.comments ? ` (${ev.comments})` : ""}</button>
         {!editing && <button className="ghost" onClick={() => setEditing(true)}>✎ {t("Edit")}</button>}
         {canEdit(me, ev) && <button className="ghost" onClick={() => confirm(ev.title + "?") && api(`/events/${ev.id}`, { method: "DELETE" }).then(reload)}>🗑 {t("Delete")}</button>}
       </div>

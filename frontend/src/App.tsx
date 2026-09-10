@@ -31,7 +31,7 @@ export const ROOMS = [
   { path: "/watch", icon: "🕯️", name: "Watchtower", short: "Watch", sub: "who is away", nav: false },
   { path: "/camp", icon: "🏕️", name: "Campground", short: "Camp", sub: "who noticed, who has the money", nav: false },
   { path: "/houses", icon: "🏘️", name: "Houses", short: "Houses", sub: "who lives here", nav: false },
-  { path: "/contacts", icon: "📇", name: "Contacts", short: "Contacts", sub: "the numbers the village keeps", nav: false },
+  { path: "/contacts", icon: "📇", name: "Contacts", short: "Contacts", sub: "who to call", nav: false },
 ];
 
 export default function App() {

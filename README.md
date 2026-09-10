@@ -5,7 +5,7 @@ the village as the home screen, and seven rooms — Tavern (pinned notices, the
 month calendar with work-bee sign-ups, and the message board), Market (needs,
 give-aways, shop runs), Watchtower (who is away), Tool shed (what the village
 lends), Projects (long jobs split into takable tasks), Campground (who
-collected from which camper) and Contacts (the numbers the village keeps) —
+collected from which camper) and Contacts (who to call) —
 plus the Codex, the village's founding text,
 editable by every house, as the fourth chip at the head of Home. Hall, Projects, Market and Tool shed sit on the phone's
 bottom bar, the rest are tiles on the map. One shared login

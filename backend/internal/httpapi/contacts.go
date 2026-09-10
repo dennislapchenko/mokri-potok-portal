@@ -19,14 +19,18 @@ import (
 var contactFields = []string{"name", "phone", "notes", "type"}
 
 func (s *Server) listContacts(w http.ResponseWriter, r *http.Request) {
-	// Untyped last: an empty heading at the top pushes the named groups off
-	// the first screen. Then by type, then by name inside it. Rows of one type
-	// always land together, which is all the room's grouping needs; a type
-	// beginning with Č or Š sorts after Z, so only the order of the groups
-	// themselves is imperfect, and only in Slovenian.
-	rows, err := s.st.Rows(r.Context(), `SELECT c.*,`+houseJoin+`, ed.name AS edited_by_name,
+	// Untyped last: a row with no type wears no pill saying what it is, so it
+	// is the one the eye should meet after the named ones, not before. Then by
+	// type, so like sits with like, then by name inside it. A type beginning
+	// with Č or Š sorts after Z, which moves that block of rows and splits
+	// nothing.
+	//
+	// The house that wrote a number down is an id and no more: the card does
+	// not name it, so neither the page nor an agent is handed its name, crest
+	// and colour. Only the house that last changed the row is named.
+	rows, err := s.st.Rows(r.Context(), `SELECT c.*, ed.name AS edited_by_name,
 		(SELECT count(*) FROM comments m WHERE m.subject='contact' AND m.subject_id=c.id) AS comments
-		FROM contacts c LEFT JOIN houses h ON h.id=c.house_id LEFT JOIN houses ed ON ed.id=c.edited_by
+		FROM contacts c LEFT JOIN houses ed ON ed.id=c.edited_by
 		ORDER BY c.type='', c.type COLLATE NOCASE, c.name COLLATE NOCASE`)
 	if err != nil {
 		fail(w, err)

@@ -1463,8 +1463,14 @@ func TestContacts(t *testing.T) {
 	steward.must(204, code, "another house corrects a number")
 	code, _, _ = steward.do("PUT", "/api/contacts/"+itoa(id), map[string]any{"name": ""})
 	steward.must(400, code, "a name cannot be emptied")
-	if fixed := row(id); fixed["phone"] != "041 222 222" || fixed["edited_by_name"] != "S" || fixed["house_name"] != "Zeleni Volk" {
+	// The corrector is named; the house that wrote the number down is an id and
+	// nothing more, because no card names it and no agent needs it.
+	fixed := row(id)
+	if fixed["phone"] != "041 222 222" || fixed["edited_by_name"] != "S" {
 		t.Fatalf("correction not recorded: %v", fixed)
+	}
+	if _, leaked := fixed["house_name"]; leaked || fixed["house_id"] == nil {
+		t.Fatalf("the adder should be an id alone: %v", fixed)
 	}
 
 	// A thread hangs on a contact like on an event, and tells nobody.

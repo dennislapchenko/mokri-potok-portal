@@ -6,6 +6,9 @@ import { Crest, When } from "./shared";
 // One comment thread, wherever a room wants one: an event, a wish, an away
 // notice, a number in the phone book. The board's own shape, one reply level. The name field starts filled
 // with the label this phone joined under, so most people never type it.
+//
+// The button that opens one is "💬 Comments" and carries the count only when
+// there is one to carry: "(0)" is two characters saying nothing, in every room.
 export function Thread({ subject, id, me, onChanged }: { subject: "event" | "wish" | "away" | "contact"; id: number; me: Me; onChanged?: () => void }) {
   const { t } = useT();
   const [items, setItems] = useState<any[]>([]);

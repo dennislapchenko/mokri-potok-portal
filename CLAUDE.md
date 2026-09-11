@@ -167,11 +167,10 @@ does not ship.
   opt-out changes meaning. Who hears is the subject's own answer, in
   `tellThread`: an event tells the caller and everyone who answered yes or
   maybe, a wish tells the wisher and everyone who wants one, **a contact tells
-  nobody at all, because the phone book has no push kind of its own; **an away
-  notice tells only the house that is away and its watcher, and tells them
-  nothing** —
-  the banner is the anonymous watchtower one, because a comment's snippet on a
-  lock screen would say what the notice itself is not allowed to. The name
+  nobody at all** because the phone book has no push kind of its own, and **an
+  away notice tells only the house that is away and its watcher, and tells them
+  nothing** — the banner is the anonymous watchtower one, because a comment's
+  snippet on a lock screen would say what the notice itself is not allowed to. The name
   field starts filled from the device label this phone joined under, and stays
   optional.
 - **Wish options are findings, not votes.** Anyone may add "this model, this

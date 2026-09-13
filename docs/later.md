@@ -91,29 +91,6 @@ cadastre about who sleeps where.
 The best next feature this week is none of these. It is a pinned post in the
 Tavern asking the houses what they miss, and then four weeks of listening.
 
-## One thing that blocks something today
-
-**`TestMarketEdits` fails, so `main` is red and no deploy can roll.** Noticed
-2026-09-13. CI runs `go test ./...` before it logs in to GHCR, so a failing test
-means no image, no `BE_TAG` roll, and the village stops receiving changes — the
-next commit under `backend/**` or `frontend/**` is the one that will notice.
-
-The cause is a hardcoded date, not a regression: `village_test.go` creates a
-shop run with `cutoff_at` of `2026-09-10`, and `listRuns` (`server.go`) lists
-only `cutoff_at >= datetime('now','-1 day')`. From 2026-09-12 the run falls out
-of the list, `runs[0]` indexes an empty slice and the test panics. It would have
-gone red on its own with nobody touching the code.
-
-Two fixes, and the choice is the owner's:
-
-1. **Date the test relative to the clock** the server already reads, so it
-   cannot rot again. Fixes this test and any sibling that hardcodes a day.
-2. **Give the run list the same treatment the two-clocks invariant asks for.**
-   `cutoff_at` is wall clock (`T`, no seconds) and `datetime('now')` is UTC with
-   a space, so that comparison is exactly the shape `CLAUDE.md` § Two clocks
-   warns about; the `-1 day` grace hides it except when the dates are equal.
-   This is the deeper fix and it changes behaviour, so it wants a decision.
-
 ## Open decisions that block nothing today
 
 | Decision | Who answers | Recorded where once decided |
@@ -132,4 +109,5 @@ Two fixes, and the choice is the owner's:
 | Whether editing the Codex in the app *amends* the adopted text or *proposes* an amendment for the council. Today any house edits and the section names it; the first edit replaces the council's wording with no copy kept but the nightly backup. A proposal state, or a section history, waits for the village to say it wants one | The collective | `CLAUDE.md` § Codex |
 | Reordering codex sections in the app. New sections append; the order the import set is the document's | Any house, if a new section ever belongs in the middle | `Codex.tsx`, one `ord` field |
 | The two languages of the adopted text do not carry the same number of principles in one section. Which one is the text | The collective | The codex itself, in the app |
+| Two more queries compare a wall-clock column against SQLite's clock, which `CLAUDE.md` § Two clocks forbids. `listRuns` was fixed on 2026-09-13 — it had gone red on its own and stopped CI rolling a deploy. Still open: the tavern's `starts_at >= date('now','-60 days')` in `server.go`, where the shapes differ only at the boundary day and the window is 60 days wide, so nothing is visibly wrong yet; and `projects.go`, which has the right shape but still reads SQLite's clock instead of `s.now()`, so a test cannot move it | The owner, if either ever misbehaves | `CLAUDE.md` § Two clocks |
 | Whether the portal is ever sold to other villages. `CLAUDE.md` calls it a social tool and not a product, and the village lists money among the things deliberately absent — so this is a question about what the thing *is* before it is a question about hosting or price. The market, the offer, the demo village, the hosting shape, the login layer above the house account, the numbers and the work are argued both ways in `docs/commercial.md`; the recommendation there is to build the demo and the landing page first and let thirty communities answer before anything else is built | The owner, and then the collective | `docs/commercial.md`, and this row deleted |

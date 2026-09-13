@@ -876,8 +876,14 @@ func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
 // ---- market --------------------------------------------------------------
 
 func (s *Server) listRuns(w http.ResponseWriter, r *http.Request) {
+	// cutoff_at is the wall clock a villager typed, so the bound has to be in
+	// that same shape — datetime('now') is UTC with a space, and comparing it
+	// to a 'T' string is the mistake CLAUDE.md warns about twice. It also has
+	// to come off s.now(), which is local and which a test can move; SQLite's
+	// own clock is neither.
+	cut := s.now().AddDate(0, 0, -1).Format("2006-01-02T15:04")
 	rows, err := s.st.Rows(r.Context(), `SELECT x.*,`+houseJoin+`FROM runs x JOIN houses h ON h.id=x.house_id
-		WHERE x.cutoff_at >= datetime('now','-1 day') ORDER BY x.cutoff_at`)
+		WHERE x.cutoff_at >= ? ORDER BY x.cutoff_at`, cut)
 	if err != nil {
 		fail(w, err)
 		return

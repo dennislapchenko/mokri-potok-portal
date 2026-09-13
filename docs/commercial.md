@@ -170,14 +170,16 @@ fact `CLAUDE.md` § Working rules keeps out of even this repo, and the thing the
 anonymous away-push exists to protect. §4 already forbids real parcels in the
 demo for that reason; the hero is the same picture with more traffic. So:
 **every screenshot on the page comes from the demo village.** If the real one is
-ever shown, it takes written per-household consent, revocable, and no crest ever
-sits on a real parcel. Marketing does not get an exemption the away-notice
+ever shown, it takes written per-household consent, and no crest ever sits on a
+real parcel. Marketing does not get an exemption the away-notice
 does not.
 
 And consent between neighbours is not the clean instrument it looks like. The
 person asking is the neighbour who built the portal, so "no" is expensive to
-say, and consent to a page that gets indexed and screenshotted cannot really be
-revoked afterwards. So: **the default is no**, the question is asked once and
+say. And consent here is not revocable in any way worth promising: withdrawing
+it takes the picture off the page, which is all it can do — the indexed copies
+and the screenshots stay. Say that when asking, rather than the word
+"revocable", which a neighbour hears as "I can change my mind". So: **the default is no**, the question is asked once and
 never a second time, and a household that declines is never named as having
 declined — not to the others, not in the file where the answers are kept.
 
@@ -423,9 +425,10 @@ software — a village tries it, three houses never install it, and they drift
 back to the chat group. Netted at 30 % a year the base case is roughly **12 /
 36 / 68 villages**, and year three's subscription line falls from €16k to about
 €12k. The table also bills every village twelve months of the year it arrived, which
-no cohort does — halve the subscription line in each village's first year and
-the picture dims again. Every figure here is a guess; these two are guesses
-with a known direction.
+no cohort does. That one is not an estimate but an arithmetic property of the
+table: villages arrive through the year, so on average they pay about half of
+their first year, which takes roughly €1.3k off year one and €3k off year three
+in the base case, before churn. Churn is the guess; this is a correction.
 
 **Read the base case honestly: year three is around €26k gross before churn,
 nearer €20k after it, for work that never fully stops.** That is a real second income and a

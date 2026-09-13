@@ -436,8 +436,8 @@ Churn is the guess; this is a correction.
 **Read the base case honestly: year three is around €26k gross as the table
 has it, about €22k once the arrival-year correction is applied, and nearer
 €18k once churn is applied too — call it €15k after the running costs above,
-for work that never fully stops.** That is a real second income and a below-minimum first one. Anyone
-doing this for the money should not.
+for work that never fully stops.** That is a real second income and a
+below-minimum first one. Anyone doing this for the money should not.
 
 The reasons to do it anyway, which are better reasons:
 

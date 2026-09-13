@@ -174,6 +174,13 @@ ever shown, it takes written per-household consent, revocable, and no crest ever
 sits on a real parcel. Marketing does not get an exemption the away-notice
 does not.
 
+And consent between neighbours is not the clean instrument it looks like. The
+person asking is the neighbour who built the portal, so "no" is expensive to
+say, and consent to a page that gets indexed and screenshotted cannot really be
+revoked afterwards. So: **the default is no**, the question is asked once and
+never a second time, and a household that declines is never named as having
+declined — not to the others, not in the file where the answers are kept.
+
 The page is a static file. It must not be a funnel.
 
 ## 4. The demo village
@@ -343,10 +350,17 @@ What can honestly be promised, tier by tier:
 - **Hosted**: no query path, backups encrypted at rest with an operator-held
   key, access logged, and a written commitment not to look. That is a promise
   about conduct, not about cryptography, and it should be worded as one.
-- **Sovereign**: backups encrypted with a key the **village** holds, so the
-  operator cannot read them at any price. This is the tier for anyone whose
-  constitution demands it, and it is the only tier where "we cannot read your
-  village" is literally true.
+- **Sovereign**: a jurisdiction the village picks, a contract, and an off-site
+  backup copy encrypted to a key the village holds, which the operator cannot
+  open. What it does **not** buy is cryptographic inability: §5 has the
+  operator provisioning that VM and §6 has the control plane rolling and
+  rescuing it, so the operator has root, the live SQLite file sits unencrypted
+  on that disk, and any key present on the box is reachable by the same root.
+  Sovereign buys jurisdiction, contract and recourse — say that, not more.
+- **Self-host** is the only tier where "we cannot read your village" is
+  literally true, and it is free. That is not a hole in the pricing; it is the
+  honest shape of the thing, and saying so out loud is worth more trust than
+  the sentence it gives up.
 
 Also worth getting right before a lawyer does: for the village's own data you
 are a **processor**, but for the control-plane account, the billing records and
@@ -408,8 +422,10 @@ decides this business, and a first year of 30 % is realistic for community
 software — a village tries it, three houses never install it, and they drift
 back to the chat group. Netted at 30 % a year the base case is roughly **12 /
 36 / 68 villages**, and year three's subscription line falls from €16k to about
-€12k. Every figure in this table is a guess; that one is a guess with a known
-direction.
+€12k. The table also bills every village twelve months of the year it arrived, which
+no cohort does — halve the subscription line in each village's first year and
+the picture dims again. Every figure here is a guess; these two are guesses
+with a known direction.
 
 **Read the base case honestly: year three is around €26k gross before churn,
 nearer €20k after it, for work that never fully stops.** That is a real second income and a

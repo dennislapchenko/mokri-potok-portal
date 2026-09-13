@@ -36,8 +36,21 @@ Two guardrails make it survivable, and both are recommended:
    because the village asked in the Tavern, never because a customer asked in
    an email. Customers get the same portal, not a vote.
 
-If either guardrail feels like a cage, stop reading — the honest answer is to
-open-source it and host nothing.
+**And two costs the village pays, which the guardrails do not cover:**
+
+- **The roadmap keeps its direction but loses its speed.** Today a thing asked
+  for in the Tavern on Saturday can ship on Sunday. With a hundred villages it
+  means a migration, six translations, a rollout across a hundred databases and
+  a support queue — so the same request takes a fortnight. Guardrail 2 protects
+  *what* gets built; nothing protects *how fast*, and the speed is the part the
+  villagers actually feel.
+- **The owner's evenings do not become free, they change shape.** The money
+  buys off the hosting bill, not the hours: what replaces building is support,
+  in languages the owner does not speak, for people who cannot read the logs.
+  Anyone doing this to get their evenings back has the arithmetic backwards.
+
+If either guardrail feels like a cage, or either cost feels too high, stop
+reading — the honest answer is to open-source it and host nothing.
 
 ## 1. What actually exists, as an asset
 
@@ -46,7 +59,7 @@ follow from it.
 
 | Asset | State | Commercial weight |
 | --- | --- | --- |
-| Go backend, stdlib HTTP, SQLite, ~6.8k lines, 92 routes, **two** dependencies | Working, tested, deployed | Very high. One static binary + one file is the cheapest per-tenant unit in the industry |
+| Go backend, stdlib HTTP, SQLite, ~4.4k lines plus ~2.4k of tests, 92 routes, **two** dependencies | Working, tested, deployed | Very high. One static binary + one file is the cheapest per-tenant unit in the industry |
 | React frontend, ~3.4k lines, **three** runtime deps, PWA with push | Working | High. No app store, no build farm |
 | One container serves API + frontend, one origin, CSP, no CORS | Working | High. Provisioning a village is `docker run` |
 | Nightly `VACUUM INTO` backups, `GET /api/export` full JSON dump | Working | High. "Your data, out, in one click" is a sales line most competitors cannot say |
@@ -140,16 +153,26 @@ rules the portal itself follows, because the buyer will check.
 
 | # | Section | Content |
 | --- | --- | --- |
-| 1 | Hero | The village map, real screenshot, crests on parcels. The sentence above. Two buttons: **Walk through the demo** (primary), **Read what it refuses** (plain) |
+| 1 | Hero | The **demo** village's map, crests on parcels. The sentence above. Two buttons: **Walk through the demo** (primary), **Read what it refuses** (plain). Never the real village — see the rule under this table |
 | 2 | The problem | Three lines of a fake WhatsApp group scrolling past: "Is anyone going to town?" … 40 messages … "sorry what was the answer". Then: "It was said once. Then it was gone." |
 | 3 | The nine rooms | One scroll, one screenshot each, one sentence each — lifted from `village.md`'s job table, which is already written in exactly the right voice |
 | 4 | **What this will never do** | The manifesto. No points, no leaderboards, no streaks. No money, no dues, no ledger. No public pages. No ads, no trackers, no third-party scripts. No selling anything to anyone. **This section is the differentiator and should be the longest on the page** |
 | 5 | The map | "We draw your village from your country's public cadastre." The list of countries we can do today, and an honest "ask us" for the rest |
 | 6 | Your data | Nightly backups, one-click full JSON export, AGPL source, "leave whenever and take everything" |
 | 7 | Price | Two columns: **Self-host, free forever** (docker run, the docs, no support) and **Hosted, €15/month** (your subdomain, your map drawn for you, backups, updates, a person to email). One-time map setup fee stated plainly |
-| 8 | The village that made it | The reference story with photos. **The strongest asset on the page** — a real collective, a real reason, a real builder |
+| 8 | The village that made it | Why each room exists, told by the builder, illustrated from the **demo** village. The reason is the asset; the neighbours' parcels are not |
 | 9 | FAQ | iPhone push, languages, what happens if you stop paying (the export runs and the container stops — data returned, not held hostage), GDPR, who runs it |
 | 10 | Footer | Email. No newsletter, no chat widget, no cookie banner because there are no cookies |
+
+**The rule this page must not break.** A screenshot of the real village with
+crests on parcels *is* a published who-lives-where map — the house-by-house
+fact `CLAUDE.md` § Working rules keeps out of even this repo, and the thing the
+anonymous away-push exists to protect. §4 already forbids real parcels in the
+demo for that reason; the hero is the same picture with more traffic. So:
+**every screenshot on the page comes from the demo village.** If the real one is
+ever shown, it takes written per-household consent, revocable, and no crest ever
+sits on a real parcel. Marketing does not get an exemption the away-notice
+does not.
 
 The page is a static file. It must not be a funnel.
 
@@ -178,9 +201,18 @@ Requirements:
   time for the words than the SQL.
 - **Reset on the hour.** A golden snapshot restored by cron. Visitors may click
   everything, including Delete.
-- **`DEMO_MODE=1`**: one extra route that hands out a device token for a named
-  house with no code, push disabled, the export still working (it is a selling
-  point), the MCP key route open so the agent story is demoable too.
+- **A way in with no code** — a route that hands out a device token for a named
+  house, push disabled, the export still working (it is a selling point), and a
+  mintable MCP key so the agent story is demoable too.
+  **This is an unauthenticated write surface, which `CLAUDE.md` § Nothing is
+  public forbids outright** — it is the same door refused to park4night on
+  2026-09-06, and the demo is not a good enough reason to soften the rule. So it
+  is fenced by compilation, not by configuration: the route lives behind a
+  **build tag** and is absent from the binary every village runs, a test pins
+  that absence, and the demo ships as its own image tag. An env-var typo on a
+  real village must not be able to open the gate. If that fence cannot be built
+  cleanly, the demo is a read-only recording instead, and the feature is
+  dropped.
 - **A house switcher** in the corner: "You are Hiša Lipa — become the steward"
   so a visitor can see both sides of every permission.
 
@@ -298,10 +330,30 @@ Explicitly rejected, with reasons:
   off.
 - **Passwords.** Nothing in the system has one. Keep it that way.
 
-One genuine new requirement: **the control plane must never be able to read a
-village's data.** It provisions, bills, backs up and rescues; it does not query.
-Backups leave the box encrypted with a key the village holds if they want the
-sovereign tier. Say this on the landing page — this buyer will ask.
+One genuine new requirement, and it needs stating precisely, because the
+comfortable version of it is a lie. **The control plane never queries a
+village's database** — it provisions, bills, rolls and rescues, and it has no
+read path into the rooms. But it *does* pull the nightly `VACUUM INTO` off the
+box (§6), and a backup is the whole village in one file. So on the standard
+tier **the operator can read a village's data if they choose to**, exactly as
+any host with a backup can, and the landing page must not claim otherwise.
+
+What can honestly be promised, tier by tier:
+
+- **Hosted**: no query path, backups encrypted at rest with an operator-held
+  key, access logged, and a written commitment not to look. That is a promise
+  about conduct, not about cryptography, and it should be worded as one.
+- **Sovereign**: backups encrypted with a key the **village** holds, so the
+  operator cannot read them at any price. This is the tier for anyone whose
+  constitution demands it, and it is the only tier where "we cannot read your
+  village" is literally true.
+
+Also worth getting right before a lawyer does: for the village's own data you
+are a **processor**, but for the control-plane account, the billing records and
+the support mail you are a **controller** — different duties, different
+paperwork. And the counterparty signing the DPA is often an unincorporated
+collective with no legal personality, which is a weak signature; expect to
+contract with a named steward or the collective's association where one exists.
 
 ## 8. Native app, or the PWA
 
@@ -349,8 +401,18 @@ is above 95 %. The economics are not the problem; the ceiling is.
 | **Base** — one good case study, steady federation word of mouth | 15, €2.7k + €4k setup | 45, €8.1k + €8k | 90, €16k + €10k |
 | **Optimistic** — a federation adopts it, or one post lands | 30, €5.4k + €9k | 90, €16k + €15k | 200, €36k + €20k |
 
-**Read the base case honestly: year three is around €26k gross, €23k net, for
-work that never fully stops.** That is a real second income and a
+**These are gross adds with no churn in them, which is the most flattering
+assumption in this document.** The product's own success metric is whether a
+village is still writing ninety days later (§10), so churn is the number that
+decides this business, and a first year of 30 % is realistic for community
+software — a village tries it, three houses never install it, and they drift
+back to the chat group. Netted at 30 % a year the base case is roughly **12 /
+36 / 68 villages**, and year three's subscription line falls from €16k to about
+€12k. Every figure in this table is a guess; that one is a guess with a known
+direction.
+
+**Read the base case honestly: year three is around €26k gross before churn,
+nearer €20k after it, for work that never fully stops.** That is a real second income and a
 below-minimum first one. Anyone doing this for the money should not.
 
 The reasons to do it anyway, which are better reasons:
@@ -395,10 +457,13 @@ them unusually strong.
   national cohousing federations (NL, DK, BE, DE, UK). These are lists of
   exactly the right buyer, published, with contact addresses. Thirty personal
   emails with a demo link beats any campaign.
-- **The reference village.** One case study — the real collective, real
-  photographs, the real reason each room exists, the builder's own account of
-  what the WhatsApp group kept losing. This is the whole marketing budget's
-  worth of asset and it already exists as lived experience.
+- **The reference village, told and not photographed.** One case study: the
+  real reason each room exists and the builder's own account of what the
+  WhatsApp group kept losing. That story is the whole marketing budget's worth
+  of asset and it already exists as lived experience. **The story is the asset,
+  the neighbours are not** — no parcel screenshots, no house names, no faces,
+  nothing a villager did not write for this purpose. The rule under §3's table
+  applies here, at a conference table, and in every email.
 - **Conferences where this audience physically gathers.** GEN Europe's annual
   gathering, the European cohousing events, regional permaculture convergences.
   A laptop with the demo on a table does more than a booth.
@@ -455,6 +520,7 @@ Sizes are working days for one experienced person who knows this codebase.
 | 7 | **Weather provider interface** + Open-Meteo adapter. Free, no key, worldwide, works with the existing backend-fetch-and-trim model. ARSO stays as the Slovenian adapter. **This single change makes the weather panel work in every country** | 3 |
 | 8 | **Map data out of the frontend build**: serve `parcels.geojson` and `water.json` from `${DATA_DIR}` so a village's map is data, not a rebuild | 2 |
 | 9 | **Cadastre import CLI**: bbox + country adapter → geojson. France (étalab) and Spain (Catastro) first — both free, national, good quality. Then NL, CZ, DK, SI | 8 (first two), 3 each after |
+| 9b | **Licence review, once per country.** "Free to download" is not "free to redistribute inside a paid hosted product", and the terms differ by country. This repo's own GURS attribution string is still `TBD` and §1 calls that a blocker — this is the same blocker six times over, and it gates shipping each country, not just documenting it | 1–2 each, plus legal time on any that are unclear |
 | 10 | **i18n**: change "Slovenian first" to "the village's language first"; add DE, FR, ES, NL, IT. The dictionary is a flat 379-line record, so the work is translation, not engineering | 5 |
 | 11 | **iOS install coach** in `Install.tsx`, gating the push toggle until installed | 2 |
 

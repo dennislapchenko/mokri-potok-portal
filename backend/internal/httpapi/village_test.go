@@ -1287,9 +1287,7 @@ func TestMarketEdits(t *testing.T) {
 	// The grace the list gives a run that has already left is 24 hours from its
 	// cut-off, measured off s.now() — which this test pinned to 2026-09-04
 	// 10:00. Both runs below are gone by the real calendar, so this passes only
-	// while the bound reads the server's clock and not SQLite's. Until
-	// 2026-09-13 it read SQLite's, in the other clock's shape, and every run
-	// dated on the bound day survived whatever hour it carried.
+	// while the bound reads the server's clock and not SQLite's.
 	fake.mu.Lock()
 	fake.sent, fake.payloads = nil, nil
 	fake.mu.Unlock()

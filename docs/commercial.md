@@ -64,11 +64,11 @@ follow from it.
 | One container serves API + frontend, one origin, CSP, no CORS | Working | High. Provisioning a village is `docker run` |
 | Nightly `VACUUM INTO` backups, `GET /api/export` full JSON dump | Working | High. "Your data, out, in one click" is a sales line most competitors cannot say |
 | Nine rooms with a real opinion behind each | Working | The product. Not replicable by a generic tool |
-| Cadastral map as the home screen, terrain-modelled watercourses | Working, **Slovenia-specific** | The differentiator **and** the biggest per-country cost. See §7 |
+| Cadastral map as the home screen, terrain-modelled watercourses | Working, **Slovenia-specific** | The differentiator **and** the biggest per-country cost. See §11 |
 | MCP door — 46 tools, the API as an agent surface | Working | Genuinely novel. No competitor has it. Small audience today, good press |
 | Slovenian + English, `t()` everywhere, 379-line flat dictionary | Working | Cheap to extend, but "Slovenian first" is an invariant that must become "the village's language first" |
 | Web push, quiet hours, per-phone consent, per-house kind filters | Working | High. Notification manners are a real feature nobody markets |
-| **No LICENSE file** | **Missing** | **Blocking.** A public repo with no licence is all-rights-reserved: nobody may legally run it. See §10 |
+| **No LICENSE file** | **Missing** | **Blocking.** A public repo with no licence is all-rights-reserved: nobody may legally run it. See §11 |
 
 Three `TBD`s in the repo become shipping blockers the moment money changes
 hands: `backdrop.jpg` provenance (a screenshot of a map service, licence not
@@ -113,8 +113,8 @@ that lose to chat were correctly never built.
 
 **Honest market size.** Take the addressable set as ~5,000 organised
 communities in Europe and North America that could plausibly want this. A very
-good outcome converts 2–4 %. That is 100–200 villages. At the pricing in §8
-that is €25–50k a year. **This is a lifestyle business, not a venture
+good outcome converts 2–4 %. That is 100–200 villages. At the pricing in §3
+that is €18–36k a year in subscriptions, before churn. **This is a lifestyle business, not a venture
 business, and no amount of execution changes that** — the ceiling is set by
 how many small collectives exist, not by how well it is sold.
 
@@ -158,7 +158,7 @@ rules the portal itself follows, because the buyer will check.
 | 3 | The nine rooms | One scroll, one screenshot each, one sentence each — lifted from `village.md`'s job table, which is already written in exactly the right voice |
 | 4 | **What this will never do** | The manifesto. No points, no leaderboards, no streaks. No money, no dues, no ledger. No public pages. No ads, no trackers, no third-party scripts. No selling anything to anyone. **This section is the differentiator and should be the longest on the page** |
 | 5 | The map | "We draw your village from your country's public cadastre." The list of countries we can do today, and an honest "ask us" for the rest |
-| 6 | Your data | Nightly backups, one-click full JSON export, AGPL source, "leave whenever and take everything" |
+| 6 | Your data | Nightly backups, one-click full JSON export, the source under whichever licence §12 settles on, "leave whenever and take everything" |
 | 7 | Price | Two columns: **Self-host, free forever** (docker run, the docs, no support) and **Hosted, €15/month** (your subdomain, your map drawn for you, backups, updates, a person to email). One-time map setup fee stated plainly |
 | 8 | The village that made it | Why each room exists, told by the builder, illustrated from the **demo** village. The reason is the asset; the neighbours' parcels are not |
 | 9 | FAQ | iPhone push, languages, what happens if you stop paying (the export runs and the container stops — data returned, not held hostage), GDPR, who runs it |
@@ -282,7 +282,7 @@ piece of engineering in the whole plan:
   instead of into `docker logs`.
 - Roll: update `BE_TAG` across N villages, health-check, roll back one.
 - Backup: pull the nightly `VACUUM INTO` off-box, encrypted, per village.
-- Bill: see §8.
+- Bill: see §11.
 - Rescue: rotate a steward invite without SSH. This is the login fix in §7.
 
 Build it boring: one Go service, the same stack the owner already knows,
@@ -299,7 +299,7 @@ The current model is the best part of the product and **it should not change
 inside the village.** A house is the account; an invite link travels through
 WhatsApp; a pairing code adds a phone across a kitchen table; there is no
 password to forget and no email to send. That is not a limitation to be fixed —
-it is why a sixty-year-old neighbour with a cracked Android actually gets in.
+it is why a house with an old phone and no patience for accounts gets in.
 
 What is missing is not in the village. It is above it:
 
@@ -422,32 +422,34 @@ assumption in this document.** The product's own success metric is whether a
 village is still writing ninety days later (§10), so churn is the number that
 decides this business, and a first year of 30 % is realistic for community
 software — a village tries it, three houses never install it, and they drift
-back to the chat group. Netted at 30 % a year the base case is roughly **12 /
-36 / 68 villages**, and year three's subscription line falls from €16k to about
-€12k.
+back to the chat group.
 
 The table also bills every village twelve months of the year it arrived, which
-no cohort does. That one is not an estimate but an arithmetic property of the
-table: villages arrive through the year, so on average each pays about half of
-its first year. In the base case that is 15, 30 and 45 arrivals, so it takes
-about €1.4k off year one, €2.7k off year two and **€4.1k off year three**.
-Churn is the guess; this is a correction.
+no cohort does: villages arrive through the year, so on average each pays
+about half of its first year. That one is arithmetic, not an estimate.
+
+Applying both at once, so neither is counted twice — 30 % of the start-of-year
+base lost across the year, each arriving cohort paying half a year and seeing
+half a year of churn — the base case is roughly **13 / 34 / 62 villages**, and
+year three's subscription line is about **€9k**, not €16k. The working is one
+line: last year's base × 0.85 × €180, plus this year's arrivals × €90.
 
 **Read the base case honestly: year three is around €26k gross as the table
-has it, about €22k once the arrival-year correction is applied, and nearer
-€18k once churn is applied too — call it €15k after the running costs above,
-for work that never fully stops.** That is a real second income and a
+has it and about €19k under that model, call it €16k after the running costs
+above, for work that never fully stops.** That is a real second income and a
 below-minimum first one. Anyone doing this for the money should not.
 
 The reasons to do it anyway, which are better reasons:
 
-- The collective's tool gets funded, maintained and improved by strangers'
-  money instead of the owner's evenings.
+- The collective's tool gets its hosting, its map data and its legal cover
+  paid for by strangers rather than by the owner. Not the hours — §0 says
+  where those go.
 - A hundred villages running a portal with no points and no ledger is a small
   argument, made at scale, about how software could treat people.
 - The onboarding service is genuinely enjoyable work: drawing a stranger's
   village from their cadastre and handing it back to them.
-- It compounds slowly and cannot crash. There is no burn rate.
+- It compounds slowly and owes nobody: no investor, no loan, no payroll. The
+  one thing it burns is the owner's evenings, and that is a rate too.
 
 **Three paths, and a recommendation:**
 
@@ -530,7 +532,7 @@ anything else.**
 | # | Work | Days |
 | --- | --- | --- |
 | 1 | **LICENSE.** AGPLv3 recommended: it matches the ethic, keeps hosting as the business, and this audience respects it. Until this exists, nobody may legally run the code — the repo is all-rights-reserved today | 0.5 |
-| 2 | **Demo village**: `demo-seed`, `DEMO_MODE`, hourly reset, house switcher, a written year of village life | 5 |
+| 2 | **Demo village**: `demo-seed`, the no-code door behind a build tag with a test pinning its absence (§4), hourly reset, house switcher, a written year of village life | 5 |
 | 3 | **Landing page**, per §3, static, self-hosted fonts, no trackers | 3 |
 | 4 | **Thirty emails** to the directories in §10 | 2 |
 | 5 | Resolve `backdrop.jpg` provenance — replace it if the licence cannot be established | 0.5 |
@@ -571,9 +573,10 @@ forbid (§0).
 
 None of these can be answered from the code.
 
-1. **Does the collective agree?** The village's own data, map and rooms become
-   the reference story. That is a conversation for the Tavern, not a decision
-   for the repo.
+1. **Does the collective agree?** Not its data and not its map — §3 and §10
+   forbid showing those — but the story: why each room exists, and what the
+   chat group kept losing, told by the builder with the village named. That is
+   a conversation for the Tavern, not a decision for the repo.
 2. **AGPL, or source-available, or proprietary?** §11 recommends AGPL. It is
    irreversible in practice.
 3. **Is the owner willing to say no in writing** to a paying village that asks

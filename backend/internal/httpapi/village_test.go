@@ -1164,7 +1164,8 @@ func TestProjectPhotos(t *testing.T) {
 // TestMarketEdits: a run's destination, time and notes, and an offer's kind,
 // are the poster's to change — or a steward's — and nobody else's. A house
 // whose need rides on the run hears when its place or time moves; a notes
-// edit rings nobody.
+// edit rings nobody. It also pins how long a run that has already left stays
+// in the list: 24 hours from its cut-off, off the clock a test can move.
 func TestMarketEdits(t *testing.T) {
 	_, fake, steward, volk := newVillage(t)
 	code, _, _ := steward.do("POST", "/api/push/subscribe", map[string]any{"endpoint": "https://push.example/s", "lang": "sl", "keys": map[string]any{"p256dh": "p", "auth": "a"}})
@@ -1289,8 +1290,14 @@ func TestMarketEdits(t *testing.T) {
 	// while the bound reads the server's clock and not SQLite's. Until
 	// 2026-09-13 it read SQLite's, in the other clock's shape, and every run
 	// dated on the bound day survived whatever hour it carried.
-	volk.do("POST", "/api/runs", map[string]any{"destination": "Prepozno", "cutoff_at": "2026-09-03T09:00"}) // 25h past
-	volk.do("POST", "/api/runs", map[string]any{"destination": "Še velja", "cutoff_at": "2026-09-03T11:00"}) // 23h past
+	fake.mu.Lock()
+	fake.sent, fake.payloads = nil, nil
+	fake.mu.Unlock()
+	code, _, _ = volk.do("POST", "/api/runs", map[string]any{"destination": "Prepozno", "cutoff_at": "2026-09-03T09:00"}) // 25h past
+	volk.must(201, code, "the run that is too old to list")
+	code, _, _ = volk.do("POST", "/api/runs", map[string]any{"destination": "Še velja", "cutoff_at": "2026-09-03T11:00"}) // 23h past
+	volk.must(201, code, "the run still inside the grace")
+	waitFor(t, 4, fake) // two runs, each to the steward's phone and the third's
 	_, _, listed := steward.do("GET", "/api/runs", nil)
 	seen := map[string]bool{}
 	for _, x := range listed {

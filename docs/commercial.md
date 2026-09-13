@@ -431,8 +431,10 @@ about half of its first year. That one is arithmetic, not an estimate.
 Applying both at once, so neither is counted twice — 30 % of the start-of-year
 base lost across the year, each arriving cohort paying half a year and seeing
 half a year of churn — the base case is roughly **13 / 34 / 62 villages**, and
-year three's subscription line is about **€9k**, not €16k. The working is one
-line: last year's base × 0.85 × €180, plus this year's arrivals × €90.
+year three's subscription line is about **€9k**, not €16k. The working is two
+lines: the base carried into a year is last year's × 0.7 plus its arrivals
+× 0.85; that year's subscriptions are the base × 0.85 × €180 plus its
+arrivals × €90.
 
 **Read the base case honestly: year three is around €26k gross as the table
 has it and about €19k under that model, call it €16k after the running costs

@@ -1282,6 +1282,23 @@ func TestMarketEdits(t *testing.T) {
 	if offers[0]["text"] != "Sadike paradižnika" || offers[0]["tag"] != "giveaway" {
 		t.Fatalf("offer: %v", offers[0])
 	}
+
+	// The grace the list gives a run that has already left is 24 hours from its
+	// cut-off, measured off s.now() — which this test pinned to 2026-09-04
+	// 10:00. Both runs below are gone by the real calendar, so this passes only
+	// while the bound reads the server's clock and not SQLite's. Until
+	// 2026-09-13 it read SQLite's, in the other clock's shape, and every run
+	// dated on the bound day survived whatever hour it carried.
+	volk.do("POST", "/api/runs", map[string]any{"destination": "Prepozno", "cutoff_at": "2026-09-03T09:00"}) // 25h past
+	volk.do("POST", "/api/runs", map[string]any{"destination": "Še velja", "cutoff_at": "2026-09-03T11:00"}) // 23h past
+	_, _, listed := steward.do("GET", "/api/runs", nil)
+	seen := map[string]bool{}
+	for _, x := range listed {
+		seen[x["destination"].(string)] = true
+	}
+	if seen["Prepozno"] || !seen["Še velja"] {
+		t.Fatalf("the run list's 24h grace: %v", listed)
+	}
 }
 
 // TestCodex: any house writes the codex and the section says which one; a

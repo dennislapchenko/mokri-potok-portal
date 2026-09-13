@@ -178,10 +178,10 @@ person asking is the neighbour who built the portal, so "no" is expensive to
 say. And consent here is not revocable in any way worth promising: withdrawing
 it takes the picture off the page, which is all it can do — the indexed copies
 and the screenshots stay. Say that when asking, rather than the word
-"revocable", which a neighbour hears as "I can change my mind".
- So: **the default is no**, the question is asked once and
-never a second time, and a household that declines is never named as having
-declined — not to the others, not in the file where the answers are kept.
+"revocable", which a neighbour hears as "I can change my mind". So: **the
+default is no**, the question is asked once and never a second time, and a
+household that declines is never named as having declined — not to the others,
+not in the file where the answers are kept.
 
 The page is a static file. It must not be a funnel.
 
@@ -435,8 +435,8 @@ Churn is the guess; this is a correction.
 
 **Read the base case honestly: year three is around €26k gross as the table
 has it, about €22k once the arrival-year correction is applied, and nearer
-€18k once churn is applied too — call it €15k net, for work that never fully
-stops.** That is a real second income and a below-minimum first one. Anyone
+€18k once churn is applied too — call it €15k after the running costs above,
+for work that never fully stops.** That is a real second income and a below-minimum first one. Anyone
 doing this for the money should not.
 
 The reasons to do it anyway, which are better reasons:

@@ -104,7 +104,9 @@
   tags live under the old image name, so set `image:` back to
   `ghcr.io/dennislapchenko/mokri-potok-portal-be` in `compose.yaml` and
   `BE_TAG` to `sha-7a6f2c3…`.
-- Pending as this was written: the porta-pagi package is private, so the VM
-  cannot pull it (anonymous pull answered 403). The owner flips it to public
-  in the package's settings (there is no API for it); the push of the cut
-  waits for that, and this entry gets the roll's outcome after `task vm:logs`.
+- The porta-pagi package was flipped to public by the owner in the package's
+  settings (there is no API for it), the anonymous pull answered 200, the cut
+  was pushed and doco-cd rolled the village to
+  `ghcr.io/dennislapchenko/porta-pagi:sha-1fbbe4d…` at 20:13: healthy, no
+  migration in the log, `/api/status` unchanged. The VM pulls anonymously, so
+  the package must stay public; the source repo stays private for now.

@@ -24,7 +24,7 @@ func TestWeatherIcons(t *testing.T) {
 	}
 	for name, want := range map[string]string{
 		"clear_day": icClear, "clear_night": icClearNight, "partCloudy_day": icPartlyCloudy, "overcast_lightRA_day": icRain,
-		"prevCloudy_modRASN_night": icSnow, "overcast_TS_day": icThunder, "FG_day": icFog, "slightCloudy_day": icMostlyClear, "": "",
+		"prevCloudy_modRASN_night": icSnow, "prevCloudy_day": icMostlyCloudy, "modCloudy_lightDZ_day": icDrizzle, "overcast_TS_day": icThunder, "FG_day": icFog, "slightCloudy_day": icMostlyClear, "": "",
 	} {
 		if got := arsoIcon(name); got != want {
 			t.Errorf("arsoIcon(%q) = %q, want %q", name, got, want)

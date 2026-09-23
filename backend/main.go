@@ -115,7 +115,7 @@ func main() {
 		hs.Shutdown(sh)
 	}()
 	if !cfg.WeatherOn() {
-		log.Printf("weather panel off: %s has no place or coordinates (WEATHER_LOCATION / WEATHER_COORDS)", cfg.WeatherProvider)
+		log.Printf("weather panel off: %s needs WEATHER_LOCATION (and WEATHER_COORDS for open-meteo)", cfg.WeatherProvider)
 	}
 	log.Printf("listening on %s:%s, data in %s, timezone %s", cfg.Bind, cfg.Port, cfg.DataDir, time.Local)
 	if err := hs.ListenAndServe(); err != nil && err != http.ErrServerClosed {

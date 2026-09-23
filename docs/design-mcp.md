@@ -143,7 +143,7 @@ the fence, this table is not a menu: **what is not here, a key cannot do**.
 | --- | --- | --- |
 | `whoami` | `GET /api/me` | First thing an agent calls: which house am I |
 | `list_houses` | `GET /api/houses` | Crest, colour, parcels, homes. Common places included, marked |
-| `weather` | `GET /api/weather` | ARSO, a town away, never a frost source |
+| `weather` | `GET /api/weather` | The village's provider (ARSO or Open-Meteo), a place away, never a frost source |
 | `list_posts` · `post` | `GET`/`POST /api/posts` | `body`, optional `author`, optional `parent_id` |
 | `list_events` · `create_event` · `update_event` | `GET`/`POST /api/events`, `PUT /api/events/{id}` | `kind` is `event` or `work`; `starts_at` wall clock `YYYY-MM-DDTHH:MM`; creating answers `yes` for your house; moving the time marks every answer stale |
 | `answer_event` | `POST /api/events/{id}/signup` | `state`: `yes` / `no` / `maybe`; silence is the fourth thing, and there is no tool to speak it |

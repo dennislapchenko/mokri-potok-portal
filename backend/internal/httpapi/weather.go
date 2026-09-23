@@ -306,14 +306,16 @@ func arsoIcon(name string) string {
 		return icThunder
 	case strings.Contains(i, "sn"): // SN and RASN alike
 		return icSnow
-	case strings.Contains(i, "ra") || strings.Contains(i, "rain") || strings.Contains(i, "dz"):
+	case strings.Contains(i, "dz"):
+		return icDrizzle
+	case strings.Contains(i, "ra") || strings.Contains(i, "rain"):
 		return icRain
 	case strings.Contains(i, "fg"):
 		return icFog
 	case strings.Contains(i, "overcast"):
 		return icOvercast
-	case strings.Contains(i, "mostcloudy"):
-		return icMostlyCloudy
+	case strings.Contains(i, "prevcloudy") || strings.Contains(i, "modcloudy") || strings.Contains(i, "mostcloudy"):
+		return icMostlyCloudy // ARSO writes prevCloudy for "pretežno oblačno"
 	case strings.Contains(i, "partcloudy"):
 		return icPartlyCloudy
 	case strings.Contains(i, "slightcloudy"):

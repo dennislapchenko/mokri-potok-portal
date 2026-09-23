@@ -50,9 +50,10 @@ order, first is the default — `sl,en`; each needs a dictionary in
 `backend/internal/httpapi/i18n/`, English needs none), `PUBLIC_URL` (invite
 links are printed under it; it is the contact in the User-Agent sent to ARSO),
 `PUSH_SUBJECT` (the VAPID subject push services see). Optional: the weather —
-`WEATHER_PROVIDER` is `open-meteo` (the default: anywhere, from `WEATHER_COORDS=lat,lon`, the
-panel naming the place in `WEATHER_LOCATION`) or `arso` (Slovenia, `WEATHER_LOCATION` is the
-ARSO place name), and the panel is off while the provider's input is unset —
+`WEATHER_PROVIDER` is `open-meteo` (the default: anywhere, from `WEATHER_COORDS=lat,lon` — the
+pair any map gives, OpenStreetMap's URL carries it — with `WEATHER_LOCATION` as the place name the
+panel prints) or `arso` (Slovenia, `WEATHER_LOCATION` is the ARSO place name), and the panel is
+off while either is unset —
 `PAGI_BOOTSTRAP_CODE` (a fixed first-steward
 code; unset means generated and logged), `DATA_DIR`, `PORT`, `BIND`, `TZ`. The picture
 behind the gate is the built-in `backdrop.jpg` until a village imports its own

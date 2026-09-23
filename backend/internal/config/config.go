@@ -18,7 +18,7 @@ type Config struct {
 	BootstrapCode   string   // optional: fixed code for the first steward house; empty = generated and logged
 	PushSubject     string   // VAPID subject: an https URL or mailto: that identifies this sender to push services
 	WeatherProvider string   // "open-meteo" (default, anywhere, from WeatherCoords) or "arso" (Slovenia, by place name)
-	WeatherLocation string   // the place named on the panel; for arso also the query. Unset with arso turns the panel off
+	WeatherLocation string   // the place named on the panel; for arso also the query. Unset turns the panel off
 	WeatherCoords   string   // "lat,lon" for open-meteo; unset turns the panel off
 	PublicURL       string   // where the portal answers: invite links are printed under it, and it is the contact in outgoing User-Agents
 	Debug           bool
@@ -56,7 +56,9 @@ func (c Config) WeatherOn() bool {
 	if c.WeatherProvider == "arso" {
 		return c.WeatherLocation != ""
 	}
-	return c.WeatherCoords != ""
+	// Open-Meteo needs the pair to ask and the name to print: a coordinate is
+	// not a place a villager reads.
+	return c.WeatherCoords != "" && c.WeatherLocation != ""
 }
 
 // Missing names the required variables that are not set, so the binary can

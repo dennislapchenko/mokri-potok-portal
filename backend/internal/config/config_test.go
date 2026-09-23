@@ -24,8 +24,12 @@ func TestMissing(t *testing.T) {
 		t.Fatal("open-meteo without coords is on")
 	}
 	c.WeatherCoords = "45.6,14.9"
+	if c.WeatherOn() {
+		t.Fatal("open-meteo with coords but no name to print is on")
+	}
+	c.WeatherLocation = "Kočevje"
 	if !c.WeatherOn() {
-		t.Fatal("open-meteo with coords is off")
+		t.Fatal("open-meteo with coords and a name is off")
 	}
 	c.WeatherProvider, c.WeatherLocation = "arso", ""
 	if c.WeatherOn() {

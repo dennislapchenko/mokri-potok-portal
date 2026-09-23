@@ -495,8 +495,11 @@ does not ship.
 - **The Codex is the village's text, so it lives in the database, never in
   the repo** (owner's decision 2026-09-09). `codex_sections` holds the founding
   document — values and the agreements the council adopted — as ordered
-  bilingual sections (`title_sl/en`, `body_sl/en`); the page shows the reader's
-  language and borrows the other one when a field is empty, saying so. **Any
+  sections whose words live in `codex_texts`, one row per language of the
+  village (`LANGUAGES`, so a third language is a row and not a migration);
+  the page shows the reader's language and borrows the first of the village's
+  that has text, saying which. The API and the seed carry `texts` — `{"sl":
+  {"title", "body"}, …}` — and refuse a language the village does not speak. **Any
   house edits a section or adds one**, on the same provisional footing as
   editing an event, and every section names the house that last wrote it and
   the day — a text anyone may change must show who did. `updated_by IS NULL`

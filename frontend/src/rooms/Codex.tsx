@@ -1,36 +1,36 @@
 import { useState } from "react";
 import { api, ApiError, type Me } from "../api";
-import { localeOf, useT } from "../i18n";
+import { langName, localeOf, useT } from "../i18n";
 import { Crest, Empty, parse, useList } from "./shared";
 
 // The Codex: the village's values and agreements, as the council adopted them
-// and as the houses have amended them since. Sections are bilingual rows in
-// the database; the page shows the reader's language and falls back to the
-// other one, saying so. Any house edits a section or adds one, a steward
+// and as the houses have amended them since. Sections are rows in the
+// database with one text per language the village speaks; the page shows the
+// reader's language and falls back to the first of the village's that has
+// text, saying which. Any house edits a section or adds one, a steward
 // removes one, and every section names the house that last wrote it — a text
 // anyone may change must show who did.
 
+type Text = { title: string; body: string };
 type Section = {
-  id: number; ord: number;
-  title_sl: string; title_en: string; body_sl: string; body_en: string;
+  id: number; ord: number; texts: Record<string, Text>;
   updated_at: string; updated_by: number | null; rev: number;
   house_name?: string | null; house_crest?: string | null; house_color?: string | null;
 };
 // rev rides along on an edit so the backend can tell the form opened on a
 // section that has since moved under it.
-type Form = Pick<Section, "title_sl" | "title_en" | "body_sl" | "body_en"> & { rev?: number };
-const blank: Form = { title_sl: "", title_en: "", body_sl: "", body_en: "" };
+type Form = { texts: Record<string, Text>; rev?: number };
+const blank: Form = { texts: {} };
+const empty: Text = { title: "", body: "" };
 
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"];
 
 export function Codex({ me }: { me: Me }) {
-  const { t, lang } = useT();
+  const { t, lang, languages } = useT();
   const { items, reload } = useList<Section>("/codex");
-  // The columns are still sl and en (a texts table per language is the next
-  // step): a reader on any other language reads English, and "other" is the
-  // one of the two the reader is not on.
-  const cur: "sl" | "en" = lang === "sl" ? "sl" : "en";
-  const other: "sl" | "en" = cur === "sl" ? "en" : "sl";
+  // The language a section is shown in: the reader's if it has text, else the
+  // first of the village's that does.
+  const shown = (s: Section) => [lang, ...languages].find((l) => s.texts[l]?.title || s.texts[l]?.body) || lang;
   const [editing, setEditing] = useState<number | "new" | null>(null);
   const [f, setF] = useState<Form>(blank);
   // The section as another house left it while this form was open — shown
@@ -38,9 +38,11 @@ export function Codex({ me }: { me: Me }) {
   // their own text. The next save then carries the newer stamp, knowingly.
   const [conflict, setConflict] = useState<Section | null>(null);
   const start = (s?: Section) => {
-    setF(s ? { title_sl: s.title_sl, title_en: s.title_en, body_sl: s.body_sl, body_en: s.body_en, rev: s.rev } : blank);
+    setF(s ? { texts: { ...s.texts }, rev: s.rev } : blank);
     setEditing(s ? s.id : "new"); setConflict(null);
   };
+  const setText = (l: string, patch: Partial<Text>) => setF({ ...f, texts: { ...f.texts, [l]: { ...(f.texts[l] || empty), ...patch } } });
+  const hasTitle = Object.values(f.texts).some((x) => x.title);
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -77,19 +79,22 @@ export function Codex({ me }: { me: Me }) {
       {conflict && (
         <div className="cx-conflict">
           <p className="small"><strong>{t("Meanwhile this section was changed by")} <Crest crest={conflict.house_crest || "🏠"} color={conflict.house_color || "#888"} /> {conflict.house_name}. {t("It now reads:")}</strong></p>
-          <h3>{conflict[`title_${cur}`] || conflict[`title_${other}`]}</h3>
-          <Prose text={conflict[`body_${cur}`] || conflict[`body_${other}`]} />
+          <h3>{conflict.texts[shown(conflict)]?.title}</h3>
+          <Prose text={conflict.texts[shown(conflict)]?.body || ""} />
           <p className="small muted">{t("Your text is below, untouched. Saving it replaces theirs.")}</p>
         </div>
       )}
-      <label>{t("Title (Slovenian)")}<input value={f.title_sl} onChange={(e) => setF({ ...f, title_sl: e.target.value })} maxLength={120} /></label>
-      <label>{t("Text (Slovenian)")}<textarea value={f.body_sl} onChange={(e) => setF({ ...f, body_sl: e.target.value })} rows={8} maxLength={8000} /></label>
-      <label>{t("Title (English)")}<input value={f.title_en} onChange={(e) => setF({ ...f, title_en: e.target.value })} maxLength={120} /></label>
-      <label>{t("Text (English)")}<textarea value={f.body_en} onChange={(e) => setF({ ...f, body_en: e.target.value })} rows={8} maxLength={8000} /></label>
+      {/* One title and one text per language the village speaks, in its order. */}
+      {languages.map((l) => (
+        <div key={l}>
+          <label>{t("Title")} ({langName(l)})<input value={f.texts[l]?.title || ""} onChange={(e) => setText(l, { title: e.target.value })} maxLength={120} /></label>
+          <label>{t("Text")} ({langName(l)})<textarea value={f.texts[l]?.body || ""} onChange={(e) => setText(l, { body: e.target.value })} rows={8} maxLength={8000} /></label>
+        </div>
+      ))}
       <p className="small muted">{t("A blank line starts a new paragraph. A line that starts with \"- \" is a bullet, and the words before its first colon are set in bold.")}</p>
       <div className="submit">
         <button type="button" className="ghost" onClick={() => { setEditing(null); setConflict(null); }}>✕</button>
-        <button className="primary" type="submit" disabled={!f.title_sl && !f.title_en}>{t("Save")}</button>
+        <button className="primary" type="submit" disabled={!hasTitle}>{t("Save")}</button>
       </div>
     </form>
   );
@@ -100,17 +105,16 @@ export function Codex({ me }: { me: Me }) {
       {last && <p className="cx-stamp cx-head"><Stamp s={last} /></p>}
       {items.length === 0 && <Empty text={t("The codex is empty. A steward brings in the adopted text.")} />}
       {items.map((s, i) => {
-        const title = s[`title_${cur}`] || s[`title_${other}`];
-        const body = s[`body_${cur}`] || s[`body_${other}`];
-        const borrowed = !s[`title_${cur}`] && !s[`body_${cur}`] && (s[`title_${other}`] || s[`body_${other}`]);
+        const l = shown(s);
+        const text = s.texts[l] || empty;
         return (
           <section key={s.id} className="cx-sec">
             <div className="cx-num">{ROMAN[i] || i + 1}.</div>
             <div className="cx-text">
               {editing === s.id ? form : (<>
-                <h3>{title}</h3>
-                {borrowed && <p className="small muted" style={{ fontStyle: "italic" }}>{other === "en" ? t("Not translated yet — shown in English.") : t("Not translated yet — shown in Slovenian.")}</p>}
-                <Prose text={body} />
+                <h3>{text.title}</h3>
+                {l !== lang && <p className="small muted" style={{ fontStyle: "italic" }}>{t("Not translated yet — language shown:")} {langName(l)}.</p>}
+                <Prose text={text.body} />
                 <div className="cx-stamp">
                   {/* A section repeats the header's line only when it has one of its own. */}
                   <span>{last && (s.updated_by || s.updated_at !== last.updated_at) ? <Stamp s={s} /> : null}</span>

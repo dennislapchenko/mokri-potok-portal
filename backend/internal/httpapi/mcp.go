@@ -171,11 +171,11 @@ var mcpTools = []mcpTool{
 		Schema: schema([]string{"id"}, map[string]any{"id": idProp, "name": prop("string", ""), "phone": prop("string", ""), "notes": prop("string", ""), "type": prop("string", "One word; empty leaves it untyped")})},
 
 	// Codex
-	{Name: "list_codex", Desc: "The village's founding text as ordered bilingual sections (title_sl/en, body_sl/en), each with its rev and the house that last wrote it; updated_by null means the text stands as the council adopted it. Bodies are plain text: a blank line splits paragraphs, lines starting with \"- \" are a list.", Method: "GET", Path: "/api/codex", Schema: schema(nil, map[string]any{})},
-	{Name: "create_codex_section", Desc: "Append a section, in your house's name. At least one title. Nothing pushes: announce it in the Tavern in your house's words.", Method: "POST", Path: "/api/codex",
-		Schema: schema(nil, map[string]any{"title_sl": prop("string", ""), "title_en": prop("string", ""), "body_sl": prop("string", ""), "body_en": prop("string", "")})},
-	{Name: "update_codex_section", Desc: "Edit a section; it then names your house and today. Send the rev you read: a 409 means another house wrote first — read again, then decide. Without rev the write lands as it is.", Method: "PUT", Path: "/api/codex/{id}",
-		Schema: schema([]string{"id"}, map[string]any{"id": idProp, "rev": prop("integer", "The rev from list_codex"), "title_sl": prop("string", ""), "title_en": prop("string", ""), "body_sl": prop("string", ""), "body_en": prop("string", "")})},
+	{Name: "list_codex", Desc: "The village's founding text as ordered sections, each with texts per language of the village ({\"sl\": {\"title\", \"body\"}, …}), its rev and the house that last wrote it; updated_by null means the text stands as the council adopted it. Bodies are plain text: a blank line splits paragraphs, lines starting with \"- \" are a list.", Method: "GET", Path: "/api/codex", Schema: schema(nil, map[string]any{})},
+	{Name: "create_codex_section", Desc: "Append a section, in your house's name. texts holds one {title, body} per language the village speaks; at least one title. Nothing pushes: announce it in the Tavern in your house's words.", Method: "POST", Path: "/api/codex",
+		Schema: schema([]string{"texts"}, map[string]any{"texts": prop("object", "Per language: {\"sl\": {\"title\": …, \"body\": …}}")})},
+	{Name: "update_codex_section", Desc: "Edit a section; it then names your house and today. Only the languages in texts change; an empty title and body removes that language. Send the rev you read: a 409 means another house wrote first — read again, then decide. Without rev the write lands as it is.", Method: "PUT", Path: "/api/codex/{id}",
+		Schema: schema([]string{"id"}, map[string]any{"id": idProp, "rev": prop("integer", "The rev from list_codex"), "texts": prop("object", "Per language: {\"sl\": {\"title\": …, \"body\": …}}")})},
 }
 
 // ---- the key --------------------------------------------------------------

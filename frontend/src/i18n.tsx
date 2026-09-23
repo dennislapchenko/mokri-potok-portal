@@ -13,6 +13,8 @@ const dicts: Record<string, Record<string, string>> = { sl };
 // BCP 47 tags for the browser's date formatting; a language with no entry
 // formats as itself.
 export const localeOf = (lang: string) => ({ sl: "sl-SI", en: "en-GB", pt: "pt-PT" } as Record<string, string>)[lang] ?? lang;
+// A language's own name for itself — the one word that is never translated.
+export const langName = (lang: string) => ({ sl: "slovenščina", en: "English", pt: "português" } as Record<string, string>)[lang] ?? lang;
 
 type T = { lang: string; t: (s: string) => string; setLang: (l: string) => void; languages: string[]; village: string };
 const Ctx = createContext<T>({ lang: "en", t: (s) => s, setLang: () => {}, languages: [], village: "" });

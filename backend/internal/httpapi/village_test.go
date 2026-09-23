@@ -1362,51 +1362,68 @@ func TestMarketEdits(t *testing.T) {
 // council's date and no house; the export carries it.
 func TestCodex(t *testing.T) {
 	srv, _, steward, other := newVillage(t)
-	code, _, _ := other.do("POST", "/api/codex", map[string]any{"body_sl": "brez naslova"})
+	T := func(l, title, body string) map[string]any {
+		return map[string]any{l: map[string]any{"title": title, "body": body}}
+	}
+	text := func(r map[string]any, l, k string) string {
+		m, _ := r["texts"].(map[string]any)[l].(map[string]any)
+		v, _ := m[k].(string)
+		return v
+	}
+	code, _, _ := other.do("POST", "/api/codex", map[string]any{"texts": T("sl", "", "brez naslova")})
 	other.must(400, code, "a section without a title")
-	code, obj, _ := other.do("POST", "/api/codex", map[string]any{"title_sl": "Prvi del", "title_en": "First part", "body_sl": "- Prva misel: …"})
+	code, _, _ = other.do("POST", "/api/codex", map[string]any{"texts": T("pt", "Título", "")})
+	other.must(400, code, "a language the village does not speak")
+	code, obj, _ := other.do("POST", "/api/codex", map[string]any{"texts": map[string]any{"sl": map[string]any{"title": "Prvi del", "body": "- Prva misel: …"}, "en": map[string]any{"title": "First part"}}})
 	other.must(201, code, "villager adds a section")
 	id := obj["id"].(float64)
 	_, _, list := steward.do("GET", "/api/codex", nil)
-	if len(list) != 1 || list[0]["house_name"] != "Zeleni Volk" || list[0]["ord"].(float64) != 1 {
-		t.Fatalf("section not listed with its house: %v", list)
+	if len(list) != 1 || list[0]["house_name"] != "Zeleni Volk" || list[0]["ord"].(float64) != 1 || text(list[0], "en", "title") != "First part" {
+		t.Fatalf("section not listed with its house and texts: %v", list)
 	}
 	opened := list[0]["rev"].(float64)
-	code, _, _ = steward.do("PUT", fmt.Sprintf("/api/codex/%d", int(id)), map[string]any{"body_en": "- First thought: …", "rev": opened})
+	code, _, _ = steward.do("PUT", fmt.Sprintf("/api/codex/%d", int(id)), map[string]any{"texts": T("en", "First part", "- First thought: …"), "rev": opened})
 	steward.must(204, code, "steward edits a villager's section")
 	_, _, list = other.do("GET", "/api/codex", nil)
-	if list[0]["body_en"] != "- First thought: …" || list[0]["body_sl"] != "- Prva misel: …" || list[0]["house_name"] != "S" || list[0]["rev"].(float64) != opened+1 {
-		t.Fatalf("edit did not land or the stamp did not move: %v", list[0])
+	if text(list[0], "en", "body") != "- First thought: …" || text(list[0], "sl", "body") != "- Prva misel: …" || list[0]["house_name"] != "S" || list[0]["rev"].(float64) != opened+1 {
+		t.Fatalf("edit did not land, touched the other language, or the stamp did not move: %v", list[0])
 	}
 	// A second form, opened before the steward saved, is refused — and its
 	// text did not land.
-	code, _, _ = other.do("PUT", fmt.Sprintf("/api/codex/%d", int(id)), map[string]any{"body_sl": "- Druga misel: …", "rev": opened})
+	code, _, _ = other.do("PUT", fmt.Sprintf("/api/codex/%d", int(id)), map[string]any{"texts": T("sl", "Prvi del", "- Druga misel: …"), "rev": opened})
 	other.must(409, code, "a form opened on an older rev is refused")
 	_, _, list = other.do("GET", "/api/codex", nil)
-	if list[0]["body_sl"] != "- Prva misel: …" {
+	if text(list[0], "sl", "body") != "- Prva misel: …" {
 		t.Fatalf("a refused edit landed anyway: %v", list[0])
 	}
-	code, _, _ = other.do("PUT", fmt.Sprintf("/api/codex/%d", int(id)), map[string]any{"body_sl": "- Druga misel: …"})
+	code, _, _ = other.do("PUT", fmt.Sprintf("/api/codex/%d", int(id)), map[string]any{"texts": T("sl", "Prvi del", "- Druga misel: …")})
 	other.must(204, code, "an edit without a rev is taken as it is")
-	code, _, _ = other.do("PUT", "/api/codex/999", map[string]any{"body_sl": "x"})
+	// An empty title and body takes that language off the section.
+	code, _, _ = other.do("PUT", fmt.Sprintf("/api/codex/%d", int(id)), map[string]any{"texts": T("en", "", "")})
+	other.must(204, code, "clearing a language")
+	_, _, list = other.do("GET", "/api/codex", nil)
+	if _, has := list[0]["texts"].(map[string]any)["en"]; has || text(list[0], "sl", "body") != "- Druga misel: …" {
+		t.Fatalf("clearing english: %v", list[0])
+	}
+	code, _, _ = other.do("PUT", "/api/codex/999", map[string]any{"texts": T("sl", "x", "")})
 	other.must(404, code, "no such section")
 	code, _, _ = other.do("DELETE", fmt.Sprintf("/api/codex/%d", int(id)), nil)
 	other.must(403, code, "a villager may not remove a section")
 	code, _, _ = steward.do("DELETE", fmt.Sprintf("/api/codex/%d", int(id)), nil)
 	steward.must(204, code, "steward removes a section")
 
-	seed := `{"adopted":"2025-01-26","sections":[{"title_sl":"Uvod","title_en":"Intro","body_sl":"a"},{"title_sl":"Drugi del","body_sl":"b"}]}`
+	seed := `{"adopted":"2025-01-26","sections":[{"texts":{"sl":{"title":"Uvod","body":"a"},"en":{"title":"Intro"}}},{"texts":{"sl":{"title":"Drugi del","body":"b"}}}]}`
 	if err := srv.ImportCodex(strings.NewReader(seed)); err != nil {
 		t.Fatalf("import: %v", err)
 	}
 	if err := srv.ImportCodex(strings.NewReader(seed)); err == nil {
 		t.Fatal("a second import went through")
 	}
-	if err := srv.ImportCodex(strings.NewReader(`{"adopted":"26.01.2025","sections":[{"title_sl":"x"}]}`)); err == nil {
+	if err := srv.ImportCodex(strings.NewReader(`{"adopted":"26.01.2025","sections":[{"texts":{"sl":{"title":"x"}}}]}`)); err == nil {
 		t.Fatal("a non-ISO date went through")
 	}
 	_, _, list = other.do("GET", "/api/codex", nil)
-	if len(list) != 2 || list[0]["title_sl"] != "Uvod" || list[1]["ord"].(float64) != 2 {
+	if len(list) != 2 || text(list[0], "sl", "title") != "Uvod" || list[1]["ord"].(float64) != 2 {
 		t.Fatalf("imported sections wrong: %v", list)
 	}
 	if list[0]["updated_by"] != nil || list[0]["house_name"] != nil || !strings.HasPrefix(list[0]["updated_at"].(string), "2025-01-26") {
@@ -1415,6 +1432,9 @@ func TestCodex(t *testing.T) {
 	_, exp, _ := steward.do("GET", "/api/export", nil)
 	if rows, ok := exp["codex_sections"].([]any); !ok || len(rows) != 2 {
 		t.Fatalf("export lacks the codex: %v", exp["codex_sections"])
+	}
+	if rows, ok := exp["codex_texts"].([]any); !ok || len(rows) != 3 {
+		t.Fatalf("export lacks the codex texts: %v", exp["codex_texts"])
 	}
 }
 

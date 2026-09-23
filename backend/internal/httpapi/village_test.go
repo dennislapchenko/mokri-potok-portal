@@ -1078,7 +1078,7 @@ func TestPageCarriesCSP(t *testing.T) {
 	if ct := rec.Header().Get("Content-Type"); rec.Code != 200 || ct != "application/manifest+json" {
 		t.Fatalf("manifest: %d %q", rec.Code, ct)
 	}
-	if body := rec.Body.String(); !strings.Contains(body, `"short_name": "Testna Vas"`) || strings.Contains(body, "{{") {
+	if body := rec.Body.String(); !strings.Contains(body, `"short_name": "Testna Vas"`) || !strings.Contains(body, `"description": "Vas na eni strani."`) || strings.Contains(body, "{{") {
 		t.Fatalf("the manifest without its village: %q", body)
 	}
 	rec = httptest.NewRecorder()

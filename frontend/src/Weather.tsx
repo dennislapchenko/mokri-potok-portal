@@ -2,29 +2,21 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "./api";
 import { localeOf, useT } from "./i18n";
 
-// Weather on the home screen. The backend fetches ARSO and trims it, so the
-// agency never sees a villager's browser and no third-party frame sits on a
-// logged-in page. Attribution stays visible: the data is theirs.
+// Weather on the home screen. The backend fetches the village's provider
+// (ARSO or Open-Meteo) and trims it, so the provider never sees a villager's
+// browser and no third-party frame sits on a logged-in page. Attribution
+// stays visible: the data is theirs. The page knows no provider: the icon is
+// a key from weather.go's small set, and the text is a dictionary key
+// (Open-Meteo) or the provider's own words (ARSO), which t() passes through.
 
 type Day = { date: string; icon: string; text: string; min: string; max: string; rain: string };
 type W = { place: string; now: string; now_icon: string; now_text: string; wind: string; days: Day[]; source: string; fetched: string };
 
-// ARSO names its icons in parts: cloud cover, then the weather, then day/night.
-function emoji(icon: string): string {
-  const i = (icon || "").toLowerCase();
-  if (i.includes("ts")) return "⛈️";
-  if (i.includes("sn")) return "🌨️";
-  if (i.includes("rasn")) return "🌨️";
-  if (i.includes("ra") || i.includes("rain") || i.includes("dz")) return "🌧️";
-  if (i.includes("fg")) return "🌫️";
-  if (i.includes("overcast")) return "☁️";
-  if (i.includes("mostcloudy")) return "🌥️";
-  if (i.includes("partcloudy")) return "⛅";
-  if (i.includes("slightcloudy")) return "🌤️";
-  if (i.includes("clear_night")) return "🌙";
-  if (i.includes("clear")) return "☀️";
-  return "🌡️";
-}
+const GLYPH: Record<string, string> = {
+  "clear": "☀️", "clear-night": "🌙", "mostly-clear": "🌤️", "partly-cloudy": "⛅", "mostly-cloudy": "🌥️", "overcast": "☁️",
+  "fog": "🌫️", "drizzle": "🌦️", "rain": "🌧️", "snow": "🌨️", "thunder": "⛈️",
+};
+const emoji = (icon: string) => GLYPH[icon] || "🌡️";
 
 export function Weather() {
   const { t, lang } = useT();
@@ -52,7 +44,7 @@ export function Weather() {
       <div className="w-now">
         <span className="w-icon">{emoji(w.now_icon)}</span>
         <span className="w-temp">{w.now}°</span>
-        <span className="w-where">{w.place}<br /><span className="small">{w.now_text}{w.wind ? ` · ${w.wind}` : ""}</span></span>
+        <span className="w-where">{w.place}<br /><span className="small">{t(w.now_text)}{w.wind ? ` · ${w.wind}` : ""}</span></span>
       </div>
       <div className="w-days">
         {w.days.map((d, i) => (
@@ -65,7 +57,7 @@ export function Weather() {
         ))}
       </div>
       <p className={"small w-src" + (stale ? " stale-note" : " muted")}>
-        {t("Vir: ARSO. Forecast for")} {w.place}, {t("not measured at the village.")}{" "}
+        {t("Source")}: {w.source}. {t("Forecast for")} {w.place}, {t("not measured at the village.")}{" "}
         {stale ? t("This reading is over an hour old.") : t("Read")} {age}
       </p>
     </div>

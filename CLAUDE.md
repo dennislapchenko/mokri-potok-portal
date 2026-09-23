@@ -72,10 +72,13 @@ does not ship.
   in `SITE.md` of the homestead repo. No second host and no CORS: in dev the
   Vite server proxies `/api` to the backend (`vite.config.ts`), so the page is
   same-origin there too.
-- **No third party in the page.** Weather is fetched by the backend from ARSO
-  and trimmed (`weather.go`, cached 30 min), never framed. ARSO's terms require
-  naming the source, so the panel shows *Vir: ARSO*; the fetch sends a
-  User-Agent with a contact URL. **The panel is a forecast for a town some
+- **No third party in the page.** Weather is fetched by the backend from the
+  provider `WEATHER_PROVIDER` names — Open-Meteo by default, for any
+  `WEATHER_COORDS`; ARSO by place name, this village — and trimmed
+  (`weather.go`, cached 30 min), never framed. Both adapters emit one shape
+  with a neutral icon key, so the page knows no provider. Both licences require
+  naming the source, so the panel shows *Vir: ARSO* or *Vir: Open-Meteo.com*;
+  the fetch sends a User-Agent with `PUBLIC_URL` as the contact. **The panel is a forecast for a town some
   kilometres away, not a measurement at the village** — the page says so, and
   it must never become a frost source for the homestead work. An iframe would hand
   the agency every villager's address on a logged-in page. Any future embed

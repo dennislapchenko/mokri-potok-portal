@@ -202,7 +202,6 @@
   "this device only": "samo ta naprava",
   "The weather service did not answer.": "Vremenska služba se ni odzvala.",
   "No weather for this village.": "Ta vas nima vremenske napovedi.",
-  "Vir: ARSO. Forecast for": "Vir: ARSO. Napoved za",
   "not measured at the village.": "ni merjeno v vasi.",
   "This reading is over an hour old.": "Ta podatek je starejši od ure.",
   "Read": "Osveženo pred",
@@ -412,5 +411,18 @@
   "on Saturday": "v soboto",
   "on Sunday": "v nedeljo",
   "Text": "Besedilo",
-  "Not translated yet — language shown:": "Še ni prevedeno — prikazan jezik:"
+  "Not translated yet — language shown:": "Še ni prevedeno — prikazan jezik:",
+  "Source": "Vir",
+  "Forecast for": "Napoved za",
+  "Clear sky": "jasno",
+  "Mainly clear": "pretežno jasno",
+  "Partly cloudy": "delno oblačno",
+  "Overcast": "oblačno",
+  "Fog": "megla",
+  "Drizzle": "pršenje",
+  "Rain": "dež",
+  "Snow": "sneg",
+  "Rain showers": "plohe",
+  "Snow showers": "snežne plohe",
+  "Thunderstorm": "nevihta"
 }

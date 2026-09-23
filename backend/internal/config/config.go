@@ -17,7 +17,9 @@ type Config struct {
 	Languages       []string // the village's languages, first is the default: "sl,en"; a phone picks one, a dictionary exists per language
 	BootstrapCode   string   // optional: fixed code for the first steward house; empty = generated and logged
 	PushSubject     string   // VAPID subject: an https URL or mailto: that identifies this sender to push services
-	WeatherLocation string   // ARSO location name for the home-screen weather; empty turns the panel off
+	WeatherProvider string   // "open-meteo" (default, anywhere, from WeatherCoords) or "arso" (Slovenia, by place name)
+	WeatherLocation string   // the place named on the panel; for arso also the query. Unset with arso turns the panel off
+	WeatherCoords   string   // "lat,lon" for open-meteo; unset turns the panel off
 	PublicURL       string   // where the portal answers: invite links are printed under it, and it is the contact in outgoing User-Agents
 	Debug           bool
 }
@@ -31,7 +33,9 @@ func Load() Config {
 		Languages:       splitList(os.Getenv("LANGUAGES")),
 		BootstrapCode:   os.Getenv("PAGI_BOOTSTRAP_CODE"),
 		PushSubject:     os.Getenv("PUSH_SUBJECT"),
+		WeatherProvider: envOr("WEATHER_PROVIDER", "open-meteo"),
 		WeatherLocation: os.Getenv("WEATHER_LOCATION"),
+		WeatherCoords:   os.Getenv("WEATHER_COORDS"),
 		PublicURL:       os.Getenv("PUBLIC_URL"),
 		Debug:           os.Getenv("DEBUG") == "1",
 	}
@@ -46,6 +50,15 @@ func (c Config) Default() string {
 	return c.Languages[0]
 }
 
+// WeatherOn says whether the provider has what it needs; off is a state the
+// panel shows, not a fault.
+func (c Config) WeatherOn() bool {
+	if c.WeatherProvider == "arso" {
+		return c.WeatherLocation != ""
+	}
+	return c.WeatherCoords != ""
+}
+
 // Missing names the required variables that are not set, so the binary can
 // refuse to start with one line that says what to set instead of serving a
 // page called nothing.
@@ -55,6 +68,9 @@ func (c Config) Missing() []string {
 		if kv.v == "" {
 			m = append(m, kv.k)
 		}
+	}
+	if c.WeatherProvider != "open-meteo" && c.WeatherProvider != "arso" {
+		m = append(m, "WEATHER_PROVIDER (open-meteo or arso)")
 	}
 	return m
 }

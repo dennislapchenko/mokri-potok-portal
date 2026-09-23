@@ -76,7 +76,7 @@ var (
 var mcpTools = []mcpTool{
 	{Name: "whoami", Desc: "Which house this key acts as, and its crest, colour and kind. Call it first.", Method: "GET", Path: "/api/me", Schema: schema(nil, map[string]any{})},
 	{Name: "list_houses", Desc: "Every house with crest, colour, parcels it holds and parcels it lives on. kind=common is a common place (event grounds, parking): land on the map, not an account.", Method: "GET", Path: "/api/houses", Schema: schema(nil, map[string]any{})},
-	{Name: "weather", Desc: "The ARSO forecast for a town some kilometres from the village, cached 30 min. A forecast, not a measurement at the village — never a frost source.", Method: "GET", Path: "/api/weather", Schema: schema(nil, map[string]any{})},
+	{Name: "weather", Desc: "The forecast for a place near the village, from ARSO or Open-Meteo as the village configured, cached 30 min. A forecast, not a measurement at the village — never a frost source.", Method: "GET", Path: "/api/weather", Schema: schema(nil, map[string]any{})},
 
 	// Tavern
 	{Name: "list_posts", Desc: "The message board: posts and replies, pinned first, newest first. " + clocks, Method: "GET", Path: "/api/posts", Schema: schema(nil, map[string]any{})},

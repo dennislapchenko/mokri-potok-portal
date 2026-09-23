@@ -27,12 +27,13 @@ export function VillageMap({ houses, selected, onParcelClick, highlight }: {
   const { t } = useT();
   const [parcels, setParcels] = useState<Parcels | null>(null);
   const [missing, setMissing] = useState(false); // no parcels row: the village has no map yet
+  const [failed, setFailed] = useState(false);   // anything else: say so, never spin forever
   const [meta, setMeta] = useState<MapMeta | null>(null);
   const [tip, setTip] = useState<string>("");
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    api<Parcels>("/map/parcels").then(setParcels).catch((e) => { if (e instanceof ApiError && e.status === 404) setMissing(true); else setParcels({ features: [] }); });
+    api<Parcels>("/map/parcels").then(setParcels).catch((e) => { if (e instanceof ApiError && e.status === 404) setMissing(true); else setFailed(true); });
     api<MapMeta[]>("/map").then((rows) => setMeta(rows.find((m) => m.name === "parcels") || null)).catch(() => {});
   }, []);
 
@@ -106,11 +107,14 @@ export function VillageMap({ houses, selected, onParcelClick, highlight }: {
   const onUp = () => { drag.current = null; };
   const onWheel = (e: React.WheelEvent) => { e.preventDefault(); zoom(e.deltaY > 0 ? 1.15 : 1 / 1.15); };
 
-  if (missing) {
+  if (missing || failed) {
+    // Every villager reads the first line; the how is for the steward, who
+    // has the README and the server. The others have a phone.
+    const steward = houses.some((h) => h.id === highlight && h.is_steward);
     return (
       <div className="map-wrap map-empty">
-        <p><strong>{t("This village has no map yet.")}</strong></p>
-        <p className="small">{t("A steward imports the cadastre on the server, as a GeoJSON FeatureCollection in planar metres — the README says how.")}</p>
+        <p><strong>{t(missing ? "This village has no map yet." : "The map did not load.")}</strong></p>
+        {missing && steward && <p className="small">{t("A steward imports the cadastre on the server, as a GeoJSON FeatureCollection in planar metres — the README says how.")}</p>}
       </div>
     );
   }

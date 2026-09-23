@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 // The map's data — the cadastre and the modelled water — is two rows in
@@ -32,6 +33,8 @@ func (s *Server) listMap(w http.ResponseWriter, r *http.Request) {
 
 // getMap serves one row's bytes. The ETag is the row's updated_at, read
 // first, so a phone that already holds the map gets a 304 and no 340 KB.
+// no-cache, not max-age: with a max-age the phone would not ask for a day,
+// and after a re-import the caption would name a snapshot the bytes are not.
 func (s *Server) getMap(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	ct, ok := mapNames[name]
@@ -48,9 +51,10 @@ func (s *Server) getMap(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "this village has no "+name+" yet")
 		return
 	}
-	etag := fmt.Sprintf(`"%s-%s"`, name, meta["updated_at"])
+	// An entity tag may not carry a space; SQLite's stamp has one.
+	etag := fmt.Sprintf(`"%s-%s"`, name, strings.ReplaceAll(fmt.Sprint(meta["updated_at"]), " ", "T"))
 	w.Header().Set("ETag", etag)
-	w.Header().Set("Cache-Control", "private, max-age=86400")
+	w.Header().Set("Cache-Control", "private, no-cache")
 	if r.Header.Get("If-None-Match") == etag {
 		w.WriteHeader(304)
 		return

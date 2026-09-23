@@ -131,6 +131,7 @@ const sl: Record<string, string> = {
   "agent": "agent",
   "Cadastre snapshot": "Kataster, posnetek",
   "This village has no map yet.": "Ta vas še nima zemljevida.",
+  "The map did not load.": "Zemljevid se ni naložil.",
   "A steward imports the cadastre on the server, as a GeoJSON FeatureCollection in planar metres — the README says how.": "Oskrbnik uvozi kataster na strežniku kot GeoJSON FeatureCollection v ravninskih metrih — README pove, kako.",
   "stream": "potok",
   "unassigned": "nedodeljeno",

@@ -57,6 +57,10 @@
   and set in `deploy/app/compose.yaml`; `WEATHER_LOCATION` too, since unset now
   means no panel. `POTOK_BOOTSTRAP_CODE` is `PAGI_BOOTSTRAP_CODE` (unused here:
   the code was generated on first boot).
+  Same day, after the roll of `79e71b4`: `task vm:map` seeded the `parcels`
+  (GURS, snapshot 2026-08-15) and `water` rows of `map_files` from
+  `deploy/map/`. The map read from the database from that minute; the two
+  minutes between the roll and the seed showed villagers "no map yet".
 - **Recovery:** `docker exec mokri-potok-potok-api-1 /server code "<house>"`
   prints a fresh invite link for that house. Needed after the move, because a
   session lives in one browser on one origin and the origin changed.

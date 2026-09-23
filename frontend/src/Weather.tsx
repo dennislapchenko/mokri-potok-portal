@@ -31,7 +31,7 @@ export function Weather() {
   const [w, setW] = useState<W | null>(null);
   const [err, setErr] = useState(false);
   const [off, setOff] = useState(false);
-  // 404 is a village with no WEATHER_LOCATION: no panel, not a fault.
+  // 404 is a village with no WEATHER_LOCATION: the panel says so, not a fault.
   useEffect(() => { api<W>("/weather").then(setW).catch((e) => (e instanceof ApiError && e.status === 404 ? setOff(true) : setErr(true))); }, []);
 
   // The chip above still lights, so the topper says why it is empty.

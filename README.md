@@ -30,7 +30,7 @@ sends notifications.
 task check      # vet + test backend, typecheck + build frontend
 task be:run     # backend on 127.0.0.1:8788 (bootstrap code printed in the log); BIND unset = all interfaces, as in the container
 # CSP check against a real page: build, copy dist into the embed dir, run the
-# backend, open :8788 — then git checkout the placeholder index.html again.
+# backend, open :8788 — then `git checkout backend/internal/httpapi/web/` to get the placeholders back.
 task fe:build && cp -R frontend/dist/. backend/internal/httpapi/web/
 task fe:dev     # frontend on :5173 against the local backend
 task vm:logs    # backend logs on the VM

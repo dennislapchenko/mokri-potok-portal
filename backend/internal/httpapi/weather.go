@@ -52,8 +52,9 @@ var wcache weatherCache
 func (s *Server) weather(w http.ResponseWriter, r *http.Request) {
 	loc := s.cfg.WeatherLocation
 	if loc == "" {
-		// Not configured is not down: a 404 tells the panel to stay off,
-		// where a 503 would have it say the service did not answer.
+		// Not configured is not down: on a 404 the panel says this village
+		// has no forecast, where a 503 would have it say the service did not
+		// answer.
 		writeErr(w, 404, "no weather location configured")
 		return
 	}

@@ -18,11 +18,12 @@ function ringsOf(f: Feature): number[][][] {
   return [];
 }
 
-export function VillageMap({ houses, selected, onParcelClick, highlight }: {
+export function VillageMap({ houses, selected, onParcelClick, highlight, steward }: {
   houses: House[];
   selected?: string[];          // parcels being edited (steward assign mode)
   onParcelClick?: (parcel: string) => void;
   highlight?: number;           // house id to emphasise
+  steward?: boolean;            // the viewer may import the map, so the empty state tells them how
 }) {
   const { t } = useT();
   const [parcels, setParcels] = useState<Parcels | null>(null);
@@ -110,7 +111,6 @@ export function VillageMap({ houses, selected, onParcelClick, highlight }: {
   if (missing || failed) {
     // Every villager reads the first line; the how is for the steward, who
     // has the README and the server. The others have a phone.
-    const steward = houses.some((h) => h.id === highlight && h.is_steward);
     return (
       <div className="map-wrap map-empty">
         <p><strong>{t(missing ? "This village has no map yet." : "The map did not load.")}</strong></p>

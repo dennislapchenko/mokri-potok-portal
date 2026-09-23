@@ -103,7 +103,7 @@ export function Houses({ me, houses, refresh, logout }: { me: Me; houses: House[
           <p className="small">{assign.mine
             ? t("Tap the parcel your house stands on. Your crest joins it beside the crest of the house whose land it is — it never gives you the land.")
             : t("Tap parcels on the map to toggle, then save. A parcel another house holds stays theirs — tapping it says this house lives on their land.")}</p>
-          <VillageMap houses={houses.map((h) => (h.id === assign.h.id ? { ...h, parcels: assign.mine ? h.parcels : [], homes: [] } : h))} selected={sel} onParcelClick={(p) => setSel((s) => (s.includes(p) ? s.filter((x) => x !== p) : [...s, p]))} />
+          <VillageMap houses={houses.map((h) => (h.id === assign.h.id ? { ...h, parcels: assign.mine ? h.parcels : [], homes: [] } : h))} selected={sel} onParcelClick={(p) => setSel((s) => (s.includes(p) ? s.filter((x) => x !== p) : [...s, p]))} steward={steward} />
           {selLand.length > 0 && <div className="small">🏞️ {t("Own land")}: {selLand.join(", ")}</div>}
           {selLives.length > 0 && <div className="small">🏠 {t("Lives on the land of")} {[...new Set(selLives.map(homeName))].join(", ")}</div>}
           <div className="submit" style={{ display: "flex", gap: ".5rem", justifyContent: "flex-end", marginTop: ".6rem" }}>

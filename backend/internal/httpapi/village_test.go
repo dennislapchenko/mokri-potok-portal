@@ -1114,8 +1114,13 @@ func TestMapFiles(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+steward.token)
 	srv.Handler().ServeHTTP(rec, req)
 	etag := rec.Header().Get("ETag")
-	if rec.Code != 200 || etag == "" || rec.Header().Get("Content-Type") != "application/geo+json" || !strings.Contains(rec.Body.String(), `"parcel":"1"`) {
+	if rec.Code != 200 || etag == "" || strings.Contains(etag, " ") || rec.Header().Get("Content-Type") != "application/geo+json" || !strings.Contains(rec.Body.String(), `"parcel":"1"`) {
 		t.Fatalf("parcels: %d %q %q", rec.Code, etag, rec.Header())
+	}
+	// no-cache, so the phone asks every time and the 304 answers; a max-age
+	// would keep old bytes under a new caption for a day after a re-import.
+	if cc := rec.Header().Get("Cache-Control"); cc != "private, no-cache" {
+		t.Fatalf("cache-control: %q", cc)
 	}
 	rec = httptest.NewRecorder()
 	req.Header.Set("If-None-Match", etag)

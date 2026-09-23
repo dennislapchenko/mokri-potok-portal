@@ -737,6 +737,9 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request) {
 // ---- bell tower ----------------------------------------------------------
 
 func (s *Server) listEvents(w http.ResponseWriter, r *http.Request) {
+	// Sixty days back, off s.now() — the third list to leave SQLite's clock,
+	// after runs and away notices, for the same reason: a test cannot move it.
+	since := s.now().AddDate(0, 0, -60).Format("2006-01-02")
 	rows, err := s.st.Rows(r.Context(), `SELECT e.*,`+houseJoin+`, pr.title AS project_title, tk.title AS task_title,
 		(SELECT count(*) FROM event_signups s WHERE s.event_id=e.id AND s.state='yes' AND s.answered_version >= e.time_version) AS signups,
 		(SELECT json_group_array(json_object('house_id', h2.id, 'name', h2.name, 'crest', h2.crest, 'state', s.state, 'stale', CASE WHEN s.answered_version < e.time_version THEN 1 ELSE 0 END)) FROM event_signups s JOIN houses h2 ON h2.id=s.house_id WHERE s.event_id=e.id) AS signup_list,
@@ -744,7 +747,7 @@ func (s *Server) listEvents(w http.ResponseWriter, r *http.Request) {
 		(SELECT count(*) FROM comments c WHERE c.subject='event' AND c.subject_id=e.id) AS comments,
 		ed.name AS edited_by_name
 		FROM events e JOIN houses h ON h.id=e.house_id LEFT JOIN projects pr ON pr.id=e.project_id LEFT JOIN project_tasks tk ON tk.id=e.task_id LEFT JOIN houses ed ON ed.id=e.edited_by
-		WHERE e.starts_at >= date('now','-60 days') ORDER BY e.starts_at LIMIT 500`, houseFrom(r).ID)
+		WHERE e.starts_at >= ? ORDER BY e.starts_at LIMIT 500`, houseFrom(r).ID, since)
 	if err != nil {
 		fail(w, err)
 		return

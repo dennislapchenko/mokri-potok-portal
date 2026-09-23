@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -182,7 +183,15 @@ func (s *Store) ExecN(ctx context.Context, q string, args ...any) (int64, error)
 // Tx runs fn inside one transaction: everything fn writes through the Store
 // it is handed lands together or not at all. For the writes that touch two
 // tables and must not leave the first one standing alone.
+//
+// The pool holds one connection and the transaction holds it while fn runs:
+// fn must use only the Store it is handed — a call on the outer Store, a
+// nested Tx, a push or an HTTP request from inside would wait on that
+// connection and stall every other request with it. A nested Tx is refused.
 func (s *Store) Tx(ctx context.Context, fn func(tx *Store) error) error {
+	if s.q != querier(s.db) {
+		return errors.New("nested Tx")
+	}
 	sqltx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err

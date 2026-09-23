@@ -12,7 +12,7 @@ import { AddPhone } from "./AddPhone";
 // who is not signed in on this origin never reaches the home screen, and the
 // in-app-browser warning is worth more before they type a code than after.
 export function InstallBanner({ gate }: { gate?: boolean }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [dismissed, setDismissed] = useState(() => { try { return sessionStorage.getItem("potok.banner") === "1"; } catch { return false; } });
   const [prompt, setPrompt] = useState<any>(null);
   const [push, setPush] = useState<PushState>("off");
@@ -64,7 +64,7 @@ export function InstallBanner({ gate }: { gate?: boolean }) {
   } else if (!standalone) {
     body = <><strong>{t("Install the village on this device")}</strong>: {t("browser menu → Install app / Add to Home Screen.")}{signin}</>;
   } else {
-    body = <><strong>{t("Ring the bell for you too?")}</strong> {t("Get a notification when a house posts, needs something, drives to town, adds an event or goes away.")} <button className="primary" onClick={() => enablePush().catch(() => undefined).then(() => pushState()).then((s) => { setPush(s); if (s !== "off") setDismissed(true); })}>🔔 {t("Enable notifications")}</button></>;
+    body = <><strong>{t("Ring the bell for you too?")}</strong> {t("Get a notification when a house posts, needs something, drives to town, adds an event or goes away.")} <button className="primary" onClick={() => enablePush(lang).catch(() => undefined).then(() => pushState()).then((s) => { setPush(s); if (s !== "off") setDismissed(true); })}>🔔 {t("Enable notifications")}</button></>;
   }
   return (
     <div className="card banner">

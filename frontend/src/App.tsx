@@ -43,8 +43,9 @@ export default function App() {
   const refresh = useCallback(async () => {
     const [m, hs] = await Promise.all([api<Me>("/me"), api<House[]>("/houses")]);
     setMe(m); setHouses(hs); setState("in");
-    syncPushLang();
   }, []);
+  // The phone's notifications follow the language the page shows.
+  useEffect(() => { if (state === "in") syncPushLang(lang); }, [state, lang]);
 
   useEffect(() => {
     if (!getToken()) return;

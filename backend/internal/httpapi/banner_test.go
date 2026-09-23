@@ -48,7 +48,7 @@ func TestNotificationBanners(t *testing.T) {
 		{"run", "POST", "/api/runs",
 			map[string]any{"destination": "Bauhaus Ljubljana", "cutoff_at": "2026-09-06T09:00"},
 			[2]string{"🚗 House Zeleni Volk gre v Bauhaus Ljubljana", "odhod v nedeljo ob 9:00 — napiši, kaj rabiš"},
-			[2]string{"🚗 House Zeleni Volk drives to Bauhaus Ljubljana", "leaves Sunday at 9:00 — post what you need"}},
+			[2]string{"🚗 House Zeleni Volk drives to Bauhaus Ljubljana", "leaves on Sunday at 9:00 — post what you need"}},
 		{"need", "POST", "/api/needs",
 			map[string]any{"text": "mleko 2l in kvas"},
 			[2]string{"🛒 House Zeleni Volk rabi iz trgovine", "mleko 2l in kvas"},

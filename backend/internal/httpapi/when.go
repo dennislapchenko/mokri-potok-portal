@@ -44,7 +44,7 @@ func humanWhen(s, lang string, now time.Time) string {
 	case delta == -1:
 		out = tr(lang, "yesterday")
 	case delta > 1 && delta < 7:
-		out = tr(lang, t.Weekday().String())
+		out = tr(lang, "on "+t.Weekday().String())
 	default:
 		// "%d %s" is day and month; the Slovenian entry writes the day with its dot.
 		out = fmt.Sprintf(tr(lang, "%d %s"), t.Day(), tr(lang, t.Format("Jan")))

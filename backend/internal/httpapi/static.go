@@ -16,10 +16,13 @@ import (
 var webFS embed.FS
 
 // nameToken is what index.html and the manifest carry where the village's name
-// goes. The frontend build knows no village; the binary fills it in from
-// VILLAGE_NAME when it serves those two files, so the tab title and the
-// home-screen label are the village's without a build per village.
+// goes, langToken where its language list goes (a meta tag the page reads
+// before anything is fetched, so the language buttons never wait on /status).
+// The frontend build knows no village; the binary fills both in from
+// VILLAGE_NAME and LANGUAGES when it serves those two files, so one build
+// serves any village.
 const nameToken = "{{VILLAGE_NAME}}"
+const langToken = "{{LANGUAGES}}"
 
 const csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
@@ -74,7 +77,8 @@ func (s *Server) staticHandler() http.Handler {
 			if p == "index.html" {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			}
-			w.Write([]byte(strings.ReplaceAll(string(b), nameToken, s.cfg.VillageName)))
+			out := strings.ReplaceAll(string(b), nameToken, s.cfg.VillageName)
+			w.Write([]byte(strings.ReplaceAll(out, langToken, strings.Join(s.cfg.Languages, ","))))
 			return
 		}
 		files.ServeHTTP(w, r)

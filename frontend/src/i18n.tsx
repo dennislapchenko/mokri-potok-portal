@@ -17,28 +17,38 @@ export const localeOf = (lang: string) => ({ sl: "sl-SI", en: "en-GB", pt: "pt-P
 type T = { lang: string; t: (s: string) => string; setLang: (l: string) => void; languages: string[]; village: string };
 const Ctx = createContext<T>({ lang: "en", t: (s) => s, setLang: () => {}, languages: [], village: "" });
 
+// The server writes the village's name into <title> and its language list
+// into a meta tag, so both are known before anything is fetched. The Vite dev
+// server serves the raw tokens; then /status fills them in.
+const served = (s: string | null | undefined) => (s && !s.includes("{{") ? s : "");
+const metaLanguages = () => served(document.querySelector('meta[name="languages"]')?.getAttribute("content")).split(",").filter(Boolean);
+
 export function I18n({ children }: { children: ReactNode }) {
-  const [languages, setLanguages] = useState<string[]>([]);
-  // The server already wrote the village's name into <title>, so the heading
-  // starts from there instead of painting nothing until /status answers.
-  const [village, setVillage] = useState(() => (document.title.includes("{{") ? "" : document.title));
+  const [languages, setLanguages] = useState<string[]>(metaLanguages);
+  const [village, setVillage] = useState(() => served(document.title));
   const [lang, setLangState] = useState<string>(() => {
+    const list = metaLanguages();
     try {
       const saved = localStorage.getItem("potok.lang");
-      if (saved) return saved;
+      if (saved && (!list.length || list.includes(saved))) return saved;
     } catch { /* ignore */ }
+    if (list.length) {
+      // The phone's own language if the village speaks it, else the village's first.
+      const nav = navigator.language.slice(0, 2);
+      return list.includes(nav) ? nav : list[0];
+    }
     const nav = navigator.language.slice(0, 2);
     return nav in dicts ? nav : "en";
   });
   useEffect(() => {
+    if (languages.length && village) return; // served by the binary, nothing to fetch
     api<{ name: string; languages: string[] | null }>("/status").then((s) => {
       setVillage(s.name);
       const list = s.languages || [];
       setLanguages(list);
-      // A phone that chose a language the village does not speak gets its first.
       if (list.length) setLangState((l) => (list.includes(l) ? l : list[0]));
     }).catch(() => {});
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const setLang = (l: string) => { setLangState(l); try { localStorage.setItem("potok.lang", l); } catch { /* ignore */ } };
   const t = (s: string) => dicts[lang]?.[s] ?? s;
   useEffect(() => { if (village) document.title = `${village} · ${t("Village portal")}`; }, [village, lang]); // eslint-disable-line react-hooks/exhaustive-deps

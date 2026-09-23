@@ -1067,7 +1067,7 @@ func TestPageCarriesCSP(t *testing.T) {
 	if got := rec.Header().Get("Content-Security-Policy"); !strings.Contains(got, "default-src 'self'") || strings.Contains(got, "http") {
 		t.Fatalf("csp: %q", got)
 	}
-	if body := rec.Body.String(); !strings.Contains(body, "<title>Testna Vas</title>") || strings.Contains(body, "{{") {
+	if body := rec.Body.String(); !strings.Contains(body, "<title>Testna Vas</title>") || !strings.Contains(body, `content="sl,en"`) || strings.Contains(body, "{{") {
 		t.Fatalf("the shell without its village: %q", body)
 	}
 	// The manifest is the second file the token lives in. A placeholder one is
@@ -1278,7 +1278,7 @@ func TestMarketEdits(t *testing.T) {
 	steward.must(204, code, "steward moves the time")
 	waitFor(t, 1, fake)
 	json.Unmarshal(fake.payloads[0], &pl)
-	if fake.sent[0].Endpoint != "https://push.example/3" || pl.Title != "🚗 Zeleni Volk changes the run to Ribnica" || pl.Body != "leaves Thursday at 14:00 — your need rides on it" {
+	if fake.sent[0].Endpoint != "https://push.example/3" || pl.Title != "🚗 Zeleni Volk changes the run to Ribnica" || pl.Body != "leaves on Thursday at 14:00 — your need rides on it" {
 		t.Fatalf("steward edit: %s %q / %q", fake.sent[0].Endpoint, pl.Title, pl.Body)
 	}
 	code, _, _ = volk.do("PUT", "/api/runs/"+rid, map[string]any{"destination": ""})

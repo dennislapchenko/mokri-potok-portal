@@ -118,7 +118,7 @@ func (s *Server) tellThread(r *http.Request, subject string, id int64, from *Hou
 			told[w] = true
 			s.notifyHouse("away", w, func(lang string) Payload {
 				return Payload{
-					Title: tr(lang, "🕯️ Watchtower"),
+					Title: "🕯️ " + tr(lang, "Watchtower"),
 					Body:  tr(lang, "someone wrote on an absence — open the portal"),
 					URL:   "#/watch",
 				}

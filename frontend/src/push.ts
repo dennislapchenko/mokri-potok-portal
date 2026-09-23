@@ -1,8 +1,6 @@
 // Install + push plumbing. Everything here degrades to "not available" quietly.
 import { api } from "./api";
 
-// Whatever the phone chose; the backend keeps it if the village speaks it, else the village's first.
-const lang = () => { try { return localStorage.getItem("potok.lang") || ""; } catch { return ""; } };
 
 // A desktop PWA window does not always report `standalone` — Chrome may report
 // `minimal-ui` or `window-controls-overlay`. Any of them means installed.
@@ -51,7 +49,9 @@ export async function pushState(): Promise<PushState> {
 }
 
 // enablePush asks permission, subscribes this phone, and tells the backend.
-export async function enablePush(): Promise<PushState> {
+// lang is the language the page shows, from useT(): the notification text is
+// built on the server, in the language this phone reads the portal in.
+export async function enablePush(lang: string): Promise<PushState> {
   if (!pushSupported()) return "unsupported";
   const perm = await Notification.requestPermission();
   if (perm !== "granted") return perm === "denied" ? "denied" : "off";
@@ -59,22 +59,23 @@ export async function enablePush(): Promise<PushState> {
   if (!reg) return "unsupported";
   const { key } = await api<{ key: string }>("/push/key");
   const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToUint8(key) });
-  await api("/push/subscribe", { method: "POST", body: { ...sub.toJSON(), lang: lang() } });
+  await api("/push/subscribe", { method: "POST", body: { ...sub.toJSON(), lang } });
+  localStorage.setItem("potok.pushlang", lang);
   return "on";
 }
 
-// syncPushLang re-registers this phone when the villager switched SL/EN after
-// subscribing — the notification text is built on the server.
-export async function syncPushLang() {
+// syncPushLang re-registers this phone when the villager switched language
+// after subscribing — the notification text is built on the server.
+export async function syncPushLang(lang: string) {
   try {
     if ((await pushState()) !== "on") return;
     const sent = localStorage.getItem("potok.pushlang");
-    if (sent === lang()) return;
+    if (sent === lang) return;
     const reg = await navigator.serviceWorker.getRegistration(import.meta.env.BASE_URL);
     const sub = await reg?.pushManager.getSubscription();
     if (!sub) return;
-    await api("/push/subscribe", { method: "POST", body: { ...sub.toJSON(), lang: lang() } });
-    localStorage.setItem("potok.pushlang", lang());
+    await api("/push/subscribe", { method: "POST", body: { ...sub.toJSON(), lang } });
+    localStorage.setItem("potok.pushlang", lang);
   } catch { /* best effort */ }
 }
 

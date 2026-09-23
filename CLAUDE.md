@@ -549,6 +549,8 @@ frontend/public/    manifest.webmanifest, sw.js (push only, no caching), icons, 
                     (an emoji glyph renders off-centre and monochrome — do not go back to one)
                     src/push.ts, src/Install.tsx, src/AddPhone.tsx, src/photo.ts (auth'd photo fetch + browser-side shrink)
 backend/internal/httpapi/codex.go  the codex: four routes and the one-time stdin import
+backend/internal/httpapi/i18n.go   tr() for push texts, off i18n/<lang>.json — the dictionaries the page imports too (@i18n alias);
+                    i18n_test.go refuses a translation whose verbs, end spaces or leading icon differ from its key
 backend/internal/httpapi/contacts.go  the phone book: four routes, and the one place a type's spelling is settled
 backend/internal/httpapi/mcp.go    the door for agents: the tool table (the whole surface), the JSON-RPC endpoint, the in-process
                     dispatcher and the key route; the fence that keeps a key on /api/mcp is in auth.go

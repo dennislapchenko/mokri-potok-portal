@@ -867,7 +867,7 @@ func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
 			title, when := ev["title"].(string), ev["starts_at"].(string)
 			s.notifyHouse("events", row["house_id"].(int64), func(lang string) Payload {
 				return Payload{
-					Title: tr(lang, "📅 Time moved: ") + title,
+					Title: "📅 " + tr(lang, "Time moved: ") + title,
 					Body:  tr(lang, "now ") + humanWhen(when, lang, s.now()) + tr(lang, " — answer again"),
 					URL:   "#/tavern",
 				}
@@ -1010,7 +1010,7 @@ func (s *Server) deleteRun(w http.ResponseWriter, r *http.Request) {
 				// Verb first: a lock screen truncates a long typed
 				// destination, and "Odpade vožnja …" still says the run is off
 				// where "… odpade" would have been cut away.
-				Title: fmt.Sprintf(tr(lang, "🚗 Called off: the run to %s by %s"), dest, driver),
+				Title: "🚗 " + fmt.Sprintf(tr(lang, "Called off: the run to %s by %s"), dest, driver),
 				Body:  tr(lang, "your need stays on the market, without a run"),
 				URL:   "#/market",
 			}
@@ -1201,7 +1201,7 @@ func (s *Server) createAway(w http.ResponseWriter, r *http.Request) {
 	// Away notices are burglary information and a lock screen is readable by
 	// anyone holding the phone: the push names no house, no dates, no notes.
 	s.notify("away", houseFrom(r).ID, func(lang string) Payload {
-		return Payload{Title: tr(lang, "🕯️ Watchtower"), Body: tr(lang, "someone marked an absence — open the portal"), URL: "#/watch"}
+		return Payload{Title: "🕯️ " + tr(lang, "Watchtower"), Body: tr(lang, "someone marked an absence — open the portal"), URL: "#/watch"}
 	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }

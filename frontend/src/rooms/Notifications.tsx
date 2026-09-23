@@ -6,7 +6,7 @@ import { disablePush, enablePush, pushState, type PushState } from "../push";
 // Notifications: this phone on/off, and the house-wide list of kinds. All kinds
 // are on until a house switches one off (the backend stores only the off list).
 export function Notifications({ steward }: { steward: boolean }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [state, setState] = useState<PushState>("off");
   const [prefs, setPrefs] = useState<{ off: string[]; global_off: string[]; global_detail: { kind: string; set_by: string | null; set_at: string }[]; kinds: string[]; phones: number; quiet_ok: boolean } | null>(null);
   const mutedBy = (k: string) => { const d = prefs?.global_detail?.find((x) => x.kind === k); return d ? `${t("Switched off for the whole village by")} ${d.set_by || "?"} · ${d.set_at.slice(0, 10)}` : ""; };
@@ -37,7 +37,7 @@ export function Notifications({ steward }: { steward: boolean }) {
   };
   const flip = async () => {
     setBusy(true);
-    try { setState(await (state === "on" ? disablePush() : enablePush())); await load(); } finally { setBusy(false); }
+    try { setState(await (state === "on" ? disablePush() : enablePush(lang))); await load(); } finally { setBusy(false); }
   };
   const labels: Record<string, string> = { posts: "Tavern posts", needs: "Needs", offers: "Give-aways", runs: "Runs to town", events: "Events", away: "Away notices", tools: "Tool shed", projects: "Projects", camp: "Campground" };
 

@@ -61,7 +61,7 @@ func (s *Server) remindTools(ctx context.Context) (int, error) {
 		name, owner := r["name"].(string), r["owner"].(string)
 		s.notifyHouse("tools", r["held_by"].(int64), func(lang string) Payload {
 			return Payload{
-				Title: tr(lang, "🛠 You still have: ") + name,
+				Title: "🛠 " + tr(lang, "You still have: ") + name,
 				Body:  tr(lang, "from ") + owner + tr(lang, " — return it or mark it returned"),
 				URL:   "#/shed",
 			}

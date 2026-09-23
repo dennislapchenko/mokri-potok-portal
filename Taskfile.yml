@@ -45,6 +45,10 @@ tasks:
     cmds:
       - ssh -p 13337 -i ~/.ssh/gaia root@gaias-choice.gardenofatlantis.com 'docker exec -i mokri-potok-potok-api-1 /server map-import parcels GURS 2026-08-15' < deploy/map/parcels.geojson
       - ssh -p 13337 -i ~/.ssh/gaia root@gaias-choice.gardenofatlantis.com 'docker exec -i mokri-potok-potok-api-1 /server map-import water' < deploy/map/water.json
+  vm:backdrop:
+    desc: 'the picture behind the gate, from a file: task vm:backdrop -- picture.jpg (jpeg, png or webp, under 2 MB)'
+    cmds:
+      - ssh -p 13337 -i ~/.ssh/gaia root@gaias-choice.gardenofatlantis.com 'docker exec -i mokri-potok-potok-api-1 /server site-import backdrop' < "{{.CLI_ARGS}}"
   vm:backup:
     desc: copy the latest SQLite backup from the VM to ./backups/
     cmds: ["mkdir -p backups && scp -P 13337 -i ~/.ssh/gaia 'root@gaias-choice.gardenofatlantis.com:/srv/mokri-potok/data/backups/*.db' backups/"]

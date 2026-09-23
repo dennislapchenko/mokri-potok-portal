@@ -97,7 +97,10 @@ does not ship.
   write surface, ever** — a camper self-check-in link from park4night was asked
   for on 2026-09-06 and refused for that reason. The one public image
   is `backdrop.jpg` behind the gate — the owner chose it knowing the repo is
-  public; provenance `TBD`. Away-notices are
+  public; provenance `TBD`. It is every village's default; a village replaces
+  it with its own by `/server site-import backdrop < picture` (`site.go`,
+  `task vm:backdrop`), a row in `site_files` served in the built-in file's
+  place, still without a token because the gate is before any login. Away-notices are
   burglary information: they never leave the logged-in app (no digests, no feeds).
   **An MCP key is the logged-in house** (owner's decision 2026-09-09): the
   model provider is a third party that house chose, the same argument that

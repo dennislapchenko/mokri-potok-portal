@@ -1262,7 +1262,7 @@ func (s *Server) updateAway(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 	out := map[string]any{"exported_at": time.Now().UTC().Format(time.RFC3339)}
-	for _, t := range []string{"houses", "house_parcels", "house_homes", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "wish_options", "comments", "projects", "project_tasks", "project_photos", "camp_takings", "codex_sections", "codex_texts", "contacts", "map_files"} {
+	for _, t := range []string{"houses", "house_parcels", "house_homes", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "wish_options", "comments", "projects", "project_tasks", "project_photos", "camp_takings", "codex_sections", "codex_texts", "contacts", "map_files", "site_files"} {
 		cols := "*"
 		switch t { // photos are bytes, not text — they stay in the SQLite backup
 		case "tools":
@@ -1271,6 +1271,8 @@ func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 			cols = "id, project_id, house_id, photo_type, created_at"
 		case "map_files": // the map is text: a village leaving with the JSON and no backup keeps it
 			cols = "name, CAST(bytes AS TEXT) AS bytes, source, snapshot, updated_at"
+		case "site_files":
+			cols = "name, content_type, updated_at"
 		}
 		rows, err := s.st.Rows(r.Context(), `SELECT `+cols+` FROM `+t)
 		if err != nil {

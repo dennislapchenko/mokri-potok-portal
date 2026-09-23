@@ -80,6 +80,15 @@ func main() {
 		}
 		return
 	}
+	// `/server site-import backdrop < picture.jpg` — the village's own picture
+	// behind the gate; without one the built-in serves (site.go).
+	if len(os.Args) > 2 && os.Args[1] == "site-import" {
+		if err := srv.ImportSite(os.Args[2], os.Stdin); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if row, _ := st.One(context.Background(), `SELECT count(*) AS n FROM houses`); row != nil && row["n"].(int64) == 0 {
 		code, err := srv.BootstrapCode()
 		if err != nil {

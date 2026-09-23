@@ -78,6 +78,9 @@ model and not a survey; the caption no longer says so (cut 2026-09-07, a
 caption nobody finishes reading protects nobody), so that fact lives here and
 in `CLAUDE.md` only.
 
+`site_files`: the picture behind the gate, when the village brings its own; the
+built-in one serves until then. Not a room, a look.
+
 `house_homes` (house ↔ parcel, many to many): where a house that owns no land
 lives. It puts the renter's crest on the map beside the crest of the house whose
 land it is, and gives the Houses room something true to print where a landholder

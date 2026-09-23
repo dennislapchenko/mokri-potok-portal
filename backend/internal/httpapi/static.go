@@ -23,6 +23,7 @@ var webFS embed.FS
 // serves any village.
 const nameToken = "{{VILLAGE_NAME}}"
 const langToken = "{{LANGUAGES}}"
+const defaultLangToken = "{{LANG}}" // the village's first language: <html lang> and the manifest's
 
 const csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
@@ -36,6 +37,12 @@ func (s *Server) staticHandler() http.Handler {
 		p := strings.TrimPrefix(r.URL.Path, "/")
 		if p == "" {
 			p = "index.html"
+		}
+		// The village's own backdrop, if it entered one; else the built-in
+		// file below — checked before the unknown-path fallback, because a
+		// bare embed has no backdrop.jpg at all.
+		if p == "backdrop.jpg" && s.serveSiteFile(w, r, "backdrop") {
+			return
 		}
 		if _, err := fs.Stat(sub, p); err != nil {
 			// Unknown path: hand back the shell. Routing is client-side.
@@ -77,8 +84,8 @@ func (s *Server) staticHandler() http.Handler {
 			if p == "index.html" {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			}
-			out := strings.ReplaceAll(string(b), nameToken, s.cfg.VillageName)
-			w.Write([]byte(strings.ReplaceAll(out, langToken, strings.Join(s.cfg.Languages, ","))))
+			out := strings.NewReplacer(nameToken, s.cfg.VillageName, langToken, strings.Join(s.cfg.Languages, ","), defaultLangToken, s.cfg.Default()).Replace(string(b))
+			w.Write([]byte(out))
 			return
 		}
 		files.ServeHTTP(w, r)

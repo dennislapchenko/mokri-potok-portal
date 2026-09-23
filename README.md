@@ -54,7 +54,9 @@ links are printed under it; it is the contact in the User-Agent sent to ARSO),
 panel naming the place in `WEATHER_LOCATION`) or `arso` (Slovenia, `WEATHER_LOCATION` is the
 ARSO place name), and the panel is off while the provider's input is unset —
 `PAGI_BOOTSTRAP_CODE` (a fixed first-steward
-code; unset means generated and logged), `DATA_DIR`, `PORT`, `BIND`, `TZ`.
+code; unset means generated and logged), `DATA_DIR`, `PORT`, `BIND`, `TZ`. The picture
+behind the gate is the built-in `backdrop.jpg` until a village imports its own
+(`task vm:backdrop -- picture.jpg`, a row in `site_files`).
 This village's values are in `deploy/app/compose.yaml`; dev ones in
 `Taskfile.yml` and `.claude/launch.json`.
 

@@ -23,7 +23,14 @@ var migrationsFS embed.FS
 
 type Store struct {
 	db      *sql.DB
+	q       querier // s.db, or the transaction a Tx view runs in
 	dataDir string
+}
+
+// querier is what a query helper needs: *sql.DB and *sql.Tx both are one.
+type querier interface {
+	ExecContext(ctx context.Context, q string, args ...any) (sql.Result, error)
+	QueryContext(ctx context.Context, q string, args ...any) (*sql.Rows, error)
 }
 
 // Open opens ${dataDir}/potok.db in WAL mode and applies pending migrations.
@@ -44,7 +51,7 @@ func Open(dataDir string) (*Store, error) {
 			return nil, fmt.Errorf("pragma %q: %w", p, err)
 		}
 	}
-	s := &Store{db: db, dataDir: dataDir}
+	s := &Store{db: db, q: db, dataDir: dataDir}
 	if err := s.migrate(); err != nil {
 		db.Close()
 		return nil, err
@@ -111,7 +118,7 @@ type Row = map[string]any
 
 // Rows runs a query and returns every row as a map.
 func (s *Store) Rows(ctx context.Context, q string, args ...any) ([]Row, error) {
-	rs, err := s.db.QueryContext(ctx, q, args...)
+	rs, err := s.q.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +161,7 @@ func (s *Store) One(ctx context.Context, q string, args ...any) (Row, error) {
 
 // Exec runs a statement and returns the last insert id.
 func (s *Store) Exec(ctx context.Context, q string, args ...any) (int64, error) {
-	res, err := s.db.ExecContext(ctx, q, args...)
+	res, err := s.q.ExecContext(ctx, q, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -165,11 +172,26 @@ func (s *Store) Exec(ctx context.Context, q string, args ...any) (int64, error) 
 // ExecN runs a statement and returns how many rows it changed — for the one
 // write that must know whether its WHERE matched (a compare-and-set).
 func (s *Store) ExecN(ctx context.Context, q string, args ...any) (int64, error) {
-	res, err := s.db.ExecContext(ctx, q, args...)
+	res, err := s.q.ExecContext(ctx, q, args...)
 	if err != nil {
 		return 0, err
 	}
 	return res.RowsAffected()
+}
+
+// Tx runs fn inside one transaction: everything fn writes through the Store
+// it is handed lands together or not at all. For the writes that touch two
+// tables and must not leave the first one standing alone.
+func (s *Store) Tx(ctx context.Context, fn func(tx *Store) error) error {
+	sqltx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	if err := fn(&Store{db: s.db, q: sqltx, dataDir: s.dataDir}); err != nil {
+		sqltx.Rollback()
+		return err
+	}
+	return sqltx.Commit()
 }
 
 // Backup writes a consistent copy with VACUUM INTO (safe on a live WAL db) to

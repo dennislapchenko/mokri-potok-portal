@@ -60,7 +60,7 @@ export async function enablePush(lang: string): Promise<PushState> {
   const { key } = await api<{ key: string }>("/push/key");
   const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToUint8(key) });
   await api("/push/subscribe", { method: "POST", body: { ...sub.toJSON(), lang } });
-  localStorage.setItem("potok.pushlang", lang);
+  try { localStorage.setItem("potok.pushlang", lang); } catch { /* subscribed all the same */ }
   return "on";
 }
 

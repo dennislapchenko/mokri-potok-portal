@@ -10,11 +10,13 @@ import sl from "@i18n/sl.json";
 // server and arrives with /api/status.
 const dicts: Record<string, Record<string, string>> = { sl };
 
-// BCP 47 tags for the browser's date formatting; a language with no entry
-// formats as itself.
-export const localeOf = (lang: string) => ({ sl: "sl-SI", en: "en-GB", pt: "pt-PT" } as Record<string, string>)[lang] ?? lang;
+// The tag for the browser's date formatting. English is pinned to en-GB —
+// day before month, as the village reads it — a bare "en" would give US
+// order; every other language formats under its own tag.
+export const localeOf = (lang: string) => (lang === "en" ? "en-GB" : lang);
 // A language's own name for itself — the one word that is never translated.
-export const langName = (lang: string) => ({ sl: "slovenščina", en: "English", pt: "português" } as Record<string, string>)[lang] ?? lang;
+// The browser knows it; a browser that does not shows the tag.
+export const langName = (lang: string) => { try { return new Intl.DisplayNames([lang], { type: "language" }).of(lang) || lang; } catch { return lang; } };
 
 type T = { lang: string; t: (s: string) => string; setLang: (l: string) => void; languages: string[]; village: string };
 const Ctx = createContext<T>({ lang: "en", t: (s) => s, setLang: () => {}, languages: [], village: "" });

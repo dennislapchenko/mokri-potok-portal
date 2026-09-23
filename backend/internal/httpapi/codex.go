@@ -3,11 +3,14 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"regexp"
 	"slices"
+
+	"github.com/dennislapchenko/mokri-potok-portal/backend/internal/store"
 )
 
 // The Codex is the village's own text: the values and agreements the council
@@ -53,13 +56,15 @@ func hasTitle(texts map[string]codexText) bool {
 
 // writeTexts upserts the given languages on a section; a text that is empty
 // in both fields is removed, so "borrowed" on the page means what it says.
-func (s *Server) writeTexts(ctx context.Context, id int64, texts map[string]codexText) error {
+// It runs inside the caller's transaction, so a section never stands with
+// half its languages, or with a stamp over words it did not get.
+func writeTexts(ctx context.Context, tx *store.Store, id int64, texts map[string]codexText) error {
 	for lang, t := range texts {
 		var err error
 		if t.Title == "" && t.Body == "" {
-			_, err = s.st.Exec(ctx, `DELETE FROM codex_texts WHERE section_id=? AND lang=?`, id, lang)
+			_, err = tx.Exec(ctx, `DELETE FROM codex_texts WHERE section_id=? AND lang=?`, id, lang)
 		} else {
-			_, err = s.st.Exec(ctx, `INSERT INTO codex_texts (section_id, lang, title, body) VALUES (?,?,?,?)
+			_, err = tx.Exec(ctx, `INSERT INTO codex_texts (section_id, lang, title, body) VALUES (?,?,?,?)
 				ON CONFLICT(section_id, lang) DO UPDATE SET title=excluded.title, body=excluded.body`, id, lang, t.Title, t.Body)
 		}
 		if err != nil {
@@ -113,13 +118,17 @@ func (s *Server) createCodexSection(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "a section needs a title")
 		return
 	}
-	id, err := s.st.Exec(r.Context(), `INSERT INTO codex_sections(ord, updated_by)
-		VALUES ((SELECT COALESCE(MAX(ord),0)+1 FROM codex_sections), ?)`, houseFrom(r).ID)
+	var id int64
+	err = s.st.Tx(r.Context(), func(tx *store.Store) error {
+		var err error
+		id, err = tx.Exec(r.Context(), `INSERT INTO codex_sections(ord, updated_by)
+			VALUES ((SELECT COALESCE(MAX(ord),0)+1 FROM codex_sections), ?)`, houseFrom(r).ID)
+		if err != nil {
+			return err
+		}
+		return writeTexts(r.Context(), tx, id, texts)
+	})
 	if err != nil {
-		fail(w, err)
-		return
-	}
-	if err := s.writeTexts(r.Context(), id, texts); err != nil {
 		fail(w, err)
 		return
 	}
@@ -142,35 +151,41 @@ func (s *Server) updateCodexSection(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, err.Error())
 		return
 	}
-	// One statement, compare-and-set on rev, claims the section before any
-	// text is written. A form sends the rev it opened on; if the section moved
-	// since, two houses were writing the same sentence and the second one is
-	// told, so neither overwrites the other unknowingly. A request without a
-	// rev (a script) is taken as it is. Only the languages sent are touched.
+	// One transaction: a compare-and-set on rev claims the section, then the
+	// texts land; if anything fails, neither the stamp nor the words stay. A
+	// form sends the rev it opened on; if the section moved since, two houses
+	// were writing the same sentence and the second one is told, so neither
+	// overwrites the other unknowingly. A request without a rev (a script) is
+	// taken as it is. Only the languages sent are touched.
 	args := []any{houseFrom(r).ID, id}
 	where := ""
 	if rev, ok := m["rev"].(float64); ok {
 		where = " AND rev=?"
 		args = append(args, int64(rev))
 	}
-	n, err := s.st.ExecN(r.Context(), `UPDATE codex_sections SET rev=rev+1, updated_at=datetime('now'), updated_by=? WHERE id=?`+where, args...)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	if n == 0 {
-		if row, _ := s.st.One(r.Context(), `SELECT id FROM codex_sections WHERE id=?`, id); row == nil {
-			writeErr(w, 404, "not found")
-		} else {
-			writeErr(w, 409, "changed meanwhile")
+	err = s.st.Tx(r.Context(), func(tx *store.Store) error {
+		n, err := tx.ExecN(r.Context(), `UPDATE codex_sections SET rev=rev+1, updated_at=datetime('now'), updated_by=? WHERE id=?`+where, args...)
+		if err != nil {
+			return err
 		}
-		return
-	}
-	if err := s.writeTexts(r.Context(), id, texts); err != nil {
+		if n == 0 {
+			if row, _ := tx.One(r.Context(), `SELECT id FROM codex_sections WHERE id=?`, id); row == nil {
+				return errNotFound
+			}
+			return errChanged
+		}
+		return writeTexts(r.Context(), tx, id, texts)
+	})
+	switch {
+	case errors.Is(err, errNotFound):
+		writeErr(w, 404, "not found")
+	case errors.Is(err, errChanged):
+		writeErr(w, 409, "changed meanwhile")
+	case err != nil:
 		fail(w, err)
-		return
+	default:
+		w.WriteHeader(204)
 	}
-	w.WriteHeader(204)
 }
 
 // ---- import --------------------------------------------------------------
@@ -188,6 +203,8 @@ func (s *Server) updateCodexSection(w http.ResponseWriter, r *http.Request) {
 // once the houses have edited, the file is the older copy.
 
 var isoDate = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+
+var errNotFound, errChanged = errors.New("not found"), errors.New("changed meanwhile")
 
 type codexSeed struct {
 	Adopted  string `json:"adopted"`
@@ -226,15 +243,21 @@ func (s *Server) ImportCodex(in io.Reader) error {
 		}
 	}
 	// Noon, so the date reads the same in every timezone the page is opened in.
+	// One transaction: the whole text or none of it.
 	at := seed.Adopted + " 12:00:00"
-	for i, sec := range seed.Sections {
-		id, err := s.st.Exec(ctx, `INSERT INTO codex_sections(ord, updated_at, updated_by) VALUES (?,?,NULL)`, i+1, at)
-		if err != nil {
-			return err
+	if err := s.st.Tx(ctx, func(tx *store.Store) error {
+		for i, sec := range seed.Sections {
+			id, err := tx.Exec(ctx, `INSERT INTO codex_sections(ord, updated_at, updated_by) VALUES (?,?,NULL)`, i+1, at)
+			if err != nil {
+				return err
+			}
+			if err := writeTexts(ctx, tx, id, sec.Texts); err != nil {
+				return err
+			}
 		}
-		if err := s.writeTexts(ctx, id, sec.Texts); err != nil {
-			return err
-		}
+		return nil
+	}); err != nil {
+		return err
 	}
 	fmt.Printf("codex: %d sections, adopted %s\n", len(seed.Sections), seed.Adopted)
 	return nil

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api, type House, type Me } from "../api";
-import { useT } from "../i18n";
+import { localeOf, useT } from "../i18n";
 import { isOver, useList, When } from "./shared";
 import { EventCard, ICON } from "./EventCard";
 import { DatePicker } from "../DatePicker";
@@ -32,7 +32,7 @@ export function Calendar({ me, houses }: { me: Me; houses: House[] }) {
   }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
   const [cursor, setCursor] = useState(() => new Date());
   const [day, setDay] = useState<string | null>(null);
-  const locale = lang === "sl" ? "sl-SI" : "en-GB";
+  const locale = localeOf(lang);
 
   // The form opens already filled: the picked day, else today when the shown
   // month is this one, else the 1st of the shown month — 09:00 to 17:00. A

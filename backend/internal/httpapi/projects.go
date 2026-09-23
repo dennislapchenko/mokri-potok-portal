@@ -88,9 +88,9 @@ func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 	s.notify("projects", h.ID, func(lang string) Payload {
 		body := snippet(str(m, "notes"), 100)
 		if d := str(m, "due_at"); d != "" {
-			body = join(" · ", tr(lang, "do ", "by ")+humanWhen(d, lang, s.now()), body)
+			body = join(" · ", tr(lang, "by ")+humanWhen(d, lang, s.now()), body)
 		}
-		return Payload{Title: "📋 " + h.Name + tr(lang, " načrtuje: ", " plans: ") + str(m, "title"), Body: body, URL: "#/projects/" + itoa64(id)}
+		return Payload{Title: "📋 " + h.Name + tr(lang, " plans: ") + str(m, "title"), Body: body, URL: "#/projects/" + itoa64(id)}
 	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
@@ -193,7 +193,7 @@ func (s *Server) updateTask(w http.ResponseWriter, r *http.Request) {
 			if owner := t["project_house"].(int64); owner != h.ID {
 				title := t["title"].(string)
 				s.notifyHouse("projects", owner, func(lang string) Payload {
-					return Payload{Title: "📋 " + h.Name + tr(lang, " prevzame: ", " takes: ") + title, Body: t["project_title"].(string), URL: "#/projects/" + itoa64(t["project_id"].(int64))}
+					return Payload{Title: "📋 " + h.Name + tr(lang, " takes: ") + title, Body: t["project_title"].(string), URL: "#/projects/" + itoa64(t["project_id"].(int64))}
 				})
 			}
 		} else {
@@ -220,7 +220,7 @@ func (s *Server) updateTask(w http.ResponseWriter, r *http.Request) {
 		if to != h.ID {
 			title, ptitle := t["title"].(string), t["project_title"].(string)
 			s.notifyHouse("projects", to, func(lang string) Payload {
-				return Payload{Title: "📋 " + h.Name + tr(lang, " vam predaja: ", " hands you: ") + title, Body: ptitle, URL: "#/projects/" + itoa64(t["project_id"].(int64))}
+				return Payload{Title: "📋 " + h.Name + tr(lang, " hands you: ") + title, Body: ptitle, URL: "#/projects/" + itoa64(t["project_id"].(int64))}
 			})
 		}
 	}
@@ -298,9 +298,9 @@ func (s *Server) createCamp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.notify("camp", h.ID, func(lang string) Payload {
-		title := "🏕️ " + h.Name + tr(lang, ": kamper je prišel", ": a camper arrived")
+		title := "🏕️ " + h.Name + tr(lang, ": a camper arrived")
 		if have {
-			title = "🏕️ " + h.Name + tr(lang, " je pobral kamp", " collected at the camp")
+			title = "🏕️ " + h.Name + tr(lang, " collected at the camp")
 		}
 		return Payload{Title: title, Body: snippet(str(m, "notes"), 80), URL: "#/camp"}
 	})
@@ -338,7 +338,7 @@ func (s *Server) updateCamp(w http.ResponseWriter, r *http.Request) {
 			s.st.Exec(r.Context(), `UPDATE camp_takings SET notes=? WHERE id=?`, n, id)
 		}
 		s.notify("camp", h.ID, func(lang string) Payload {
-			return Payload{Title: "💰 " + h.Name + tr(lang, " ima denar od kampa", " has the camp money"), Body: snippet(str(m, "notes"), 80), URL: "#/camp"}
+			return Payload{Title: "💰 " + h.Name + tr(lang, " has the camp money"), Body: snippet(str(m, "notes"), 80), URL: "#/camp"}
 		})
 		w.WriteHeader(204)
 		return

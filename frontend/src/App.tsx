@@ -35,7 +35,7 @@ export const ROOMS = [
 ];
 
 export default function App() {
-  const { t, lang, setLang } = useT();
+  const { t, lang, setLang, languages, village } = useT();
   const [me, setMe] = useState<Me | null>(null);
   const [houses, setHouses] = useState<House[]>([]);
   const [state, setState] = useState<"loading" | "gate" | "in">(getToken() ? "loading" : "gate");
@@ -53,13 +53,6 @@ export default function App() {
 
   const logout = () => { setToken(null); setMe(null); setState("gate"); };
 
-  // The village's name comes from the backend: the build knows no village.
-  // The server already wrote it into <title>, so the heading starts from
-  // there instead of painting a bare castle until /status answers.
-  const [village, setVillage] = useState(() => (document.title.includes("{{") ? "" : document.title));
-  useEffect(() => { api<{ name: string }>("/status").then((s) => setVillage(s.name)).catch(() => {}); }, []);
-  useEffect(() => { if (village) document.title = `${village} · ${t("Village portal")}`; }, [village, lang]);
-
   return (
     <>
       <header className="topbar">
@@ -67,8 +60,8 @@ export default function App() {
           <h1><Link to="/">🏰 {village}</Link> <span className="small" style={{ color: "var(--parch2)" }}>· {t("Village portal")}</span></h1>
           {me && <Link className="house" to="/houses"><span className="crest" style={{ backgroundColor: me.color }}>{me.crest}</span> {me.name}</Link>}
           <span className="lang">
-            <button className={lang === "sl" ? "primary" : ""} onClick={() => setLang("sl")}>SL</button>{" "}
-            <button className={lang === "en" ? "primary" : ""} onClick={() => setLang("en")}>EN</button>
+            {/* The village's languages, in its order; the buttons are the codes. */}
+            {languages.map((l) => <span key={l}><button className={lang === l ? "primary" : ""} onClick={() => setLang(l)}>{l.toUpperCase()}</button>{" "}</span>)}
           </span>
         </div>
       </header>

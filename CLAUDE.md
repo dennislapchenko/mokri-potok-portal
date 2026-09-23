@@ -462,8 +462,16 @@ does not ship.
   form is for, plain for the rest, `lesser` for inner additions (add a task, add
   a note) — a real button one size down, never a ghost link. `ghost` is for
   dismiss and delete only.
-- **Slovenian first.** Every user-facing string goes through `t()` in
-  `frontend/src/i18n.tsx` with a Slovenian entry. English is the fallback key.
+- **The village's language first.** `LANGUAGES` lists a village's languages
+  in its order, the first is its default (`sl,en` here); the top bar's buttons
+  and a phone's push language come from that list. Every user-facing string
+  goes through `t()` in `frontend/src/i18n.tsx`, and every push text through
+  `tr(lang, …)` in `i18n.go` — **both read the same dictionary**,
+  `backend/internal/httpapi/i18n/<lang>.json`, keyed by the English phrase, so
+  a phrase is translated once. English is the key and has no file. A new
+  language is one new file and nothing else; a phrase with no entry reads as
+  English. The dictionary lives with the backend because Go can embed only
+  below its own module; Vite reaches it through the `@i18n` alias.
 - **The bottom bar fits five.** Village plus four rooms — Hall, Projects,
   Market, Shed (owner's pick 2026-09-05). A new room either replaces one, merges
   into one, or lives off the bar like Watchtower, Campground, Houses and

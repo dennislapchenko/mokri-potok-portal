@@ -36,7 +36,7 @@ func newVillage(t *testing.T) (*Server, *fakeSender, *client, *client) {
 	}
 	t.Cleanup(func() { st.Close() })
 	fake := &fakeSender{status: map[string]int{}}
-	srv := New(st, config.Config{BootstrapCode: "x", VillageName: "Testna Vas"})
+	srv := New(st, config.Config{BootstrapCode: "x", VillageName: "Testna Vas", Languages: []string{"sl", "en"}})
 	srv.send = fake
 	srv.now = func() time.Time { return time.Date(2026, 9, 4, 10, 0, 0, 0, time.Local) }
 	h := srv.Handler()

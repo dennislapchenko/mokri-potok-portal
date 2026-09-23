@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "./api";
-import { useT } from "./i18n";
+import { localeOf, useT } from "./i18n";
 
 // Weather on the home screen. The backend fetches ARSO and trims it, so the
 // agency never sees a villager's browser and no third-party frame sits on a
@@ -38,7 +38,7 @@ export function Weather() {
   if (off) return <div className="parchment weather"><p className="small muted">{t("No weather for this village.")}</p></div>;
   if (err) return <div className="parchment weather"><p className="small muted">{t("The weather service did not answer.")}</p></div>;
   if (!w) return <div className="parchment weather"><p className="small muted">{t("Loading…")}</p></div>;
-  const locale = lang === "sl" ? "sl-SI" : "en-GB";
+  const locale = localeOf(lang);
   // The backend serves the last good copy when ARSO is down, so the panel must
   // say how old the reading is rather than promise it is fresh.
   const fetchedAt = new Date(w.fetched);

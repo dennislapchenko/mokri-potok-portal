@@ -7,6 +7,9 @@ WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json frontend/.npmrc ./
 RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
+# The dictionaries are the backend's; the page imports them through the @i18n
+# alias at ../backend/internal/httpapi/i18n, so they go to that place here too.
+COPY backend/internal/httpapi/i18n /backend/internal/httpapi/i18n
 RUN npm run build
 
 FROM golang:1.25-alpine AS build

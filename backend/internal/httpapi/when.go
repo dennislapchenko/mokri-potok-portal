@@ -11,21 +11,6 @@ import (
 // <input type="datetime-local">, so nothing here converts a timezone — it only
 // needs the village's own date to say "today" and "tomorrow" correctly.
 
-var slWeekday = map[time.Weekday]string{
-	time.Monday: "v ponedeljek", time.Tuesday: "v torek", time.Wednesday: "v sredo",
-	time.Thursday: "v četrtek", time.Friday: "v petek", time.Saturday: "v soboto", time.Sunday: "v nedeljo",
-}
-
-var slMonth = [...]string{"jan.", "feb.", "mar.", "apr.", "maja", "jun.", "jul.", "avg.", "sep.", "okt.", "nov.", "dec."}
-
-// tr picks the Slovenian string unless the phone subscribed in English.
-func tr(lang, sl, en string) string {
-	if lang == "en" {
-		return en
-	}
-	return sl
-}
-
 // parseWhen accepts what the form controls produce: a date, or a date and time.
 func parseWhen(s string) (t time.Time, hasTime bool, ok bool) {
 	s = strings.TrimSpace(s)
@@ -53,18 +38,19 @@ func humanWhen(s, lang string, now time.Time) string {
 	var out string
 	switch {
 	case delta == 0:
-		out = tr(lang, "danes", "today")
+		out = tr(lang, "today")
 	case delta == 1:
-		out = tr(lang, "jutri", "tomorrow")
+		out = tr(lang, "tomorrow")
 	case delta == -1:
-		out = tr(lang, "včeraj", "yesterday")
+		out = tr(lang, "yesterday")
 	case delta > 1 && delta < 7:
-		out = tr(lang, slWeekday[t.Weekday()], t.Weekday().String())
+		out = tr(lang, t.Weekday().String())
 	default:
-		out = tr(lang, fmt.Sprintf("%d. %s", t.Day(), slMonth[int(t.Month())-1]), fmt.Sprintf("%d %s", t.Day(), t.Format("Jan")))
+		// "%d %s" is day and month; the Slovenian entry writes the day with its dot.
+		out = fmt.Sprintf(tr(lang, "%d %s"), t.Day(), tr(lang, t.Format("Jan")))
 	}
 	if hasTime {
-		out += tr(lang, " ob ", " at ") + fmt.Sprintf("%d:%02d", t.Hour(), t.Minute())
+		out += tr(lang, " at ") + fmt.Sprintf("%d:%02d", t.Hour(), t.Minute())
 	}
 	return out
 }

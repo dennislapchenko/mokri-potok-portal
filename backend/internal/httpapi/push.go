@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -193,9 +194,10 @@ func (s *Server) subscribe(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "endpoint must be a public https url")
 		return
 	}
+	// The village's languages, from LANGUAGES; anything else is its first.
 	lang := str(m, "lang")
-	if lang != "en" {
-		lang = "sl"
+	if !slices.Contains(s.cfg.Languages, lang) {
+		lang = s.cfg.Default()
 	}
 	if _, err := s.st.Exec(r.Context(), `INSERT INTO push_subscriptions(house_id, device_id, endpoint, p256dh, auth, lang) VALUES (?,?,?,?,?,?)
 		ON CONFLICT(endpoint) DO UPDATE SET house_id=excluded.house_id, device_id=excluded.device_id, p256dh=excluded.p256dh, auth=excluded.auth, lang=excluded.lang`,

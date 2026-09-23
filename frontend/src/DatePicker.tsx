@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useT } from "./i18n";
+import { localeOf, useT } from "./i18n";
 
 // The one date control of the portal, desktop and phone alike: a parchment
 // button showing the date in words, opening a month grid in the calendar's own
@@ -23,7 +23,7 @@ export function DatePicker({ value, onChange, time, placeholder, required, defau
   value: string; onChange: (v: string) => void; time?: boolean; placeholder?: string; required?: boolean; defaultTime?: string; min?: string;
 }) {
   const { t, lang } = useT();
-  const locale = lang === "sl" ? "sl-SI" : "en-GB";
+  const locale = localeOf(lang);
   const [open, setOpen] = useState(false);
   // The right-hand field of a two-column row has no room for a popup hanging
   // off its left edge — on a narrow phone it ran past the screen, which made

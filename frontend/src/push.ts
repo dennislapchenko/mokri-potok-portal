@@ -1,7 +1,8 @@
 // Install + push plumbing. Everything here degrades to "not available" quietly.
 import { api } from "./api";
 
-const lang = () => { try { return localStorage.getItem("potok.lang") === "en" ? "en" : "sl"; } catch { return "sl"; } };
+// Whatever the phone chose; the backend keeps it if the village speaks it, else the village's first.
+const lang = () => { try { return localStorage.getItem("potok.lang") || ""; } catch { return ""; } };
 
 // A desktop PWA window does not always report `standalone` — Chrome may report
 // `minimal-ui` or `window-controls-overlay`. Any of them means installed.

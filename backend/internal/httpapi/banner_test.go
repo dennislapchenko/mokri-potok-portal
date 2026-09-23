@@ -18,7 +18,7 @@ func TestNotificationBanners(t *testing.T) {
 	}
 	defer st.Close()
 	fake := &fakeSender{status: map[string]int{}}
-	srv := New(st, config.Config{BootstrapCode: "x"})
+	srv := New(st, config.Config{BootstrapCode: "x", Languages: []string{"sl", "en"}})
 	srv.send = fake
 	srv.now = func() time.Time { return time.Date(2026, 9, 4, 9, 42, 0, 0, time.Local) }
 	h := srv.Handler()

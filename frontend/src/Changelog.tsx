@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useT } from "./i18n";
+import { localeOf, useT } from "./i18n";
 import { Empty } from "./rooms/shared";
 
 // What changed in the portal in the last 90 days, read off the git log at
@@ -20,7 +20,7 @@ export function Changelog() {
       .then(setLog)
       .catch(() => setErr(true));
   }, []);
-  const day = (d: string) => new Date(d + "T00:00").toLocaleDateString(lang === "sl" ? "sl-SI" : "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const day = (d: string) => new Date(d + "T00:00").toLocaleDateString(localeOf(lang), { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const days: [string, Entry[]][] = [];
   for (const e of log?.entries ?? []) {
     const last = days[days.length - 1];

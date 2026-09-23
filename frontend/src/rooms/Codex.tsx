@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { api, ApiError, type Me } from "../api";
-import { useT } from "../i18n";
+import { localeOf, useT } from "../i18n";
 import { Crest, Empty, parse, useList } from "./shared";
 
 // The Codex: the village's values and agreements, as the council adopted them
@@ -26,7 +26,11 @@ const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI"
 export function Codex({ me }: { me: Me }) {
   const { t, lang } = useT();
   const { items, reload } = useList<Section>("/codex");
-  const other = lang === "sl" ? "en" : "sl";
+  // The columns are still sl and en (a texts table per language is the next
+  // step): a reader on any other language reads English, and "other" is the
+  // one of the two the reader is not on.
+  const cur: "sl" | "en" = lang === "sl" ? "sl" : "en";
+  const other: "sl" | "en" = cur === "sl" ? "en" : "sl";
   const [editing, setEditing] = useState<number | "new" | null>(null);
   const [f, setF] = useState<Form>(blank);
   // The section as another house left it while this form was open — shown
@@ -60,7 +64,7 @@ export function Codex({ me }: { me: Me }) {
   };
   // The codex spans years, so the day carries its year and no hour — nobody
   // needs to know at what o'clock a sentence changed.
-  const day = (s: string) => parse(s).toLocaleDateString(lang === "sl" ? "sl-SI" : "en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const day = (s: string) => parse(s).toLocaleDateString(localeOf(lang), { day: "numeric", month: "long", year: "numeric" });
   const Stamp = ({ s }: { s: Section }) => s.updated_by ? (
     <>{t("Changed by")} <Crest crest={s.house_crest || "🏠"} color={s.house_color || "#888"} /> <strong>{s.house_name}</strong>, {day(s.updated_at)}</>
   ) : (
@@ -73,8 +77,8 @@ export function Codex({ me }: { me: Me }) {
       {conflict && (
         <div className="cx-conflict">
           <p className="small"><strong>{t("Meanwhile this section was changed by")} <Crest crest={conflict.house_crest || "🏠"} color={conflict.house_color || "#888"} /> {conflict.house_name}. {t("It now reads:")}</strong></p>
-          <h3>{conflict[`title_${lang}`] || conflict[`title_${other}`]}</h3>
-          <Prose text={conflict[`body_${lang}`] || conflict[`body_${other}`]} />
+          <h3>{conflict[`title_${cur}`] || conflict[`title_${other}`]}</h3>
+          <Prose text={conflict[`body_${cur}`] || conflict[`body_${other}`]} />
           <p className="small muted">{t("Your text is below, untouched. Saving it replaces theirs.")}</p>
         </div>
       )}
@@ -96,9 +100,9 @@ export function Codex({ me }: { me: Me }) {
       {last && <p className="cx-stamp cx-head"><Stamp s={last} /></p>}
       {items.length === 0 && <Empty text={t("The codex is empty. A steward brings in the adopted text.")} />}
       {items.map((s, i) => {
-        const title = s[`title_${lang}`] || s[`title_${other}`];
-        const body = s[`body_${lang}`] || s[`body_${other}`];
-        const borrowed = !s[`title_${lang}`] && !s[`body_${lang}`] && (s[`title_${other}`] || s[`body_${other}`]);
+        const title = s[`title_${cur}`] || s[`title_${other}`];
+        const body = s[`body_${cur}`] || s[`body_${other}`];
+        const borrowed = !s[`title_${cur}`] && !s[`body_${cur}`] && (s[`title_${other}`] || s[`body_${other}`]);
         return (
           <section key={s.id} className="cx-sec">
             <div className="cx-num">{ROMAN[i] || i + 1}.</div>

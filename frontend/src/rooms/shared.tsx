@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api";
-import { useT } from "../i18n";
+import { localeOf, useT } from "../i18n";
 
 // useList: load a resource, expose reload. Rooms are lists with a form on top.
 export function useList<T = any>(path: string) {
@@ -29,7 +29,7 @@ export function When({ iso }: { iso?: string | null }) {
   if (!iso) return null;
   const d = parse(iso);
   const opts: Intl.DateTimeFormatOptions = iso.length <= 10 ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" };
-  return <time dateTime={iso}>{d.toLocaleString(lang === "sl" ? "sl-SI" : "en-GB", opts)}</time>;
+  return <time dateTime={iso}>{d.toLocaleString(localeOf(lang), opts)}</time>;
 }
 
 export function Empty({ text }: { text: string }) {

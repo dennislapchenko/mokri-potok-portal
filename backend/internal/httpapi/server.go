@@ -272,7 +272,7 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	writeJSON(w, 200, map[string]any{"name": s.cfg.VillageName, "houses": row["n"], "bootstrap_needed": row["n"].(int64) == 0})
+	writeJSON(w, 200, map[string]any{"name": s.cfg.VillageName, "languages": s.cfg.Languages, "houses": row["n"], "bootstrap_needed": row["n"].(int64) == 0})
 }
 
 // BootstrapCode returns the code that creates the first steward house. Fixed
@@ -704,7 +704,7 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request) {
 		who = a + " · " + who
 	}
 	s.notify("posts", houseFrom(r).ID, func(lang string) Payload {
-		return Payload{Title: "🍺 " + who + tr(lang, " v gostilni", " in the tavern"), Body: snippet(str(m, "body"), 140), URL: "#/tavern?at=board"}
+		return Payload{Title: "🍺 " + who + tr(lang, " in the tavern"), Body: snippet(str(m, "body"), 140), URL: "#/tavern?at=board"}
 	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
@@ -867,8 +867,8 @@ func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
 			title, when := ev["title"].(string), ev["starts_at"].(string)
 			s.notifyHouse("events", row["house_id"].(int64), func(lang string) Payload {
 				return Payload{
-					Title: tr(lang, "📅 Termin premaknjen: ", "📅 Time moved: ") + title,
-					Body:  tr(lang, "zdaj ", "now ") + humanWhen(when, lang, s.now()) + tr(lang, " — potrdi znova", " — answer again"),
+					Title: tr(lang, "📅 Time moved: ") + title,
+					Body:  tr(lang, "now ") + humanWhen(when, lang, s.now()) + tr(lang, " — answer again"),
 					URL:   "#/tavern",
 				}
 			})
@@ -909,9 +909,9 @@ func (s *Server) createRun(w http.ResponseWriter, r *http.Request) {
 	}
 	s.notify("runs", houseFrom(r).ID, func(lang string) Payload {
 		return Payload{
-			Title: "🚗 " + houseFrom(r).Name + tr(lang, " gre v ", " drives to ") + str(m, "destination"),
-			Body: join(" — ", tr(lang, "odhod ", "leaves ")+humanWhen(str(m, "cutoff_at"), lang, s.now()),
-				tr(lang, "napiši, kaj rabiš", "post what you need")),
+			Title: "🚗 " + houseFrom(r).Name + tr(lang, " drives to ") + str(m, "destination"),
+			Body: join(" — ", tr(lang, "leaves ")+humanWhen(str(m, "cutoff_at"), lang, s.now()),
+				tr(lang, "post what you need")),
 			URL: "#/market",
 		}
 	})
@@ -963,8 +963,8 @@ func (s *Server) updateRun(w http.ResponseWriter, r *http.Request) {
 		for _, n := range riders {
 			s.notifyHouse("runs", n["house_id"].(int64), func(lang string) Payload {
 				return Payload{
-					Title: "🚗 " + driver + tr(lang, " spremeni vožnjo v ", " changes the run to ") + dest,
-					Body:  tr(lang, "odhod ", "leaves ") + humanWhen(at, lang, s.now()) + tr(lang, " — tvoja potreba je na tej vožnji", " — your need rides on it"),
+					Title: "🚗 " + driver + tr(lang, " changes the run to ") + dest,
+					Body:  tr(lang, "leaves ") + humanWhen(at, lang, s.now()) + tr(lang, " — your need rides on it"),
 					URL:   "#/market",
 				}
 			})
@@ -1010,8 +1010,8 @@ func (s *Server) deleteRun(w http.ResponseWriter, r *http.Request) {
 				// Verb first: a lock screen truncates a long typed
 				// destination, and "Odpade vožnja …" still says the run is off
 				// where "… odpade" would have been cut away.
-				Title: tr(lang, "🚗 Odpade vožnja hiše "+driver+" v "+dest, "🚗 Called off: the run to "+dest+" by "+driver),
-				Body:  tr(lang, "tvoja potreba ostane na tržnici, brez vožnje", "your need stays on the market, without a run"),
+				Title: fmt.Sprintf(tr(lang, "🚗 Called off: the run to %s by %s"), dest, driver),
+				Body:  tr(lang, "your need stays on the market, without a run"),
 				URL:   "#/market",
 			}
 		})
@@ -1045,7 +1045,7 @@ func (s *Server) createNeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.notify("needs", houseFrom(r).ID, func(lang string) Payload {
-		return Payload{Title: "🛒 " + houseFrom(r).Name + tr(lang, " rabi iz trgovine", " needs from the shop"), Body: snippet(str(m, "text"), 140), URL: "#/market"}
+		return Payload{Title: "🛒 " + houseFrom(r).Name + tr(lang, " needs from the shop"), Body: snippet(str(m, "text"), 140), URL: "#/market"}
 	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
@@ -1079,14 +1079,14 @@ func (s *Server) createOffer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.notify("offers", houseFrom(r).ID, func(lang string) Payload {
-		icon, what := "🎁", tr(lang, " podarja", " gives away")
+		icon, what := "🎁", tr(lang, " gives away")
 		switch tag {
 		case "seeds":
-			icon, what = "🌱", tr(lang, " deli semena", " shares seeds")
+			icon, what = "🌱", tr(lang, " shares seeds")
 		case "surplus":
-			icon, what = "🧺", tr(lang, " deli presežek", " shares surplus")
+			icon, what = "🧺", tr(lang, " shares surplus")
 		case "joint":
-			icon, what = "📦", tr(lang, " zbira skupno naročilo", " starts a joint order")
+			icon, what = "📦", tr(lang, " starts a joint order")
 		}
 		return Payload{Title: icon + " " + houseFrom(r).Name + what, Body: snippet(str(m, "text"), 140), URL: "#/market"}
 	})
@@ -1201,7 +1201,7 @@ func (s *Server) createAway(w http.ResponseWriter, r *http.Request) {
 	// Away notices are burglary information and a lock screen is readable by
 	// anyone holding the phone: the push names no house, no dates, no notes.
 	s.notify("away", houseFrom(r).ID, func(lang string) Payload {
-		return Payload{Title: tr(lang, "🕯️ Stražnica", "🕯️ Watchtower"), Body: tr(lang, "nekdo je vpisal odsotnost — odpri portal", "someone marked an absence — open the portal"), URL: "#/watch"}
+		return Payload{Title: tr(lang, "🕯️ Watchtower"), Body: tr(lang, "someone marked an absence — open the portal"), URL: "#/watch"}
 	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
@@ -1323,14 +1323,10 @@ func (s *Server) signUp(w http.ResponseWriter, r *http.Request) {
 	}
 	if owner := ev["house_id"].(int64); owner != h.ID {
 		title := ev["title"].(string)
-		word := map[string]struct{ sl, en string }{
-			"yes":   {" prihaja", " is coming"},
-			"no":    {" ne pride", " cannot come"},
-			"maybe": {" mogoče pride", " might come"},
-		}[state]
+		word := map[string]string{"yes": " is coming", "no": " cannot come", "maybe": " might come"}[state]
 		icon := map[string]string{"yes": "🙋", "no": "🚫", "maybe": "🤔"}[state]
 		s.notifyHouse("events", owner, func(lang string) Payload {
-			return Payload{Title: icon + " " + h.Name + tr(lang, word.sl, word.en), Body: title, URL: "#/tavern"}
+			return Payload{Title: icon + " " + h.Name + tr(lang, word), Body: title, URL: "#/tavern"}
 		})
 	}
 	w.WriteHeader(204)
@@ -1375,7 +1371,7 @@ func (s *Server) createTool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.notify("tools", h.ID, func(lang string) Payload {
-		return Payload{Title: "🛠 " + h.Name + tr(lang, " deli orodje", " shares a tool"), Body: snippet(join(" — ", str(m, "name"), str(m, "notes")), 140), URL: "#/shed"}
+		return Payload{Title: "🛠 " + h.Name + tr(lang, " shares a tool"), Body: snippet(join(" — ", str(m, "name"), str(m, "notes")), 140), URL: "#/shed"}
 	})
 	writeJSON(w, 201, map[string]any{"id": id})
 }
@@ -1417,7 +1413,7 @@ func (s *Server) updateTool(w http.ResponseWriter, r *http.Request) {
 			if owner != h.ID {
 				name := row["name"].(string)
 				s.notifyHouse("tools", owner, func(lang string) Payload {
-					return Payload{Title: "🛠 " + h.Name + tr(lang, " je vzel", " took"), Body: name, URL: "#/shed"}
+					return Payload{Title: "🛠 " + h.Name + tr(lang, " took"), Body: name, URL: "#/shed"}
 				})
 			}
 		} else {
@@ -1429,7 +1425,7 @@ func (s *Server) updateTool(w http.ResponseWriter, r *http.Request) {
 			if held && owner != h.ID {
 				name := row["name"].(string)
 				s.notifyHouse("tools", owner, func(lang string) Payload {
-					return Payload{Title: "🛠 " + h.Name + tr(lang, " je vrnil", " returned"), Body: name, URL: "#/shed"}
+					return Payload{Title: "🛠 " + h.Name + tr(lang, " returned"), Body: name, URL: "#/shed"}
 				})
 			}
 		}

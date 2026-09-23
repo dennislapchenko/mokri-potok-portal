@@ -9,6 +9,9 @@
     "noUnusedLocals": true,
     "skipLibCheck": true,
     "isolatedModules": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": { "@i18n/*": ["../backend/internal/httpapi/i18n/*"] },
     "types": ["vite/client"]
   },
   "include": ["src"]

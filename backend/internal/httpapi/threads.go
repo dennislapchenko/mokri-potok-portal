@@ -118,8 +118,8 @@ func (s *Server) tellThread(r *http.Request, subject string, id int64, from *Hou
 			told[w] = true
 			s.notifyHouse("away", w, func(lang string) Payload {
 				return Payload{
-					Title: tr(lang, "🕯️ Stražnica", "🕯️ Watchtower"),
-					Body:  tr(lang, "nekdo je pripisal k odsotnosti — odpri portal", "someone wrote on an absence — open the portal"),
+					Title: tr(lang, "🕯️ Watchtower"),
+					Body:  tr(lang, "someone wrote on an absence — open the portal"),
 					URL:   "#/watch",
 				}
 			})
@@ -141,7 +141,7 @@ func (s *Server) tellThread(r *http.Request, subject string, id int64, from *Hou
 		}
 		told[to] = true
 		s.notifyHouse(kind, to, func(lang string) Payload {
-			return Payload{Title: icon + " " + from.Name + tr(lang, " o: ", " on: ") + label, Body: body, URL: url}
+			return Payload{Title: icon + " " + from.Name + tr(lang, " on: ") + label, Body: body, URL: url}
 		})
 	}
 }

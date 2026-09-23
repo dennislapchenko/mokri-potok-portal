@@ -54,7 +54,7 @@ func TestVillageFlow(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer st.Close()
-	srv := New(st, config.Config{BootstrapCode: "letmein"})
+	srv := New(st, config.Config{BootstrapCode: "letmein", Languages: []string{"sl", "en"}})
 	// The dates below are fixed, so the clock is too — off the wall clock the
 	// away list and the run list read, this test expired on 2026-09-18.
 	srv.now = func() time.Time { return time.Date(2026, 9, 4, 10, 0, 0, 0, time.Local) }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/dennislapchenko/mokri-potok-portal/backend/internal/config"
 	"github.com/dennislapchenko/mokri-potok-portal/backend/internal/store"
@@ -54,6 +55,9 @@ func TestVillageFlow(t *testing.T) {
 	}
 	defer st.Close()
 	srv := New(st, config.Config{BootstrapCode: "letmein"})
+	// The dates below are fixed, so the clock is too — off the wall clock the
+	// away list and the run list read, this test expired on 2026-09-18.
+	srv.now = func() time.Time { return time.Date(2026, 9, 4, 10, 0, 0, 0, time.Local) }
 	steward := &client{t: t, h: srv.Handler()}
 
 	code, obj, _ := steward.do("GET", "/api/status", nil)

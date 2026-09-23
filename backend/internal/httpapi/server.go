@@ -1155,10 +1155,14 @@ func (s *Server) updateClaimable(w http.ResponseWriter, r *http.Request, table, 
 // ---- watchtower ----------------------------------------------------------
 
 func (s *Server) listAway(w http.ResponseWriter, r *http.Request) {
+	// A notice stays listed three days after it ends. The bound comes off
+	// s.now(), like listRuns: SQLite's own clock is UTC and no test can move
+	// it, which is how the fixtures' September dates quietly expired.
+	cut := s.now().AddDate(0, 0, -3).Format("2006-01-02")
 	rows, err := s.st.Rows(r.Context(), `SELECT x.*,`+houseJoin+`, t.name AS watcher_name,
 		(SELECT count(*) FROM comments c WHERE c.subject='away' AND c.subject_id=x.id) AS comments
 		FROM away x JOIN houses h ON h.id=x.house_id
-		LEFT JOIN houses t ON t.id=x.watcher WHERE x.to_date >= date('now','-3 days') ORDER BY x.from_date`)
+		LEFT JOIN houses t ON t.id=x.watcher WHERE x.to_date >= ? ORDER BY x.from_date`, cut)
 	if err != nil {
 		fail(w, err)
 		return

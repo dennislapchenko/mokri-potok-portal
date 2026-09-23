@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { api } from "../api";
 import { useT } from "../i18n";
 
 // Water on the village map. The lines are the watercourses a terrain model
@@ -11,9 +12,10 @@ import { useT } from "../i18n";
 // never whether it runs, so calling every small one a gully would be a claim
 // the data cannot make.
 //
-// It is one file, one data file and one line in VillageMap. To take the water
-// off the map, delete this file, `public/data/water.json` and the <Water/>
-// line, and drop the note about it from the map's caption.
+// It is one file, one database row and one line in VillageMap. To take the
+// water off the map, delete this file and the <Water/> line; a village with
+// no `water` row draws none and says nothing, because water is the one
+// village's model and a map is its parcels.
 type Line = { flow_m2: number; kind: string; points: [number, number][] };
 type Doc = { lines: Line[] };
 
@@ -21,7 +23,7 @@ export function Water({ scale }: { scale: number }) {
   const { t } = useT();
   const [doc, setDoc] = useState<Doc | null>(null);
   useEffect(() => {
-    fetch(import.meta.env.BASE_URL + "data/water.json").then((r) => r.json()).then(setDoc).catch(() => {});
+    api<Doc>("/map/water").then(setDoc).catch(() => {});
   }, []);
   if (!doc) return null;
   // The name is sized in ground metres, capped: it is a whisper when the whole

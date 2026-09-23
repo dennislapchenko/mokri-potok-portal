@@ -132,6 +132,8 @@ func (s *Server) routes() {
 	m.HandleFunc("DELETE /api/tasks/{id}", s.requireHouse(s.deleteTask))
 	m.HandleFunc("POST /api/projects/{id}/photos", s.requireHouse(s.addProjectPhoto))
 	m.HandleFunc("GET /api/photos/{id}", s.requireHouse(s.getProjectPhoto))
+	m.HandleFunc("GET /api/map", s.requireHouse(s.listMap))
+	m.HandleFunc("GET /api/map/{name}", s.requireHouse(s.getMap))
 	m.HandleFunc("DELETE /api/photos/{id}", s.requireHouse(s.deleteProjectPhoto))
 	// Campground
 	m.HandleFunc("GET /api/camp", s.requireHouse(s.listCamp))
@@ -1260,13 +1262,15 @@ func (s *Server) updateAway(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) export(w http.ResponseWriter, r *http.Request) {
 	out := map[string]any{"exported_at": time.Now().UTC().Format(time.RFC3339)}
-	for _, t := range []string{"houses", "house_parcels", "house_homes", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "wish_options", "comments", "projects", "project_tasks", "project_photos", "camp_takings", "codex_sections", "contacts"} {
+	for _, t := range []string{"houses", "house_parcels", "house_homes", "posts", "events", "event_signups", "runs", "needs", "offers", "away", "tools", "wishes", "wish_wants", "wish_options", "comments", "projects", "project_tasks", "project_photos", "camp_takings", "codex_sections", "contacts", "map_files"} {
 		cols := "*"
 		switch t { // photos are bytes, not text — they stay in the SQLite backup
 		case "tools":
 			cols = "id, house_id, name, notes, category, held_by, held_since, reminded_at, created_at"
 		case "project_photos":
 			cols = "id, project_id, house_id, photo_type, created_at"
+		case "map_files": // the map is text: a village leaving with the JSON and no backup keeps it
+			cols = "name, CAST(bytes AS TEXT) AS bytes, source, snapshot, updated_at"
 		}
 		rows, err := s.st.Rows(r.Context(), `SELECT `+cols+` FROM `+t)
 		if err != nil {

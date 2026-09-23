@@ -1090,6 +1090,58 @@ func TestPageCarriesCSP(t *testing.T) {
 
 func fmtID(f string, id int64) string { return fmt.Sprintf(f, id) }
 
+// TestMapFiles: the map's data is a row entered from a file, served only to a
+// token with an ETag, and absent until then — a 404 the page turns into "no
+// map yet". A file that is not a FeatureCollection never lands.
+func TestMapFiles(t *testing.T) {
+	srv, _, steward, _ := newVillage(t)
+	code, _, _ := steward.do("GET", "/api/map/parcels", nil)
+	steward.must(404, code, "no parcels yet")
+	if err := srv.ImportMap("parcels", "GURS", "2026-08-15", strings.NewReader(`{"type":"Feature"}`)); err == nil {
+		t.Fatal("a bare feature was taken as a cadastre")
+	}
+	if err := srv.ImportMap("parcels", "", "", strings.NewReader(`{"type":"FeatureCollection","features":[{}]}`)); err == nil {
+		t.Fatal("parcels landed without a source and a date")
+	}
+	if err := srv.ImportMap("parcels", "GURS", "2026-08-15", strings.NewReader(`{"type":"FeatureCollection","features":[{"properties":{"parcel":"1"}}]}`)); err != nil {
+		t.Fatal(err)
+	}
+	if err := srv.ImportMap("water", "", "", strings.NewReader(`{"lines":[{"kind":"stream","points":[[0,0],[1,1]]}]}`)); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/map/parcels", nil)
+	req.Header.Set("Authorization", "Bearer "+steward.token)
+	srv.Handler().ServeHTTP(rec, req)
+	etag := rec.Header().Get("ETag")
+	if rec.Code != 200 || etag == "" || rec.Header().Get("Content-Type") != "application/geo+json" || !strings.Contains(rec.Body.String(), `"parcel":"1"`) {
+		t.Fatalf("parcels: %d %q %q", rec.Code, etag, rec.Header())
+	}
+	rec = httptest.NewRecorder()
+	req.Header.Set("If-None-Match", etag)
+	srv.Handler().ServeHTTP(rec, req)
+	if rec.Code != 304 || rec.Body.Len() != 0 {
+		t.Fatalf("a phone that holds the map fetched it again: %d", rec.Code)
+	}
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/api/map/parcels", nil))
+	if rec.Code != 401 {
+		t.Fatalf("the cadastre without a token: %d", rec.Code)
+	}
+	_, _, list := steward.do("GET", "/api/map", nil)
+	if len(list) != 2 || list[0]["source"] != "GURS" || list[0]["snapshot"] != "2026-08-15" {
+		t.Fatalf("map list: %v", list)
+	}
+	// The export carries the map as text: a village leaving with the JSON and
+	// no backup keeps its cadastre.
+	code, exp, _ := steward.do("GET", "/api/export", nil)
+	steward.must(200, code, "export")
+	files := exp["map_files"].([]any)
+	if len(files) != 2 || !strings.Contains(files[0].(map[string]any)["bytes"].(string), "FeatureCollection") {
+		t.Fatalf("export map_files: %v", files)
+	}
+}
+
 // TestProjectPhotos: any house puts a picture on a project; the project lists
 // it without the bytes; the bytes need a token; the uploader, the project's
 // house or a steward removes it; deleting the project takes its pictures with

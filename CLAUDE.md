@@ -124,8 +124,8 @@ does not ship.
   question. That split is the assistant's, not the owner's.
 - **No tallies of favours.** "Taken by", "claimed by", "watched by" are
   acknowledgments. No counts, points, leaderboards, streaks. Ever.
-- **Water on the map is one file and one component.** `map/Water.tsx` draws
-  `public/data/water.json` — the watercourses chained out of an epsilon
+- **Water on the map is one row and one component.** `map/Water.tsx` draws
+  the `water` row of `map_files` — the watercourses chained out of an epsilon
   priority-flood + D8 model (the method of the homestead repo's
   `10-site/terrain-data/water.py`) run on ARSO DMR 1 m over **the whole village,
   E485000-488000 N44800-47600** — the box the map's own reset view opens on, so
@@ -147,11 +147,19 @@ does not ship.
   survey disagree about this water — OSM calls the valley trunk *Reka* and puts
   *Mokri potok* 1.6 km west, `10-site/geodetic-survey-2013.md` reads *Mokri
   potok* on the trunk itself — and the owner has not picked. To take the water
-  off the map, delete those two files and the `<Water/>` line in
-  `VillageMap.tsx` — nothing else knows about it.
-- **Cadastre is a view, not a source.** `parcels.geojson` is public GURS data;
-  parcel numbers show only for assigned parcels (and to stewards in assign
-  mode). The caption under the map is **one line**: the snapshot date and GURS.
+  off the map, delete `Water.tsx` and the `<Water/>` line in `VillageMap.tsx` —
+  nothing else knows about it. A village with no `water` row draws none and
+  says nothing: the water is this village's model, a map is its parcels.
+- **Cadastre is a view, not a source.** The `parcels` row of `map_files` is
+  public GURS data, entered once from `deploy/map/parcels.geojson` by
+  `/server map-import` (`maps.go`) — **in the database like the photos, so the
+  backup is the whole village and one image serves any village**; served only
+  to a token, with an ETag so a phone holding it gets a 304. The import refuses
+  anything but a FeatureCollection, because a bad upload would open every phone
+  on an empty map. **A village with no `parcels` row sees what it needs**, in
+  words, instead of a map. Parcel numbers show only for assigned parcels (and
+  to stewards in assign mode). The caption under the map is **one line**: the
+  snapshot date and the source, both typed at import and kept on the row.
   The "boundaries, not fences" sentence and the water-model disclaimer were cut
   on 2026-09-07 (owner's decision) — a caption nobody finishes reading protects
   nobody. The attribution itself stays, and an outline nobody holds is drawn at
@@ -229,9 +237,10 @@ does not ship.
   shrunk in the browser and stored as a BLOB (`photos.go` reads and serves
   both), so the SQLite backup is the whole village. Lists and the export never
   carry the bytes; `GET /api/tools/{id}/photo` and `GET /api/photos/{id}` need
-  a token. The export hardcodes the `tools` and `project_photos` column lists —
-  a new column on either must be added there too, or it silently drops out of
-  the exit path. **Any house may put a picture on any project** — a project is
+  a token. The export hardcodes the `tools`, `project_photos` and `map_files`
+  column lists — a new column on any must be added there too, or it silently
+  drops out of the exit path. The map rows go out as text, unlike the photos:
+  a village leaving with the JSON and no backup keeps its cadastre. **Any house may put a picture on any project** — a project is
   the village's, like its events — and the full-size view says which house and
   when; the house that added it, the project's house or a steward takes it
   down. The input opens the chooser, not the camera: before-and-after pictures
@@ -544,7 +553,8 @@ docs/               design docs the owner and the assistant decide on together (
                     and `design-mcp.md` — the API as MCP tools for agents: built, with the options rejected and their costs);
                     `later.md` = the one home for what is brainstormed, designed-and-set-aside, or still undecided
 docs/diagrams/      hand-drawn SVG sketches belonging to those docs
-frontend/public/data/  parcels.geojson (cadastre), water.json (the modelled watercourses, drawn by map/Water.tsx)
+deploy/map/         parcels.geojson (cadastre), water.json (the modelled watercourses) — this village's seed for the
+                    map_files rows, imported once by task vm:map; backend/internal/httpapi/maps.go serves and imports them
 deploy/app/         compose for the VM stack; deploy/infra-log.md = what was done by hand
 .doco-cd.yml        deploy config the VM's doco-cd polls; BE_TAG rolled by CI
 .github/workflows/  build-backend (GHCR + roll tag)

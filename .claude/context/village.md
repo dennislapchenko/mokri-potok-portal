@@ -63,8 +63,10 @@ That file is the one home for "not yet".
 
 ## Map data
 
-`frontend/public/data/parcels.geojson`: ~500 parcels of k.o. 1590, public
-cadastre WFS snapshot 2026-08-15, EPSG:3794 metres, rounded to 0.1 m. The
+`deploy/map/parcels.geojson`, imported once into the `map_files` table (the
+map lives in the database so the backup is the whole village): ~500 parcels of
+k.o. 1590, public cadastre WFS snapshot 2026-08-15, EPSG:3794 metres, rounded
+to 0.1 m. The
 GURS open-data licence string is not recorded yet — it must be, before the
 portal moves to the collective's own domain. Drawn as
 SVG with northing flipped; no tiles. `water.json` is the watercourse network a

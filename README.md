@@ -22,9 +22,14 @@ sends notifications.
 - **Backend:** Go, stdlib HTTP, SQLite (pure Go), VAPID web push, one binary, nightly backups in-process.
   Image built by CI to GHCR; deployed by the doco-cd controller on the gaias-choice
   VM (`.doco-cd.yml`, `deploy/`).
-- **Map data:** `frontend/public/data/parcels.geojson` — public cadastre (GURS), EPSG:3794 —
-  and `water.json`, the watercourses a terrain model finds across the whole village.
-  House ↔ parcel assignment is app data, never in git.
+- **Map data:** two rows in the database (`map_files`), entered once from a file on the
+  VM — `task vm:map`, which runs `/server map-import parcels <source> <YYYY-MM-DD>` and
+  `/server map-import water` — so the SQLite backup is the whole village and one image
+  serves any village. This village's files are `deploy/map/parcels.geojson` (public
+  cadastre, GURS, EPSG:3794) and `deploy/map/water.json` (the watercourses a terrain
+  model finds). Parcels must be a GeoJSON FeatureCollection in planar metres, under 2 MB;
+  a village without the row sees what it needs instead of a map. House ↔ parcel
+  assignment is app data, never in git.
 
 ```sh
 task check      # vet + test backend, typecheck + build frontend

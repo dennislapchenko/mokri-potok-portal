@@ -40,6 +40,11 @@ tasks:
     desc: 'import the adopted codex once, from a JSON file: task vm:codex -- codex.json (see codex.go for the shape)'
     cmds:
       - ssh -p 13337 -i ~/.ssh/gaia root@gaias-choice.gardenofatlantis.com 'docker exec -i mokri-potok-potok-api-1 /server codex-import' < "{{.CLI_ARGS}}"
+  vm:map:
+    desc: 'import the map data from deploy/map into the village database: task vm:map (parcels with source and snapshot date, then water)'
+    cmds:
+      - ssh -p 13337 -i ~/.ssh/gaia root@gaias-choice.gardenofatlantis.com 'docker exec -i mokri-potok-potok-api-1 /server map-import parcels GURS 2026-08-15' < deploy/map/parcels.geojson
+      - ssh -p 13337 -i ~/.ssh/gaia root@gaias-choice.gardenofatlantis.com 'docker exec -i mokri-potok-potok-api-1 /server map-import water' < deploy/map/water.json
   vm:backup:
     desc: copy the latest SQLite backup from the VM to ./backups/
     cmds: ["mkdir -p backups && scp -P 13337 -i ~/.ssh/gaia 'root@gaias-choice.gardenofatlantis.com:/srv/mokri-potok/data/backups/*.db' backups/"]

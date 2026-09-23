@@ -66,6 +66,20 @@ func main() {
 		}
 		return
 	}
+	// `/server map-import parcels <source> <YYYY-MM-DD> < parcels.geojson` and
+	// `/server map-import water < water.json` — the map's data enters the
+	// database from a file, so one image serves any village (maps.go).
+	if len(os.Args) > 2 && os.Args[1] == "map-import" {
+		source, snapshot := "", ""
+		if len(os.Args) > 4 {
+			source, snapshot = os.Args[3], os.Args[4]
+		}
+		if err := srv.ImportMap(os.Args[2], source, snapshot, os.Stdin); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if row, _ := st.One(context.Background(), `SELECT count(*) AS n FROM houses`); row != nil && row["n"].(int64) == 0 {
 		code, err := srv.BootstrapCode()
 		if err != nil {

@@ -1,0 +1,6 @@
+{
+  "name": "{{VILLAGE_NAME}}",
+  "short_name": "{{VILLAGE_NAME}}",
+  "start_url": "./",
+  "display": "standalone"
+}

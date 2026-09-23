@@ -8,6 +8,7 @@ backups/
 *.local
 *.log
 
-# The Docker build writes Vite output here; only the placeholder is tracked.
+# The Docker build writes Vite output here; only the placeholders are tracked.
 backend/internal/httpapi/web/*
 !backend/internal/httpapi/web/index.html
+!backend/internal/httpapi/web/manifest.webmanifest

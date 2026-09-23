@@ -1070,12 +1070,16 @@ func TestPageCarriesCSP(t *testing.T) {
 	if body := rec.Body.String(); !strings.Contains(body, "<title>Testna Vas</title>") || strings.Contains(body, "{{") {
 		t.Fatalf("the shell without its village: %q", body)
 	}
+	// The manifest is the second file the token lives in. A placeholder one is
+	// committed beside index.html so this runs on the bare embed in CI, not
+	// only on a machine where a build has filled web/.
 	rec = httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/manifest.webmanifest", nil))
-	// The placeholder embed has no manifest; the built image does. Either way
-	// the content type must not fall back to sniffing.
-	if ct := rec.Header().Get("Content-Type"); rec.Code == 200 && ct != "application/manifest+json" {
-		t.Fatalf("manifest content type: %q", ct)
+	if ct := rec.Header().Get("Content-Type"); rec.Code != 200 || ct != "application/manifest+json" {
+		t.Fatalf("manifest: %d %q", rec.Code, ct)
+	}
+	if body := rec.Body.String(); !strings.Contains(body, `"short_name": "Testna Vas"`) || strings.Contains(body, "{{") {
+		t.Fatalf("the manifest without its village: %q", body)
 	}
 	rec = httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/api/status", nil))

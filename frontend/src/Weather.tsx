@@ -34,7 +34,8 @@ export function Weather() {
   // 404 is a village with no WEATHER_LOCATION: no panel, not a fault.
   useEffect(() => { api<W>("/weather").then(setW).catch((e) => (e instanceof ApiError && e.status === 404 ? setOff(true) : setErr(true))); }, []);
 
-  if (off) return null;
+  // The chip above still lights, so the topper says why it is empty.
+  if (off) return <div className="parchment weather"><p className="small muted">{t("No weather for this village.")}</p></div>;
   if (err) return <div className="parchment weather"><p className="small muted">{t("The weather service did not answer.")}</p></div>;
   if (!w) return <div className="parchment weather"><p className="small muted">{t("Loading…")}</p></div>;
   const locale = lang === "sl" ? "sl-SI" : "en-GB";

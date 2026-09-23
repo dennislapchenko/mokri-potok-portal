@@ -202,6 +202,7 @@ const sl: Record<string, string> = {
   "Nothing pinned, nothing planned.": "Nič pripetega, nič načrtovanega.",
   "this device only": "samo ta naprava",
   "The weather service did not answer.": "Vremenska služba se ni odzvala.",
+  "No weather for this village.": "Ta vas nima vremenske napovedi.",
   "Vir: ARSO. Forecast for": "Vir: ARSO. Napoved za",
   "not measured at the village.": "ni merjeno v vasi.",
   "This reading is over an hour old.": "Ta podatek je starejši od ure.",

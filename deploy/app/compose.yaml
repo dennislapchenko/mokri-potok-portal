@@ -10,6 +10,10 @@ services:
       DATA_DIR: /data
       PORT: "8788"
       PUSH_SUBJECT: ${PUSH_SUBJECT:-https://vas.mokri-potok.si/}
+      # The binary has no village in it: these three name this one.
+      VILLAGE_NAME: Mokri Potok
+      PUBLIC_URL: https://vas.mokri-potok.si
+      WEATHER_LOCATION: Kočevje
       # Notifications say "today" / "tomorrow" against the village's own date.
       TZ: Europe/Ljubljana
     volumes:

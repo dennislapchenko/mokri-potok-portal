@@ -1,4 +1,4 @@
-// mokri-potok-portal backend. One binary: HTTP API + SQLite + nightly backup.
+// porta-pagi backend. One binary: HTTP API + SQLite + nightly backup.
 // `server healthcheck` probes the running instance (distroless has no curl).
 package main
 
@@ -9,11 +9,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 	// Embeds the timezone database: the image is distroless and has none, and
 	// notifications say "today" / "tomorrow" against the village's local date.
-	// Set TZ=Europe/Ljubljana in the compose file to pick it up.
+	// Set TZ in the compose file to pick it up.
 	_ "time/tzdata"
 
 	"github.com/dennislapchenko/mokri-potok-portal/backend/internal/config"
@@ -29,6 +30,10 @@ func main() {
 			os.Exit(1)
 		}
 		return
+	}
+
+	if m := cfg.Missing(); len(m) > 0 {
+		log.Fatalf("set %s: they name this village and have no default", strings.Join(m, ", "))
 	}
 
 	st, err := store.Open(cfg.DataDir)

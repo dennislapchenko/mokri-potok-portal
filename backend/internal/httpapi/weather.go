@@ -49,9 +49,6 @@ type weatherCache struct {
 
 var wcache weatherCache
 
-// contact is what ARSO sees if anyone looks at their logs.
-const contact = "https://vas.mokri-potok.si/"
-
 func (s *Server) weather(w http.ResponseWriter, r *http.Request) {
 	loc := s.cfg.WeatherLocation
 	if loc == "" {
@@ -63,7 +60,7 @@ func (s *Server) weather(w http.ResponseWriter, r *http.Request) {
 	body := wcache.body
 	wcache.mu.Unlock()
 	if !fresh {
-		out, err := fetchWeather(r.Context(), loc)
+		out, err := fetchWeather(r.Context(), loc, s.cfg.PublicURL)
 		if err != nil {
 			if body != nil { // serve the stale copy rather than nothing
 				writeRaw(w, body)
@@ -98,7 +95,8 @@ type arsoFeatureSet struct {
 	} `json:"features"`
 }
 
-func fetchWeather(ctx context.Context, loc string) (*weatherOut, error) {
+// contact is the portal's own URL, what ARSO sees if anyone looks at their logs.
+func fetchWeather(ctx context.Context, loc, contact string) (*weatherOut, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", "https://vreme.arso.gov.si/api/1.0/location/?location="+url.QueryEscape(loc), nil)
 	if err != nil {
 		return nil, err
@@ -106,7 +104,7 @@ func fetchWeather(ctx context.Context, loc string) (*weatherOut, error) {
 	req.Header.Set("Accept", "application/json")
 	// Identify the caller. An anonymous poller is the thing a service blocks
 	// first, and there is no published rate limit to rely on.
-	req.Header.Set("User-Agent", "mokri-potok-portal/1 (village portal; "+contact+")")
+	req.Header.Set("User-Agent", "porta-pagi/1 (village portal; "+contact+")")
 	resp, err := (&http.Client{Timeout: 15 * time.Second}).Do(req)
 	if err != nil {
 		return nil, err

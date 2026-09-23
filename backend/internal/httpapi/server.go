@@ -270,7 +270,7 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	writeJSON(w, 200, map[string]any{"houses": row["n"], "bootstrap_needed": row["n"].(int64) == 0})
+	writeJSON(w, 200, map[string]any{"name": s.cfg.VillageName, "houses": row["n"], "bootstrap_needed": row["n"].(int64) == 0})
 }
 
 // BootstrapCode returns the code that creates the first steward house. Fixed

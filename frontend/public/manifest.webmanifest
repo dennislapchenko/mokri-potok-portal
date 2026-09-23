@@ -1,6 +1,6 @@
 {
-  "name": "Mokri Potok — vaški portal",
-  "short_name": "Mokri Potok",
+  "name": "{{VILLAGE_NAME}}",
+  "short_name": "{{VILLAGE_NAME}}",
   "description": "Vas na zemljevidu: gostilna, zvonik, tržnica, stražnica.",
   "start_url": "./",
   "scope": "./",

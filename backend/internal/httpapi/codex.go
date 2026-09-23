@@ -99,7 +99,7 @@ func (s *Server) updateCodexSection(w http.ResponseWriter, r *http.Request) {
 // The adopted text enters once, from a JSON file on the VM, so the repo never
 // carries it:
 //
-//	docker exec -i mokri-potok-potok-api-1 /server codex-import < codex.json
+//	docker exec -i <container> /server codex-import < codex.json
 //
 // {"adopted": "2025-01-26", "sections": [{"title_sl": …, "body_sl": …, "title_en": …, "body_en": …}]}
 //

@@ -11,7 +11,7 @@ import (
 // the credential to use it is SSH access to the machine, which is the strongest
 // one the village has:
 //
-//	docker exec mokri-potok-potok-api-1 /server code "<house>"
+//	docker exec <container> /server code "<house>"
 //
 // It rotates that house's invite and prints the link. The old link stops
 // working, which is the point: an invite that leaks is replaced, not shared.

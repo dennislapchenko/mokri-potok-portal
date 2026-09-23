@@ -12,7 +12,8 @@ tasks:
   be:run:
     desc: run the backend locally on 127.0.0.1:8788 with ./data
     dir: backend
-    env: { BIND: 127.0.0.1 } # loopback only, so the macOS firewall never asks
+    # loopback only, so the macOS firewall never asks; the three names because the binary has no default village
+    env: { BIND: 127.0.0.1, VILLAGE_NAME: Dev, PUBLIC_URL: http://localhost:5173, PUSH_SUBJECT: "mailto:dev@localhost" }
     cmds: [go run .]
   be:image:
     desc: build the backend image locally

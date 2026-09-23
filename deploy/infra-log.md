@@ -52,6 +52,11 @@
   notifications on the Pages origin must allow them again on the new domain;
   the install banner asks. Nothing warns them automatically.
 - `PUSH_SUBJECT` and `WEATHER_LOCATION` are the two new env knobs.
+  **2026-09-23:** the binary lost its village defaults on the way to
+  `porta-pagi`. `VILLAGE_NAME`, `PUBLIC_URL` and `PUSH_SUBJECT` are required
+  and set in `deploy/app/compose.yaml`; `WEATHER_LOCATION` too, since unset now
+  means no panel. `POTOK_BOOTSTRAP_CODE` is `PAGI_BOOTSTRAP_CODE` (unused here:
+  the code was generated on first boot).
 - **Recovery:** `docker exec mokri-potok-potok-api-1 /server code "<house>"`
   prints a fresh invite link for that house. Needed after the move, because a
   session lives in one browser on one origin and the origin changed.

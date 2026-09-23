@@ -536,7 +536,9 @@ backend/internal/httpapi/contacts.go  the phone book: four routes, and the one p
 backend/internal/httpapi/mcp.go    the door for agents: the tool table (the whole surface), the JSON-RPC endpoint, the in-process
                     dispatcher and the key route; the fence that keeps a key on /api/mcp is in auth.go
 backend/internal/httpapi/shed.go   tool photo routes, wishlist; photos.go = how a photo is read and served (≤2 MB, auth) + project pictures; remind.go = return nudges
-                    threads.go = comments on any subject + wish options; weather.go = ARSO, server-side; static.go = the embedded frontend
+                    threads.go = comments on any subject + wish options; weather.go = ARSO, server-side; static.go = the embedded frontend,
+                    which fills {{VILLAGE_NAME}} into index.html and the manifest at serve time — the build knows no village
+                    (config.go: VILLAGE_NAME, PUBLIC_URL, PUSH_SUBJECT have no default, the binary refuses to start without them)
 docs/               design docs the owner and the assistant decide on together (navigation growth, Projects, Campground,
                     `design-membership.md` — accounts for people who live here without land, options only, nothing built;
                     and `design-mcp.md` — the API as MCP tools for agents: built, with the options rejected and their costs);

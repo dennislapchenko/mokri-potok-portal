@@ -38,6 +38,16 @@ task vm:code -- "<house>"  # fresh invite link for a house, when nobody is logge
 task vm:codex -- codex.json  # import the adopted codex once (shape in backend/internal/httpapi/codex.go)
 ```
 
+The binary carries no village. Three variables name one, have no default, and
+the process refuses to start without them: `VILLAGE_NAME` (the tab title, the
+home-screen label, the heading), `PUBLIC_URL` (invite links are printed under
+it; it is the contact in the User-Agent sent to ARSO), `PUSH_SUBJECT` (the
+VAPID subject push services see). Optional: `WEATHER_LOCATION` (an ARSO place
+name; unset turns the panel off), `PAGI_BOOTSTRAP_CODE` (a fixed first-steward
+code; unset means generated and logged), `DATA_DIR`, `PORT`, `BIND`, `TZ`.
+This village's values are in `deploy/app/compose.yaml`; dev ones in
+`Taskfile.yml` and `.claude/launch.json`.
+
 ## For agents (MCP)
 
 The portal's API as MCP tools: an agent acts **as your house** — same rows,

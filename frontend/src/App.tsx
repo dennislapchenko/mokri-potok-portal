@@ -53,11 +53,15 @@ export default function App() {
 
   const logout = () => { setToken(null); setMe(null); setState("gate"); };
 
+  // The village's name comes from the backend: the build knows no village.
+  const [village, setVillage] = useState("");
+  useEffect(() => { api<{ name: string }>("/status").then((s) => { setVillage(s.name); document.title = `${s.name} · ${t("Village portal")}`; }).catch(() => {}); }, [t]);
+
   return (
     <>
       <header className="topbar">
         <div className="inner">
-          <h1><Link to="/">🏰 Mokri Potok</Link> <span className="small" style={{ color: "var(--parch2)" }}>· {t("Village portal")}</span></h1>
+          <h1><Link to="/">🏰 {village}</Link> <span className="small" style={{ color: "var(--parch2)" }}>· {t("Village portal")}</span></h1>
           {me && <Link className="house" to="/houses"><span className="crest" style={{ backgroundColor: me.color }}>{me.crest}</span> {me.name}</Link>}
           <span className="lang">
             <button className={lang === "sl" ? "primary" : ""} onClick={() => setLang("sl")}>SL</button>{" "}

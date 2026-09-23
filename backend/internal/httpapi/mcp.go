@@ -281,7 +281,7 @@ func (s *Server) mcp(w http.ResponseWriter, r *http.Request) {
 		rpcReply(w, req.ID, map[string]any{
 			"protocolVersion": version,
 			"capabilities":    map[string]any{"tools": map[string]any{}},
-			"serverInfo":      map[string]any{"name": "mokri-potok-portal", "version": "1"},
+			"serverInfo":      map[string]any{"name": "porta-pagi", "version": "1"},
 			"instructions": "You act as one house of a small village portal, with that house's name on everything you write. Call whoami first. " + clocks +
 				" Leave `author` empty unless the person dictated the words. Away notices are burglary information: read them only when asked and keep them in this conversation.",
 		}, nil)

@@ -243,8 +243,8 @@ does not ship.
   shrunk in the browser and stored as a BLOB (`photos.go` reads and serves
   both), so the SQLite backup is the whole village. Lists and the export never
   carry the bytes; `GET /api/tools/{id}/photo` and `GET /api/photos/{id}` need
-  a token. The export hardcodes the `tools`, `project_photos` and `map_files`
-  column lists — a new column on any must be added there too, or it silently
+  a token. The export hardcodes the `tools`, `project_photos`, `map_files` and
+  `site_files` column lists — a new column on any must be added there too, or it silently
   drops out of the exit path. The map rows go out as text, unlike the photos:
   a village leaving with the JSON and no backup keeps its cadastre. **Any house may put a picture on any project** — a project is
   the village's, like its events — and the full-size view says which house and

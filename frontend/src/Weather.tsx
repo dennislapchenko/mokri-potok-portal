@@ -14,7 +14,7 @@ type W = { place: string; now: string; now_icon: string; now_text: string; wind:
 
 const GLYPH: Record<string, string> = {
   "clear": "☀️", "clear-night": "🌙", "mostly-clear": "🌤️", "partly-cloudy": "⛅", "mostly-cloudy": "🌥️", "overcast": "☁️",
-  "fog": "🌫️", "drizzle": "☂️", "rain": "🌧️", "snow": "🌨️", "thunder": "⛈️",
+  "fog": "🌫️", "drizzle": "☔", "rain": "🌧️", "snow": "🌨️", "thunder": "⛈️",
 };
 const emoji = (icon: string) => GLYPH[icon] || "🌡️";
 
@@ -58,7 +58,7 @@ export function Weather() {
       </div>
       <p className={"small w-src" + (stale ? " stale-note" : " muted")}>
         {/* CC BY asks for the licensor's name and a link; a link loads nothing until tapped. */}
-        {t("Source")}: {w.source === "Open-Meteo.com" ? <a href="https://open-meteo.com" rel="noopener">Open-Meteo.com</a> : w.source}. {t("Forecast for")} {w.place}, {t("not measured at the village.")}{" "}
+        {t("Source")}: {w.source === "Open-Meteo.com" ? <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo.com</a> : w.source}. {t("Forecast for")} {w.place}, {t("not measured at the village.")}{" "}
         {stale ? t("This reading is over an hour old.") : t("Read")} {age}
       </p>
     </div>

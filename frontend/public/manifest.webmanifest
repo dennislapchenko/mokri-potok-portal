@@ -1,7 +1,7 @@
 {
   "name": "{{VILLAGE_NAME}}",
   "short_name": "{{VILLAGE_NAME}}",
-  "description": "The village on one page.",
+  "description": "{{DESCRIPTION}}",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

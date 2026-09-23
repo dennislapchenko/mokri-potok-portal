@@ -91,6 +91,9 @@ func main() {
 		defer cancel()
 		hs.Shutdown(sh)
 	}()
+	if cfg.WeatherLocation == "" {
+		log.Print("WEATHER_LOCATION unset: weather panel off")
+	}
 	log.Printf("listening on %s:%s, data in %s, timezone %s", cfg.Bind, cfg.Port, cfg.DataDir, time.Local)
 	if err := hs.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		fmt.Fprintln(os.Stderr, err)

@@ -54,8 +54,11 @@ export default function App() {
   const logout = () => { setToken(null); setMe(null); setState("gate"); };
 
   // The village's name comes from the backend: the build knows no village.
-  const [village, setVillage] = useState("");
-  useEffect(() => { api<{ name: string }>("/status").then((s) => { setVillage(s.name); document.title = `${s.name} · ${t("Village portal")}`; }).catch(() => {}); }, [t]);
+  // The server already wrote it into <title>, so the heading starts from
+  // there instead of painting a bare castle until /status answers.
+  const [village, setVillage] = useState(() => (document.title.includes("{{") ? "" : document.title));
+  useEffect(() => { api<{ name: string }>("/status").then((s) => setVillage(s.name)).catch(() => {}); }, []);
+  useEffect(() => { if (village) document.title = `${village} · ${t("Village portal")}`; }, [village, lang]);
 
   return (
     <>

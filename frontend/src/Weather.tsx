@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "./api";
+import { api, ApiError } from "./api";
 import { useT } from "./i18n";
 
 // Weather on the home screen. The backend fetches ARSO and trims it, so the
@@ -30,8 +30,11 @@ export function Weather() {
   const { t, lang } = useT();
   const [w, setW] = useState<W | null>(null);
   const [err, setErr] = useState(false);
-  useEffect(() => { api<W>("/weather").then(setW).catch(() => setErr(true)); }, []);
+  const [off, setOff] = useState(false);
+  // 404 is a village with no WEATHER_LOCATION: no panel, not a fault.
+  useEffect(() => { api<W>("/weather").then(setW).catch((e) => (e instanceof ApiError && e.status === 404 ? setOff(true) : setErr(true))); }, []);
 
+  if (off) return null;
   if (err) return <div className="parchment weather"><p className="small muted">{t("The weather service did not answer.")}</p></div>;
   if (!w) return <div className="parchment weather"><p className="small muted">{t("Loading…")}</p></div>;
   const locale = lang === "sl" ? "sl-SI" : "en-GB";

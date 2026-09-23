@@ -36,7 +36,7 @@ func newVillage(t *testing.T) (*Server, *fakeSender, *client, *client) {
 	}
 	t.Cleanup(func() { st.Close() })
 	fake := &fakeSender{status: map[string]int{}}
-	srv := New(st, config.Config{BootstrapCode: "x"})
+	srv := New(st, config.Config{BootstrapCode: "x", VillageName: "Testna Vas"})
 	srv.send = fake
 	srv.now = func() time.Time { return time.Date(2026, 9, 4, 10, 0, 0, 0, time.Local) }
 	h := srv.Handler()
@@ -1058,13 +1058,24 @@ func TestCommonPlaceGetsNoInvite(t *testing.T) {
 	steward.must(404, code, "invite for nobody")
 }
 
-// TestPageCarriesCSP: the document says it talks to nobody but itself.
+// TestPageCarriesCSP: the document says it talks to nobody but itself, and
+// carries the village's name where the build left a token.
 func TestPageCarriesCSP(t *testing.T) {
 	srv, _, _, _ := newVillage(t)
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
 	if got := rec.Header().Get("Content-Security-Policy"); !strings.Contains(got, "default-src 'self'") || strings.Contains(got, "http") {
 		t.Fatalf("csp: %q", got)
+	}
+	if body := rec.Body.String(); !strings.Contains(body, "<title>Testna Vas</title>") || strings.Contains(body, "{{") {
+		t.Fatalf("the shell without its village: %q", body)
+	}
+	rec = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/manifest.webmanifest", nil))
+	// The placeholder embed has no manifest; the built image does. Either way
+	// the content type must not fall back to sniffing.
+	if ct := rec.Header().Get("Content-Type"); rec.Code == 200 && ct != "application/manifest+json" {
+		t.Fatalf("manifest content type: %q", ct)
 	}
 	rec = httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/api/status", nil))

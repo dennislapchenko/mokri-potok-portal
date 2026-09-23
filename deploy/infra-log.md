@@ -92,3 +92,19 @@
   compose file no longer passes that variable, and since the same day the
   backend reads none. The old `/potok/*` route
   left the gaias-choice Caddyfile: that repo's `deploy/infra-log.md`, same date.
+
+### 7. The split — 2026-09-23
+- The code moved to `github.com/dennislapchenko/porta-pagi` with its whole
+  history (a merge of unrelated histories, no rewrite). This repo keeps the
+  village's deploy. `compose.yaml` was pointed at `ghcr.io/dennislapchenko/
+  porta-pagi` and `BE_TAG` at `sha-1fbbe4d…`, porta-pagi's first build — the
+  same source as the last `mokri-potok-portal-be` build, so that roll should
+  change no table. CI here is gone; `task roll -- sha-<commit>` is the release.
+- **Rollback of that first roll is a hand edit**, not `task roll`: the old
+  tags live under the old image name, so set `image:` back to
+  `ghcr.io/dennislapchenko/mokri-potok-portal-be` in `compose.yaml` and
+  `BE_TAG` to `sha-7a6f2c3…`.
+- Pending as this was written: the porta-pagi package is private, so the VM
+  cannot pull it (anonymous pull answered 403). The owner flips it to public
+  in the package's settings (there is no API for it); the push of the cut
+  waits for that, and this entry gets the roll's outcome after `task vm:logs`.

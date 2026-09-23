@@ -1,14 +1,4 @@
-node_modules/
-frontend/dist/
-# Written from the git log by frontend/scripts/changelog.mjs at build time.
-frontend/public/changelog.json
-backend/data/
 backups/
 .DS_Store
 *.local
 *.log
-
-# The Docker build writes Vite output here; only the placeholders are tracked.
-backend/internal/httpapi/web/*
-!backend/internal/httpapi/web/index.html
-!backend/internal/httpapi/web/manifest.webmanifest

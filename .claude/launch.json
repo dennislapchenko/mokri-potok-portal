@@ -1,7 +1,0 @@
-{
-  "version": "0.0.1",
-  "configurations": [
-    { "name": "frontend", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--prefix", "frontend"], "port": 5173 },
-    { "name": "backend", "runtimeExecutable": "env", "runtimeArgs": ["BIND=127.0.0.1", "VILLAGE_NAME=Dev", "LANGUAGES=sl,en", "PUBLIC_URL=http://localhost:5173", "PUSH_SUBJECT=mailto:dev@localhost", "go", "run", "-C", "backend", "."], "port": 8788 }
-  ]
-}

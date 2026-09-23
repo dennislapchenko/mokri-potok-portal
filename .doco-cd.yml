@@ -2,11 +2,11 @@
 # (second entry in that repo's deploy/controller/poll.yaml) and reconciles
 # deploy/app/ on every push to main. Non-secrets only — this stack has no
 # secrets: the first steward code is generated on first boot and read from
-# `docker logs`. BE_TAG is rolled by .github/workflows/build-backend.yml.
+# `docker logs`. BE_TAG is a porta-pagi build, rolled by `task roll`.
 name: mokri-potok
 working_dir: deploy/app
 environment:
   PUSH_SUBJECT: https://vas.mokri-potok.si/
-  BE_TAG: sha-7a6f2c32be00fcb9116b77019855f8c0df05993d
+  BE_TAG: sha-1fbbe4d4af247008107537d32fa4dd6bcf8a2b71
 reconciliation:
   events: [unhealthy]

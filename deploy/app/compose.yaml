@@ -4,7 +4,7 @@
 # under /srv.
 services:
   potok-api:
-    image: ghcr.io/dennislapchenko/mokri-potok-portal-be:${BE_TAG:-latest}
+    image: ghcr.io/dennislapchenko/porta-pagi:${BE_TAG:-latest}
     restart: unless-stopped
     environment:
       DATA_DIR: /data

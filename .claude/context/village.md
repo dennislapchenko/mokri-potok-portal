@@ -44,10 +44,11 @@ land** — someone renting a hut from a house, or using a vacant one part of the
 year. They are a house with no parcels, the Watchtower treats them exactly like
 any house in both directions, and a steward ends such an account by deleting the
 house. The argument, the options not taken and the drawings:
-`docs/design-membership.md`.
+`docs/design-membership.md` in `porta-pagi`.
 
 Later, only if the houses ask: every room brainstormed and not built, every
-variant designed and set aside, and the open decisions are in `docs/later.md`.
+variant designed and set aside, and the open decisions are in `docs/later.md`
+in `porta-pagi`.
 That file is the one home for "not yet".
 
 ## Things that are deliberately not here

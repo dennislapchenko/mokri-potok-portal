@@ -7,7 +7,12 @@
 
 - **VM:** the gaias-choice VM (Hetzner, Helsinki). SSH
   `ssh -p 13337 -i ~/.ssh/gaia root@gaias-choice.gardenofatlantis.com`.
-  Owned by the gaias-choice repo; this stack is a tenant.
+  Owned by the gaias-choice repo; this stack is a tenant. Since 2026-09-24
+  the box also runs the Porta Pagi landing page and its public demo village
+  (that repo's `deploy/infra-log.md`, "Third and fourth sites"). The demo
+  hands any visitor a house's login for an hour; it sits on a compose
+  network of its own with only Caddy on it, under memory, CPU, process and
+  tmpfs caps, so it cannot name this stack's container or fill the disk.
 - **URL:** `https://vas.mokri-potok.si` — page and `/api` from the one
   container, the whole host proxied by the gaias-choice Caddy.
 - **Data:** `/srv/mokri-potok/data/potok.db` + `backups/` on the VM.
